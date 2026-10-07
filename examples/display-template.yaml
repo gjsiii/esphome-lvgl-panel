@@ -1,0 +1,88 @@
+# Example display file — copy into your Home Assistant's /config/esphome/,
+# rename it to match the device name, and edit everything marked ◀.
+#
+# The shared files are pulled from GitHub at the version in `ref`. To update a
+# display later, change `ref` to a newer release tag and reinstall.
+#
+# After adopting the display in Home Assistant, open the ESPHome integration's
+# options for it and turn on "Allow the device to perform Home Assistant
+# actions" — otherwise its buttons do nothing.
+
+substitutions:
+  # ── Connection (put the values in secrets.yaml) ──────────────────────────
+  api_key: !secret living_room_panel_api_key          # ◀ 32-byte base64 key
+  wifi_ssid: !secret wifi_ssid
+  wifi_password: !secret wifi_password
+  ap_password: !secret living_room_panel_ap_password  # ◀ fallback hotspot, 8+ chars
+  # ota_password: !secret living_room_panel_ota_password   # optional
+
+  # ── Site ─────────────────────────────────────────────────────────────────
+  ha_url: "http://homeassistant.local:8123"           # ◀ your HA address (for artwork)
+
+  # Optional overrides (defaults shown):
+  # idle_dim_timeout: 30s
+  # idle_off_timeout: 5min
+  # idle_dim_brightness: "0.30"
+  # c_accent: "0xF2F2F7"          # any palette color from core/theme.yaml
+
+esphome:
+  name: esp-living-room-panel                         # ◀ lowercase, digits, hyphens
+  friendly_name: Living Room Panel                    # ◀
+
+packages:
+  panel:
+    url: https://github.com/gjsiii/esphome-lvgl-panel
+    ref: v0.1.0                                       # ◀ release to build from
+    refresh: 1d
+    files:
+      # ── Board + core (always) ──────────────────────────────────────────
+      - hardware/guition-4848s040.yaml
+      - core/core.yaml
+
+      # ── Optional features (delete the ones you don't want) ─────────────
+      - path: features/weather.yaml
+        vars:
+          weather_entity: weather.home
+          forecast_entity: sensor.panel_weather_forecast  # needs ha/panel_weather.yaml in HA
+      - path: features/presence_wake.yaml
+        vars:
+          presence_entity: binary_sensor.living_room_presence   # ◀
+
+      # ── Lights tab: scene chips (optional; omit all for no SCENES row) ─
+      - path: items/scene.yaml
+        vars: { slot: 1, name: "Evening", entity: scene.living_room_evening }   # ◀
+      - path: items/scene.yaml
+        vars: { slot: 2, name: "Off", entity: scene.living_room_off }           # ◀
+
+      # ── Lights tab: lights and fans (slots shared, 1 = top) ────────────
+      - path: items/light.yaml
+        vars: { slot: 1, name: "Ceiling", entity: light.living_room_ceiling }   # ◀
+      - path: items/light.yaml
+        vars: { slot: 2, name: "Lamp", entity: light.living_room_lamp }         # ◀
+      - path: items/fan.yaml
+        vars: { slot: 3, name: "Fan", entity: fan.living_room_fan }             # ◀
+
+      # ── Other tabs (tab_position 2–9 = order after Lights) ─────────────
+      - path: tabs/tv_appletv.yaml
+        vars:
+          tab_position: 2
+          tv_remote: remote.living_room_apple_tv              # ◀
+          tv_player: media_player.living_room_apple_tv        # ◀
+          tv_volume_player: media_player.living_room_speaker  # ◀ what the volume keys control
+          tv_mute_player: media_player.living_room_speaker    # ◀ what the mute key controls
+      - path: tabs/music.yaml
+        vars:
+          tab_position: 3
+          music_player: media_player.living_room_speaker      # ◀ Music Assistant player works best
+      - path: tabs/favorites.yaml
+        vars: { tab_position: 4 }
+
+      # ── Favorites tiles (image path is relative to THIS file) ──────────
+      - path: items/favorite.yaml
+        vars:
+          slot: 1
+          name: "Morning Jazz"                                                     # ◀
+          image: ../www/playlist_icons/morning_jazz.png                            # ◀ square PNG/JPG
+          media_content_id: "https://open.spotify.com/playlist/37i9dQZF1DXbITWG1ZJKYt"  # ◀
+          player: media_player.living_room_speaker                                 # ◀
+          shuffle: "true"

@@ -1,0 +1,13 @@
+# Core bundle: include this once in every device file.
+#
+#   packages:
+#     core: !include panel/core/core.yaml
+#
+# Requires the device file to set the connection substitutions described in
+# connection.yaml (api_key, wifi_ssid, wifi_password, ap_password).
+
+packages:
+  connection: !include connection.yaml
+  base: !include base.yaml
+  theme: !include theme.yaml
+  ui: !include ui.yaml

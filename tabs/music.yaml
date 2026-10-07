@@ -1,0 +1,367 @@
+# Tab: Music (iOS Now Playing style) for a Music Assistant / media player.
+#
+#   tab_music: !include
+#     file: panel/tabs/music.yaml
+#     vars:
+#       tab_position: 3                         # 2-9, order in the tab bar
+#       music_player: media_player.family_room_2
+#
+# The tab selects itself when the player starts playing after a real stop
+# (see media_autoswitch_gap_ms).
+
+globals:
+  - id: tab_index_music
+    type: int
+    initial_value: "-1"
+  - id: music_playing
+    type: bool
+    initial_value: "false"
+  - id: music_stopped_ms
+    type: uint32_t
+    initial_value: "0"
+  # Last album art URL fetched, so repeats of the same URL are skipped
+  - id: last_album_art_url
+    type: std::string
+    initial_value: '""'
+
+esphome:
+  on_boot:
+    - priority: -10${tab_position}
+      then:
+        - lambda: |-
+            lv_obj_t *tab = lv_tabview_add_tab(id(main_tabview), "Music");
+            lv_obj_set_style_pad_all(tab, 0, 0);
+            lv_obj_set_scrollbar_mode(tab, LV_SCROLLBAR_MODE_OFF);
+            lv_obj_set_parent(id(content_music), tab);
+            id(tab_index_music) = lv_obj_get_index(tab);
+
+script:
+  # Debounced album art fetch: rapid track skips restart the delay, so only
+  # the final track's art is downloaded (downloads briefly block the UI)
+  - id: load_album_art
+    mode: restart
+    parameters:
+      url: string
+    then:
+      - delay: 1500ms
+      - if:
+          condition:
+            lambda: "return url != id(last_album_art_url);"
+          then:
+            - lambda: "id(last_album_art_url) = url;"
+            - online_image.set_url:
+                id: album_art_image
+                url: !lambda "return url;"
+
+sensor:
+  - platform: homeassistant
+    id: media_position_sensor
+    entity_id: ${music_player}
+    attribute: media_position
+    on_value:
+      - lvgl.bar.update:
+          id: bar_track_progress
+          value: !lambda |-
+            float dur = id(media_duration_sensor).state;
+            if (dur <= 0) return 0;
+            int pct = (int)(x / dur * 100.0f);
+            return pct > 100 ? 100 : pct;
+      - lvgl.label.update:
+          id: lbl_time_elapsed
+          text: !lambda |-
+            int pos = (int)x;
+            char buf[16];
+            snprintf(buf, sizeof(buf), "%d:%02d", pos / 60, pos % 60);
+            return std::string(buf);
+      - lvgl.label.update:
+          id: lbl_time_total
+          text: !lambda |-
+            float d = id(media_duration_sensor).state;
+            int dur = isnan(d) ? 0 : (int)d;
+            char buf[16];
+            snprintf(buf, sizeof(buf), "%d:%02d", dur / 60, dur % 60);
+            return std::string(buf);
+
+  - platform: homeassistant
+    id: media_duration_sensor
+    entity_id: ${music_player}
+    attribute: media_duration
+
+text_sensor:
+  - platform: homeassistant
+    id: media_title_text
+    entity_id: ${music_player}
+    attribute: media_title
+    on_value:
+      - lvgl.label.update:
+          id: lbl_track_name
+          text: !lambda "return x.c_str();"
+
+  - platform: homeassistant
+    id: media_artist_text
+    entity_id: ${music_player}
+    attribute: media_artist
+    on_value:
+      - lvgl.label.update:
+          id: lbl_artist_name
+          text: !lambda "return x.c_str();"
+
+  # Player state: show pause while playing, play otherwise.
+  # Also brings up the Music tab when playback (re)starts after a real stop.
+  - platform: homeassistant
+    id: media_state_text
+    entity_id: ${music_player}
+    on_value:
+      - lvgl.label.update:
+          id: lbl_music_playpause
+          text: !lambda |-
+            return std::string(x == "playing" ? "\U000F03E4" : "\U000F040A");
+      - if:
+          condition:
+            lambda: |-
+              bool playing = (x == "playing");
+              bool start = playing && !id(music_playing) &&
+                (id(music_stopped_ms) == 0 ||
+                 millis() - id(music_stopped_ms) >= ${media_autoswitch_gap_ms});
+              if (!playing && id(music_playing)) id(music_stopped_ms) = millis();
+              id(music_playing) = playing;
+              return start && id(tab_index_music) >= 0;
+          then:
+            - lambda: "lv_tabview_set_act(id(main_tabview), id(tab_index_music), LV_ANIM_OFF);"
+            - script.execute: refresh_tab_bar
+
+  - platform: homeassistant
+    id: media_entity_picture
+    entity_id: ${music_player}
+    attribute: entity_picture
+    on_value:
+      - if:
+          condition:
+            lambda: "return !x.empty();"
+          then:
+            - script.execute:
+                id: load_album_art
+                url: !lambda |-
+                  if (x.rfind("http", 0) == 0) return x;
+                  return std::string("${ha_url}") + x;
+
+online_image:
+  - id: album_art_image
+    url: "https://www.home-assistant.io/images/favicon-192x192.png"
+    format: JPEG
+    type: RGB565
+    resize: [180, 180]
+    on_download_finished:
+      - logger.log: "Album art downloaded, updating LVGL widget"
+      - lvgl.image.update:
+          id: lvgl_album_art
+          src: album_art_image
+    on_error:
+      - logger.log: "Album art download failed"
+
+lvgl:
+  pages:
+    # Holding page (never shown): content_music is moved into the Music tab at boot
+    - id: holding_music
+      skip: true
+      widgets:
+        - obj:
+            id: content_music
+            width: 100%
+            height: 100%
+            styles: container
+            scrollbar_mode: "off"
+            widgets:
+              # ── Album Art (rounded) ───────────────────
+              - obj:
+                  align: TOP_MID
+                  y: 6
+                  width: 180
+                  height: 180
+                  styles: art_frame
+                  radius: 14
+                  clickable: false
+                  scrollable: false
+                  scrollbar_mode: "off"
+                  widgets:
+                    - image:
+                        id: lvgl_album_art
+                        src: album_art_image
+                        align: CENTER
+
+              # ── Track Name ────────────────────────────
+              - label:
+                  id: lbl_track_name
+                  text: "—"
+                  text_color: ${c_text}
+                  text_font: font_title
+                  text_align: CENTER
+                  long_mode: DOT
+                  width: 420
+                  align: TOP_MID
+                  y: 196
+
+              # ── Artist Name ───────────────────────────
+              - label:
+                  id: lbl_artist_name
+                  text: "—"
+                  text_color: ${c_text_2}
+                  text_font: font_body
+                  text_align: CENTER
+                  long_mode: DOT
+                  width: 420
+                  align: TOP_MID
+                  y: 222
+
+              # ── Progress Bar + times ──────────────────
+              - bar:
+                  id: bar_track_progress
+                  align: TOP_MID
+                  y: 250
+                  width: 400
+                  height: 4
+                  min_value: 0
+                  max_value: 100
+                  value: 0
+
+              - label:
+                  id: lbl_time_elapsed
+                  text: "0:00"
+                  text_color: ${c_text_2}
+                  text_font: font_caption
+                  align: TOP_LEFT
+                  x: 40
+                  y: 260
+
+              - label:
+                  id: lbl_time_total
+                  text: "0:00"
+                  text_color: ${c_text_2}
+                  text_font: font_caption
+                  align: TOP_RIGHT
+                  x: -40
+                  y: 260
+
+              # ── Transport: Prev | Play/Pause | Next ───
+              - button:
+                  id: music_btn_prev
+                  align: TOP_MID
+                  x: -112
+                  y: 284
+                  width: 64
+                  height: 56
+                  styles: icon_btn
+                  widgets:
+                    - label:
+                        text: "\U000F04AE" # mdi-skip-previous
+                        text_font: icons_xl
+                        align: CENTER
+                  on_click:
+                    - homeassistant.action:
+                        action: media_player.media_previous_track
+                        data:
+                          entity_id: ${music_player}
+
+              - button:
+                  id: music_btn_playpause
+                  align: TOP_MID
+                  y: 280
+                  width: 64
+                  height: 64
+                  styles: round_btn
+                  bg_color: ${c_accent}
+                  pressed:
+                    bg_color: ${c_text_2}
+                  widgets:
+                    - label:
+                        id: lbl_music_playpause
+                        text: "\U000F040A" # mdi-play
+                        text_font: icons_xl
+                        text_color: ${c_on_accent}
+                        align: CENTER
+                  on_click:
+                    - homeassistant.action:
+                        action: media_player.media_play_pause
+                        data:
+                          entity_id: ${music_player}
+
+              - button:
+                  id: music_btn_next
+                  align: TOP_MID
+                  x: 112
+                  y: 284
+                  width: 64
+                  height: 56
+                  styles: icon_btn
+                  widgets:
+                    - label:
+                        text: "\U000F04AD" # mdi-skip-next
+                        text_font: icons_xl
+                        align: CENTER
+                  on_click:
+                    - homeassistant.action:
+                        action: media_player.media_next_track
+                        data:
+                          entity_id: ${music_player}
+
+              # ── Volume: − | Mute | + ──────────────────
+              - button:
+                  id: music_btn_vol_down
+                  align: TOP_MID
+                  x: -112
+                  y: 350
+                  width: 64
+                  height: 38
+                  styles: icon_btn
+                  widgets:
+                    - label:
+                        text: "\U000F075E" # mdi-volume-minus
+                        text_font: icons_md
+                        text_color: ${c_text_2}
+                        align: CENTER
+                  on_click:
+                    - homeassistant.action:
+                        action: media_player.volume_down
+                        data:
+                          entity_id: ${music_player}
+
+              - button:
+                  id: music_btn_mute
+                  align: TOP_MID
+                  y: 350
+                  width: 64
+                  height: 38
+                  styles: icon_btn
+                  widgets:
+                    - label:
+                        text: "\U000F075F" # mdi-volume-mute
+                        text_font: icons_md
+                        text_color: ${c_text_2}
+                        align: CENTER
+                  on_click:
+                    - homeassistant.action:
+                        action: media_player.volume_mute
+                        data_template:
+                          is_volume_muted: "{{ not state_attr('${music_player}', 'is_volume_muted') }}"
+                          entity_id: ${music_player}
+
+              - button:
+                  id: music_btn_vol_up
+                  align: TOP_MID
+                  x: 112
+                  y: 350
+                  width: 64
+                  height: 38
+                  styles: icon_btn
+                  widgets:
+                    - label:
+                        text: "\U000F075D" # mdi-volume-plus
+                        text_font: icons_md
+                        text_color: ${c_text_2}
+                        align: CENTER
+                  on_click:
+                    - homeassistant.action:
+                        action: media_player.volume_up
+                        data:
+                          entity_id: ${music_player}
+

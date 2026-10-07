@@ -1,0 +1,66 @@
+# LVGL panel weather forecast
+#
+# HA no longer keeps forecasts as weather-entity attributes; they're only
+# available from the weather.get_forecasts action, which ESPHome can't read.
+# This sensor fetches them every 30 minutes and stores a compact copy the
+# panels subscribe to (see esphome/panel/features/weather.yaml).
+#
+#   state:  last update time, e.g. "7:30am"
+#   hourly: 6 entries, now and every 3 hours:  "Now,58,partlycloudy;10am,62,sunny;..."
+#   daily:  5 entries:  "Today,48,65,partlycloudy,0.00;Thu,47,63,rainy,0.21;..."
+#           (day, low, high, condition, rain in the weather entity's unit)
+#
+# Install: copy this file into HA's /config/packages/ and change `source` to
+# your weather entity. If packages aren't enabled yet, add to configuration.yaml
+#   homeassistant:
+#     packages: !include_dir_named packages
+# and restart Home Assistant.
+
+template:
+  - triggers:
+      - trigger: time_pattern
+        minutes: "/30"
+      - trigger: homeassistant
+        event: start
+      - trigger: event
+        event_type: event_template_reloaded
+    actions:
+      - variables:
+          source: weather.home
+      - action: weather.get_forecasts
+        target:
+          entity_id: "{{ source }}"
+        data:
+          type: hourly
+        response_variable: hourly
+      - action: weather.get_forecasts
+        target:
+          entity_id: "{{ source }}"
+        data:
+          type: daily
+        response_variable: daily
+    sensor:
+      - name: Panel Weather Forecast
+        unique_id: panel_weather_forecast
+        icon: mdi:weather-partly-cloudy
+        state: "{{ now().strftime('%-I:%M%p') | lower }}"
+        attributes:
+          hourly: >-
+            {%- set f = hourly[source].forecast if hourly is defined and source in hourly else [] -%}
+            {%- set ns = namespace(out=[]) -%}
+            {%- for i in [0, 3, 6, 9, 12, 15] if i < f | count -%}
+              {%- set e = f[i] -%}
+              {%- set t = 'Now' if i == 0 else (as_local(as_datetime(e.datetime)).strftime('%-I%p') | lower) -%}
+              {%- set ns.out = ns.out + [t ~ ',' ~ (e.temperature | float(0) | round(0) | int) ~ ',' ~ e.condition] -%}
+            {%- endfor -%}
+            {{ ns.out | join(';') }}
+          daily: >-
+            {%- set f = daily[source].forecast if daily is defined and source in daily else [] -%}
+            {%- set ns = namespace(out=[]) -%}
+            {%- for e in f[:5] -%}
+              {%- set d = 'Today' if loop.first else as_local(as_datetime(e.datetime)).strftime('%a') -%}
+              {%- set lo = (e.templow | float(0) | round(0) | int) if e.templow is defined and e.templow is not none else '' -%}
+              {%- set hi = e.temperature | float(0) | round(0) | int -%}
+              {%- set ns.out = ns.out + [d ~ ',' ~ lo ~ ',' ~ hi ~ ',' ~ e.condition ~ ',' ~ ('%.2f' | format(e.precipitation | float(0)))] -%}
+            {%- endfor -%}
+            {{ ns.out | join(';') }}

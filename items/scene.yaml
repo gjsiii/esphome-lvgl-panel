@@ -1,0 +1,33 @@
+# Item: one scene chip on the Lights tab.
+#
+# Include once per scene; `slot` sets the order and must be unique.
+#   scene_1: !include { file: panel/items/scene.yaml, vars: { slot: 1, name: "Daytime", entity: scene.family_room_daytime } }
+#
+# Chips are 3 per row; a last row of 2 gets wider chips (widths are set in
+# core/base.yaml once all chips are added).
+
+esphome:
+  on_boot:
+    - priority: -20${slot}
+      then:
+        - lambda: "lv_obj_set_parent(id(scene_chip_${slot}), id(scene_chips));"
+
+lvgl:
+  pages:
+    - id: holding_scene_${slot}
+      skip: true
+      widgets:
+        - button:
+            id: scene_chip_${slot}
+            width: 140
+            height: 48
+            styles: chip
+            widgets:
+              - label:
+                  text: "${name}"
+                  align: CENTER
+            on_click:
+              - homeassistant.action:
+                  action: scene.turn_on
+                  data:
+                    entity_id: ${entity}

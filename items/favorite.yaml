@@ -1,0 +1,79 @@
+# Item: one Favorites tile (artwork + caption) that plays media when tapped.
+#
+# Include once per favorite; `slot` sets the order and must be unique.
+#   fav_1: !include
+#     file: panel/items/favorite.yaml
+#     vars:
+#       slot: 1
+#       name: "Peaceful Piano"
+#       image: ../www/playlist_icons/peaceful_piano_playlist_art.png  # relative to the device file
+#       media_content_id: "https://open.spotify.com/playlist/37i9dQZF1DX4sWSpwq3LiO"
+#       player: media_player.family_room_2
+#       shuffle: "true"     # "false" for radio stations
+#
+# Artwork is compiled into the firmware (no download at runtime); changing
+# it requires a reflash.
+
+esphome:
+  on_boot:
+    - priority: -20${slot}
+      then:
+        - lambda: "lv_obj_set_parent(id(fav_tile_${slot}), id(content_favorites));"
+
+image:
+  - platform: file
+    id: fav_art_${slot}
+    file: ${image}
+    type: RGB565
+    resize: 140x140
+
+lvgl:
+  pages:
+    - id: holding_fav_${slot}
+      skip: true
+      widgets:
+        - button:
+            id: fav_tile_${slot}
+            width: 140
+            height: 172
+            bg_opa: TRANSP
+            pad_all: 0
+            pressed:
+              bg_color: ${c_surface}
+              bg_opa: COVER
+            widgets:
+              - obj:
+                  align: TOP_MID
+                  width: 140
+                  height: 140
+                  styles: art_frame
+                  clickable: false
+                  scrollable: false
+                  widgets:
+                    - image:
+                        src: fav_art_${slot}
+                        align: CENTER
+              - label:
+                  text: "${name}"
+                  text_font: font_caption
+                  text_align: CENTER
+                  long_mode: DOT
+                  width: 136
+                  align: TOP_MID
+                  y: 148
+            on_click:
+              - homeassistant.action:
+                  action: media_player.play_media
+                  data:
+                    entity_id: ${player}
+                    media_content_id: "${media_content_id}"
+                    media_content_type: "music"
+              - if:
+                  condition:
+                    lambda: "return ${shuffle};"
+                  then:
+                    - homeassistant.action:
+                        action: media_player.shuffle_set
+                        data:
+                          entity_id: ${player}
+                          shuffle: "true"

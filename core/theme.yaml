@@ -1,0 +1,218 @@
+# Core: look & feel — palette, fonts, LVGL theme and reusable styles.
+#
+# Palette values are defaults; a device file can override any of them in its
+# own `substitutions:` block.
+
+substitutions:
+  # ── UI palette (iOS/Android-style dark, neutral accent) ────────────────────
+  c_bg: "0x000000"          # screen background
+  c_surface: "0x1C1C1E"     # cards, buttons, slider tracks
+  c_surface_2: "0x2C2C2E"   # pressed state, selected tab, inner circles
+  c_separator: "0x38383A"   # hairlines, progress track
+  c_text: "0xFFFFFF"        # primary text / icons
+  c_text_2: "0x8E8E93"      # secondary text, captions, unselected tabs
+  c_accent: "0xF2F2F7"      # slider fill, progress, play button, "Done"
+  c_on_accent: "0x000000"   # icons/text drawn on the accent color
+
+font:
+  # ── Text (Inter: closest open font to SF Pro / Roboto) ─────────────────────
+  - file: "gfonts://Inter@500"
+    id: font_caption
+    size: 13
+    bpp: 4
+    glyphsets: [GF_Latin_Core]
+
+  - file: "gfonts://Inter@500"
+    id: font_body
+    size: 16
+    bpp: 4
+    glyphsets: [GF_Latin_Core]
+
+  - file: "gfonts://Inter@600"
+    id: font_title
+    size: 20
+    bpp: 4
+    glyphsets: [GF_Latin_Core]
+
+  - file: "gfonts://Inter@600"
+    id: font_time
+    size: 22
+    bpp: 4
+    glyphs: "0123456789:-apm"
+
+  # Weather sheet: big current temperature
+  - file: "gfonts://Inter@300"
+    id: font_temp_xl
+    size: 72
+    bpp: 4
+    glyphs: "0123456789-°"
+
+  # ── Icons (Material Design Icons) ──────────────────────────────────────────
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
+    id: icons_sm
+    size: 22
+    bpp: 4
+    glyphs: [
+        "\U000F0493", # mdi-cog
+        "\U000F05A9", # mdi-wifi
+        "\U000F05AA", # mdi-wifi-off (HA disconnected)
+        # Weather conditions (HA weather states)
+        "\U000F0599", # mdi-weather-sunny            sunny
+        "\U000F0594", # mdi-weather-night            clear-night
+        "\U000F0595", # mdi-weather-partly-cloudy    partlycloudy
+        "\U000F0590", # mdi-weather-cloudy           cloudy
+        "\U000F0591", # mdi-weather-fog              fog
+        "\U000F0592", # mdi-weather-hail             hail
+        "\U000F0593", # mdi-weather-lightning        lightning
+        "\U000F067E", # mdi-weather-lightning-rainy  lightning-rainy
+        "\U000F0596", # mdi-weather-pouring          pouring
+        "\U000F0597", # mdi-weather-rainy            rainy
+        "\U000F0598", # mdi-weather-snowy            snowy
+        "\U000F067F", # mdi-weather-snowy-rainy      snowy-rainy
+        "\U000F059D", # mdi-weather-windy            windy
+        "\U000F059E", # mdi-weather-windy-variant    windy-variant
+        "\U000F05D6", # mdi-alert-circle-outline     exceptional
+      ]
+
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
+    id: icons_md
+    size: 28
+    bpp: 4
+    glyphs: [
+        "\U000F02DC", # mdi-home
+        "\U000F0731", # mdi-arrow-left
+        "\U000F0425", # mdi-power
+        "\U000F040E", # mdi-play-pause
+        "\U000F075F", # mdi-volume-mute
+        "\U000F075E", # mdi-volume-minus
+        "\U000F075D", # mdi-volume-plus
+        "\U000F00DE", # mdi-brightness-5 (low)
+        "\U000F00E0", # mdi-brightness-7 (high)
+        # Weather conditions (weather sheet forecast rows)
+        "\U000F0599", "\U000F0594", "\U000F0595", "\U000F0590", "\U000F0591",
+        "\U000F0592", "\U000F0593", "\U000F067E", "\U000F0596", "\U000F0597",
+        "\U000F0598", "\U000F067F", "\U000F059D", "\U000F059E", "\U000F05D6",
+      ]
+
+  # Weather sheet: big current condition icon
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
+    id: icons_wx_xl
+    size: 72
+    bpp: 4
+    glyphs: [
+        "\U000F0599", "\U000F0594", "\U000F0595", "\U000F0590", "\U000F0591",
+        "\U000F0592", "\U000F0593", "\U000F067E", "\U000F0596", "\U000F0597",
+        "\U000F0598", "\U000F067F", "\U000F059D", "\U000F059E", "\U000F05D6",
+      ]
+
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
+    id: icons_xl
+    size: 40
+    bpp: 4
+    glyphs: [
+        "\U000F0143", # mdi-chevron-up
+        "\U000F0140", # mdi-chevron-down
+        "\U000F0141", # mdi-chevron-left
+        "\U000F0142", # mdi-chevron-right
+        "\U000F04AE", # mdi-skip-previous
+        "\U000F04AD", # mdi-skip-next
+        "\U000F040A", # mdi-play
+        "\U000F03E4", # mdi-pause
+      ]
+
+lvgl:
+  default_font: font_body
+
+  # ── Theme: defaults for every widget of a type (replaces LVGL's blue) ──────
+  # Avoid shadows/gradients: they are expensive to draw on the ESP32-S3.
+  theme:
+    button:
+      bg_color: ${c_surface}
+      bg_opa: COVER
+      border_width: 0
+      shadow_width: 0
+      outline_width: 0
+      radius: 14
+      text_color: ${c_text}
+      pressed:
+        bg_color: ${c_surface_2}
+    slider:
+      bg_color: ${c_surface}
+      bg_opa: COVER
+      border_width: 0
+      outline_width: 0
+      radius: 16
+      pad_all: 0
+      indicator:
+        bg_color: ${c_accent}
+        bg_opa: COVER
+        radius: 16
+      knob:
+        bg_opa: TRANSP
+        border_width: 0
+        shadow_width: 0
+        outline_width: 0
+        pad_all: 0
+    bar:
+      bg_color: ${c_separator}
+      bg_opa: COVER
+      border_width: 0
+      radius: 2
+      pad_all: 0
+      indicator:
+        bg_color: ${c_accent}
+        bg_opa: COVER
+        radius: 2
+    label:
+      text_color: ${c_text}
+
+  # ── Reusable styles ────────────────────────────────────────────────────────
+  style_definitions:
+    # Plain full-size black background, no chrome
+    - id: container
+      bg_color: ${c_bg}
+      bg_opa: COVER
+      border_width: 0
+      outline_width: 0
+      radius: 0
+      pad_all: 0
+    # Invisible layout box
+    - id: transparent
+      bg_opa: TRANSP
+      border_width: 0
+      outline_width: 0
+      radius: 0
+      pad_all: 0
+    # Small grey uppercase heading above a group (iOS grouped-list style)
+    - id: section_header
+      text_font: font_caption
+      text_color: ${c_text_2}
+      text_letter_space: 1
+    # Pill-shaped button
+    - id: chip
+      radius: 24
+      pad_all: 0
+    # Fully round button
+    - id: round_btn
+      radius: 999
+      pad_all: 0
+    # Icon-only button with no background until pressed
+    - id: icon_btn
+      bg_opa: TRANSP
+      radius: 999
+      pad_all: 0
+    # Rounded frame that clips artwork to its corners
+    - id: art_frame
+      bg_color: ${c_surface}
+      bg_opa: COVER
+      border_width: 0
+      radius: 12
+      pad_all: 0
+      clip_corner: true
+    # Grouped card (settings)
+    - id: card
+      bg_color: ${c_surface}
+      bg_opa: COVER
+      border_width: 0
+      radius: 14
+      pad_all: 0

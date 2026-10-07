@@ -1,0 +1,280 @@
+# Core: shared behavior — idle dim/sleep, antiburn, clock, brightness restore.
+#
+# Expects from the hardware package: display_backlight, my_touchscreen.
+# Substitutions below are defaults; a device file can override any of them.
+
+substitutions:
+  # ── Screen idle (saves backlight life) ─────────────────────────────────────
+  idle_dim_timeout: 30s        # untouched this long -> dim
+  idle_off_timeout: 5min       # untouched this long -> backlight off
+  idle_dim_brightness: "0.30"  # dim level (never brighter than the user's setting)
+
+  # ── Home Assistant ─────────────────────────────────────────────────────────
+  ha_url: "http://homeassistant.local:8123"  # prefix for HA-relative artwork URLs
+  # Auto-select a media tab only when playback starts after being stopped
+  # at least this long (ignores the brief idle between tracks).
+  media_autoswitch_gap_ms: "15000"
+
+esphome:
+  min_version: 2026.9.0
+  project:
+    name: gjsiii.esphome-lvgl-panel
+    version: "0.1.0"
+  on_boot:
+    # Flex layouts for the containers that item packages fill. Set here because
+    # ESPHome rejects a layout on a container defined without widgets.
+    - priority: -100
+      then:
+        - lambda: |-
+            // Scene chips: wrap into rows (chip widths are set at -300)
+            lv_obj_set_flex_flow(id(scene_chips), LV_FLEX_FLOW_ROW_WRAP);
+            lv_obj_set_flex_align(id(scene_chips), LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START);
+            lv_obj_set_style_pad_row(id(scene_chips), 10, 0);
+            lv_obj_set_style_pad_column(id(scene_chips), 10, 0);
+            // Light sliders: one column
+            lv_obj_set_flex_flow(id(lights_list), LV_FLEX_FLOW_COLUMN);
+            lv_obj_set_flex_align(id(lights_list), LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START);
+            lv_obj_set_style_pad_row(id(lights_list), 10, 0);
+    # Runs after every tab/item package has added itself (priorities -101..-299)
+    - priority: -300
+      then:
+        # No scene packages: hide the SCENES section and give the sliders
+        # the whole tab (about 5 fit without scrolling)
+        # Scene chip widths: 3 per row fill the 440px row; a last row of 2
+        # (or 1) splits the row between them, e.g. 140/140/140 + 215/215.
+        - lambda: |-
+            uint32_t n = lv_obj_get_child_cnt(id(scene_chips));
+            for (uint32_t i = 0; i < n; i++) {
+              uint32_t in_row = std::min<uint32_t>(3, n - (i / 3) * 3);
+              lv_obj_set_width(lv_obj_get_child(id(scene_chips), i), (440 - (in_row - 1) * 10) / in_row);
+            }
+        - lambda: |-
+            if (lv_obj_get_child_cnt(id(scene_chips)) == 0) {
+              lv_obj_add_flag(id(lbl_scenes_header), LV_OBJ_FLAG_HIDDEN);
+              lv_obj_add_flag(id(scene_chips), LV_OBJ_FLAG_HIDDEN);
+              lv_obj_set_y(id(lbl_lights_header), 12);
+              lv_obj_set_y(id(lights_list), 34);
+              lv_obj_set_height(id(lights_list), 352);
+            }
+        # Tab bar: tabs added by packages at boot get LVGL's default (blue)
+        # look, since the YAML tab_style only reaches tabs defined in YAML.
+        # Style every tab button the same way, then keep label colors in
+        # sync with the selected tab.
+        - lambda: |-
+            lv_obj_t *bar = lv_tabview_get_tab_bar(id(main_tabview));
+            uint32_t n = lv_obj_get_child_cnt(bar);
+            lv_obj_t *ref_lbl = n > 0 ? lv_obj_get_child(lv_obj_get_child(bar, 0), 0) : nullptr;
+            const lv_font_t *font = ref_lbl ? lv_obj_get_style_text_font(ref_lbl, LV_PART_MAIN) : nullptr;
+            for (uint32_t i = 0; i < n; i++) {
+              lv_obj_t *btn = lv_obj_get_child(bar, i);
+              lv_obj_set_style_bg_opa(btn, LV_OPA_TRANSP, LV_STATE_DEFAULT);
+              lv_obj_set_style_radius(btn, 12, LV_STATE_DEFAULT);
+              lv_obj_set_style_border_width(btn, 0, LV_STATE_DEFAULT);
+              lv_obj_set_style_outline_width(btn, 0, LV_STATE_DEFAULT);
+              lv_obj_set_style_shadow_width(btn, 0, LV_STATE_DEFAULT);
+              lv_obj_set_style_bg_color(btn, lv_color_hex(${c_surface_2}), LV_STATE_CHECKED);
+              lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, LV_STATE_CHECKED);
+              lv_obj_set_style_border_width(btn, 0, LV_STATE_CHECKED);
+              lv_obj_set_style_bg_color(btn, lv_color_hex(${c_surface}), LV_STATE_PRESSED);
+              lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, LV_STATE_PRESSED);
+              lv_obj_t *lbl = lv_obj_get_child(btn, 0);
+              if (lbl && font) lv_obj_set_style_text_font(lbl, font, LV_STATE_DEFAULT);
+            }
+            lv_obj_add_event_cb(id(main_tabview), [](lv_event_t *e) {
+              id(refresh_tab_bar).execute();
+            }, LV_EVENT_VALUE_CHANGED, nullptr);
+        - script.execute: refresh_tab_bar
+        # Package holding pages come first in the page list, so show the UI
+        - lvgl.page.show: main_page
+        # Restore the saved Settings brightness to the backlight and slider
+        - light.turn_on:
+            id: display_backlight
+            brightness: !lambda "return id(user_brightness);"
+            transition_length: 0s
+        - lvgl.slider.update:
+            id: slider_brightness
+            value: !lambda "return (int) lroundf(id(user_brightness) * 100.0f);"
+        - lvgl.label.update:
+            id: lbl_brightness_pct
+            text: !lambda 'return std::to_string((int) lroundf(id(user_brightness) * 100.0f)) + "%";'
+
+logger:
+
+web_server:
+  port: 80
+
+# HTTP fetches block the main loop (and touch) while waiting, so cap the wait
+http_request:
+  timeout: 2s
+
+captive_portal:
+
+time:
+  # Used to display time on screen
+  - platform: homeassistant
+    id: ha_time
+  # Used in screen antiburn feature
+  - platform: homeassistant
+    on_time:
+      - hours: 1,2,3,4,5,6
+        minutes: 5
+        seconds: 0
+        then:
+          - switch.turn_on: switch_antiburn
+      - hours: 2,3,4,5,6
+        minutes: 35
+        seconds: 0
+        then:
+          - switch.turn_off: switch_antiburn
+
+globals:
+  # Set while a slider is being updated from HA (not by a finger)
+  - id: slider_ha_update
+    type: bool
+    initial_value: "false"
+
+  # Backlight level chosen in Settings (0.1–1.0), kept across reboots
+  - id: user_brightness
+    type: float
+    restore_value: true
+    initial_value: "1.0"
+
+  # Screen idle state: 0 = active, 1 = dimmed, 2 = off (LVGL paused)
+  - id: screen_state
+    type: int
+    initial_value: "0"
+
+script:
+  # Tab bar labels: selected tab in primary text, others in secondary text.
+  # Runs when the tab changes (by touch or by a media tab auto-selecting).
+  - id: refresh_tab_bar
+    mode: restart
+    then:
+      - lambda: |-
+          lv_obj_t *bar = lv_tabview_get_tab_bar(id(main_tabview));
+          uint32_t active = lv_tabview_get_tab_active(id(main_tabview));
+          uint32_t n = lv_obj_get_child_cnt(bar);
+          for (uint32_t i = 0; i < n; i++) {
+            lv_obj_t *lbl = lv_obj_get_child(lv_obj_get_child(bar, i), 0);
+            if (lbl) lv_obj_set_style_text_color(lbl,
+                lv_color_hex(i == active ? ${c_text} : ${c_text_2}), LV_STATE_DEFAULT);
+          }
+
+  # Wake the screen. full=true: user's brightness (touch);
+  # full=false: dim level (presence). Restarts the idle timers.
+  - id: screen_wake
+    mode: restart
+    parameters:
+      full: bool
+    then:
+      - if:
+          condition: lvgl.is_paused
+          then:
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+      - light.turn_on:
+          id: display_backlight
+          brightness: !lambda |-
+            if (full) return id(user_brightness);
+            return std::min(${idle_dim_brightness}f, id(user_brightness));
+          transition_length: 250ms
+      - lambda: |-
+          id(screen_state) = full ? 0 : 1;
+          lv_disp_trig_activity(NULL);
+
+switch:
+  # Antiburn
+  - platform: template
+    name: Antiburn
+    id: switch_antiburn
+    optimistic: true
+    entity_category: "config"
+    turn_on_action:
+      - logger.log: "Starting Antiburn"
+      - if:
+          condition: lvgl.is_paused
+          then:
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+      - lvgl.pause:
+          show_snow: true
+    turn_off_action:
+      - logger.log: "Stopping Antiburn"
+      - if:
+          condition: lvgl.is_paused
+          then:
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+      # Screen was asleep: stay paused so a tap can't hit a hidden button
+      - if:
+          condition:
+            lambda: "return id(screen_state) == 2;"
+          then:
+            - lvgl.pause:
+
+touchscreen:
+  - id: !extend my_touchscreen
+    # Dimmed: brighten immediately; the touch still works normally.
+    on_touch:
+      - if:
+          condition:
+            lambda: "return id(screen_state) == 1;"
+          then:
+            - script.execute:
+                id: screen_wake
+                full: true
+    # Off: wake on release, so the waking tap never presses a hidden button
+    # (LVGL is paused while off and ignores the touch).
+    on_release:
+      - if:
+          condition:
+            lambda: "return id(screen_state) == 2;"
+          then:
+            - script.execute:
+                id: screen_wake
+                full: true
+
+interval:
+  - interval: 10s
+    then:
+      - lvgl.label.update:
+          id: lbl_time
+          text: !lambda |-
+            auto t = id(ha_time).now();
+            if (t.is_valid()) {
+              char buf[16];
+              t.strftime(buf, sizeof(buf), "%I:%M%p");
+              std::string s(buf);
+              std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+              if (s[0] == '0') s.erase(0, 1);
+              return s;
+            }
+            return std::string("--:--");
+
+lvgl:
+  # ── Screen idle: dim, then backlight off (touch or presence wakes it) ──────
+  on_idle:
+    - timeout: ${idle_dim_timeout}
+      then:
+        # Close the Settings sheet so the panel returns to its tabs
+        - lvgl.widget.hide: settings_panel
+        - if:
+            condition:
+              lambda: "return id(screen_state) == 0;"
+            then:
+              - light.turn_on:
+                  id: display_backlight
+                  brightness: !lambda "return std::min(${idle_dim_brightness}f, id(user_brightness));"
+                  transition_length: 1s
+              - lambda: "id(screen_state) = 1;"
+    - timeout: ${idle_off_timeout}
+      then:
+        - if:
+            condition:
+              lambda: "return id(screen_state) != 2;"
+            then:
+              - light.turn_off:
+                  id: display_backlight
+                  transition_length: 1s
+              - lvgl.pause:
+              - lambda: "id(screen_state) = 2;"

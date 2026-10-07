@@ -1,0 +1,19 @@
+# Feature: wake a sleeping panel (to its dim level) when a Home Assistant
+# presence/occupancy sensor turns on.
+#
+#   presence_wake: !include { file: panel/features/presence_wake.yaml, vars: { presence_entity: binary_sensor.xxx } }
+#
+# Rooms without a presence sensor: leave this package out.
+
+binary_sensor:
+  - platform: homeassistant
+    id: presence_wake_sensor
+    entity_id: ${presence_entity}
+    on_press:
+      - if:
+          condition:
+            lambda: "return id(screen_state) == 2;"
+          then:
+            - script.execute:
+                id: screen_wake
+                full: false

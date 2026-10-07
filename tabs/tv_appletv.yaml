@@ -1,0 +1,514 @@
+# Tab: TV remote for an Apple TV (iOS Remote style) with now-playing artwork.
+#
+#   tab_tv: !include
+#     file: panel/tabs/tv_appletv.yaml
+#     vars:
+#       tab_position: 2                                   # 2-9, order in the tab bar
+#       tv_remote: remote.family_room_apple_tv            # Apple TV remote entity
+#       tv_player: media_player.family_room_apple_tv      # Apple TV media player
+#       tv_volume_player: media_player.family_room        # speaker the volume keys control
+#       tv_mute_player: media_player.family_room          # device the mute key controls (often the same)
+#
+# The tab selects itself when the Apple TV starts playing after a real stop
+# (see media_autoswitch_gap_ms).
+
+globals:
+  - id: tab_index_tv
+    type: int
+    initial_value: "-1"
+  - id: tv_playing
+    type: bool
+    initial_value: "false"
+  - id: tv_stopped_ms
+    type: uint32_t
+    initial_value: "0"
+  # Last Apple TV artwork URL fetched, so repeats are skipped
+  - id: last_tv_art_url
+    type: std::string
+    initial_value: '""'
+
+esphome:
+  on_boot:
+    - priority: -10${tab_position}
+      then:
+        - lambda: |-
+            lv_obj_t *tab = lv_tabview_add_tab(id(main_tabview), "TV");
+            lv_obj_set_style_pad_all(tab, 0, 0);
+            lv_obj_set_scrollbar_mode(tab, LV_SCROLLBAR_MODE_OFF);
+            lv_obj_set_parent(id(content_tv), tab);
+            id(tab_index_tv) = lv_obj_get_index(tab);
+
+script:
+  # Debounced Apple TV artwork fetch (downloads briefly block the UI)
+  - id: load_tv_art
+    mode: restart
+    parameters:
+      url: string
+    then:
+      - delay: 1500ms
+      - if:
+          condition:
+            lambda: "return url != id(last_tv_art_url);"
+          then:
+            - lambda: "id(last_tv_art_url) = url;"
+            - online_image.set_url:
+                id: tv_art_image
+                url: !lambda "return url;"
+
+  # Now-playing captions: show name (or title) + app name
+  - id: update_tv_now_playing
+    mode: restart
+    then:
+      - lvgl.label.update:
+          id: lbl_tv_title
+          text: !lambda |-
+            std::string s = id(tv_artist_text).state;
+            if (s.empty()) s = id(tv_title_text).state;
+            return s;
+      - lvgl.label.update:
+          id: lbl_tv_app
+          text: !lambda "return id(tv_app_text).state;"
+
+text_sensor:
+  # State: auto-select the TV tab when playback starts; show/hide now-playing art
+  - platform: homeassistant
+    id: tv_state_text
+    entity_id: ${tv_player}
+    on_value:
+      - if:
+          condition:
+            lambda: |-
+              bool playing = (x == "playing");
+              bool start = playing && !id(tv_playing) &&
+                (id(tv_stopped_ms) == 0 ||
+                 millis() - id(tv_stopped_ms) >= ${media_autoswitch_gap_ms});
+              if (!playing && id(tv_playing)) id(tv_stopped_ms) = millis();
+              id(tv_playing) = playing;
+              return start && id(tab_index_tv) >= 0;
+          then:
+            - lambda: "lv_tabview_set_act(id(main_tabview), id(tab_index_tv), LV_ANIM_OFF);"
+            - script.execute: refresh_tab_bar
+      - if:
+          condition:
+            lambda: 'return x == "playing" || x == "paused";'
+          then:
+            - lvgl.widget.show: tv_now_playing
+          else:
+            - lvgl.widget.hide: tv_now_playing
+            # HA stops sending attributes that disappear, so clear old captions
+            - lambda: |-
+                id(tv_title_text).publish_state("");
+                id(tv_artist_text).publish_state("");
+                id(tv_app_text).publish_state("");
+
+  - platform: homeassistant
+    id: tv_entity_picture
+    entity_id: ${tv_player}
+    attribute: entity_picture
+    on_value:
+      - if:
+          condition:
+            lambda: "return !x.empty();"
+          then:
+            - script.execute:
+                id: load_tv_art
+                url: !lambda |-
+                  if (x.rfind("http", 0) == 0) return x;
+                  return std::string("${ha_url}") + x;
+
+  - platform: homeassistant
+    id: tv_title_text
+    entity_id: ${tv_player}
+    attribute: media_title
+    on_value:
+      - script.execute: update_tv_now_playing
+
+  - platform: homeassistant
+    id: tv_artist_text
+    entity_id: ${tv_player}
+    attribute: media_artist
+    on_value:
+      - script.execute: update_tv_now_playing
+
+  - platform: homeassistant
+    id: tv_app_text
+    entity_id: ${tv_player}
+    attribute: app_name
+    on_value:
+      - script.execute: update_tv_now_playing
+
+online_image:
+  # Now-playing artwork (corner thumbnail)
+  - id: tv_art_image
+    url: "https://www.home-assistant.io/images/favicon-192x192.png"
+    format: JPEG
+    type: RGB565
+    resize: [104, 104]
+    on_download_finished:
+      - lvgl.image.update:
+          id: img_tv_art
+          src: tv_art_image
+    on_error:
+      - logger.log: "Apple TV art download failed"
+
+lvgl:
+  pages:
+    # Holding page (never shown): content_tv is moved into the TV tab at boot
+    - id: holding_tv
+      skip: true
+      widgets:
+        - obj:
+            id: content_tv
+            width: 100%
+            height: 100%
+            styles: container
+            scrollbar_mode: "off"
+            widgets:
+              # ── Now playing (left of the d-pad) ───────
+              # Shown only while the Apple TV is playing/paused.
+              - obj:
+                  id: tv_now_playing
+                  align: TOP_LEFT
+                  x: 0
+                  y: 0
+                  width: 128
+                  height: 180
+                  styles: transparent
+                  clickable: false
+                  scrollable: false
+                  scrollbar_mode: "off"
+                  hidden: true
+                  widgets:
+                    - obj:
+                        align: TOP_LEFT
+                        x: 12
+                        y: 12
+                        width: 104
+                        height: 104
+                        styles: art_frame
+                        clickable: false
+                        scrollable: false
+                        widgets:
+                          - image:
+                              id: img_tv_art
+                              src: tv_art_image
+                              align: CENTER
+                    - label:
+                        id: lbl_tv_title
+                        text: ""
+                        text_font: font_caption
+                        text_color: ${c_text}
+                        long_mode: DOT
+                        width: 108
+                        align: TOP_LEFT
+                        x: 12
+                        y: 124
+                    - label:
+                        id: lbl_tv_app
+                        text: ""
+                        text_font: font_caption
+                        text_color: ${c_text_2}
+                        long_mode: DOT
+                        width: 108
+                        align: TOP_LEFT
+                        x: 12
+                        y: 142
+
+              # ── D-pad ─────────────────────────────────
+              - obj:
+                  id: tv_dpad
+                  align: TOP_MID
+                  y: 8
+                  width: 220
+                  height: 220
+                  bg_color: ${c_surface}
+                  bg_opa: COVER
+                  border_width: 0
+                  radius: 110
+                  pad_all: 0
+                  clickable: false
+                  scrollable: false
+                  scrollbar_mode: "off"
+                  widgets:
+                    #### Up
+                    - button:
+                        id: tv_btn_up
+                        align: TOP_MID
+                        y: 4
+                        width: 76
+                        height: 64
+                        styles: icon_btn
+                        widgets:
+                          - label:
+                              text: "\U000F0143" # mdi-chevron-up
+                              text_font: icons_xl
+                              align: CENTER
+                        on_press:
+                          - homeassistant.action:
+                              action: remote.send_command
+                              data:
+                                command: up
+                                entity_id: ${tv_remote}
+                                num_repeats: "1"
+                                delay_secs: "0.4"
+                                hold_secs: "0"
+
+                    #### Down
+                    - button:
+                        id: tv_btn_down
+                        align: BOTTOM_MID
+                        y: -4
+                        width: 76
+                        height: 64
+                        styles: icon_btn
+                        widgets:
+                          - label:
+                              text: "\U000F0140" # mdi-chevron-down
+                              text_font: icons_xl
+                              align: CENTER
+                        on_press:
+                          - homeassistant.action:
+                              action: remote.send_command
+                              data:
+                                command: down
+                                entity_id: ${tv_remote}
+                                num_repeats: "1"
+                                delay_secs: "0.4"
+                                hold_secs: "0"
+
+                    #### Left
+                    - button:
+                        id: tv_btn_left
+                        align: LEFT_MID
+                        x: 4
+                        width: 64
+                        height: 76
+                        styles: icon_btn
+                        widgets:
+                          - label:
+                              text: "\U000F0141" # mdi-chevron-left
+                              text_font: icons_xl
+                              align: CENTER
+                        on_press:
+                          - homeassistant.action:
+                              action: remote.send_command
+                              data:
+                                command: left
+                                entity_id: ${tv_remote}
+                                num_repeats: "1"
+                                delay_secs: "0.4"
+                                hold_secs: "0"
+
+                    #### Right
+                    - button:
+                        id: tv_btn_right
+                        align: RIGHT_MID
+                        x: -4
+                        width: 64
+                        height: 76
+                        styles: icon_btn
+                        widgets:
+                          - label:
+                              text: "\U000F0142" # mdi-chevron-right
+                              text_font: icons_xl
+                              align: CENTER
+                        on_press:
+                          - homeassistant.action:
+                              action: remote.send_command
+                              data:
+                                command: right
+                                entity_id: ${tv_remote}
+                                num_repeats: "1"
+                                delay_secs: "0.4"
+                                hold_secs: "0"
+
+                    #### Select (center)
+                    - button:
+                        id: tv_btn_select
+                        align: CENTER
+                        width: 84
+                        height: 84
+                        styles: round_btn
+                        bg_color: ${c_surface_2}
+                        pressed:
+                          bg_color: ${c_separator}
+                        on_press:
+                          - homeassistant.action:
+                              action: remote.send_command
+                              data:
+                                command: select
+                                entity_id: ${tv_remote}
+                                num_repeats: "1"
+                                delay_secs: "0.4"
+                                hold_secs: "0"
+
+              # ── Power | Back | Home | Play/Pause ──────
+              #### Power (tap: wake, hold: sleep)
+              - button:
+                  id: tv_btn_power
+                  align: TOP_MID
+                  x: -114
+                  y: 244
+                  width: 60
+                  height: 60
+                  styles: round_btn
+                  widgets:
+                    - label:
+                        text: "\U000F0425" # mdi-power
+                        text_font: icons_md
+                        align: CENTER
+                  on_short_click:
+                    - homeassistant.action:
+                        action: homeassistant.reload_config_entry
+                        data:
+                          mode: single
+                          entity_id: ${tv_remote}
+                    - delay: 200ms
+                    - homeassistant.action:
+                        action: remote.turn_on
+                        data:
+                          entity_id: ${tv_remote}
+                    - homeassistant.action:
+                        action: media_player.turn_on
+                        data:
+                          entity_id: ${tv_player}
+                  on_long_press:
+                    - homeassistant.action:
+                        action: remote.send_command
+                        data:
+                          command: suspend
+                          entity_id: ${tv_remote}
+
+              #### Back (menu)
+              - button:
+                  id: tv_btn_back
+                  align: TOP_MID
+                  x: -38
+                  y: 244
+                  width: 60
+                  height: 60
+                  styles: round_btn
+                  widgets:
+                    - label:
+                        text: "\U000F0731" # mdi-arrow-left
+                        text_font: icons_md
+                        align: CENTER
+                  on_press:
+                    - homeassistant.action:
+                        action: remote.send_command
+                        data:
+                          command: menu
+                          entity_id: ${tv_remote}
+                          num_repeats: "1"
+                          delay_secs: "0.4"
+                          hold_secs: "0"
+
+              #### Home
+              - button:
+                  id: tv_btn_home
+                  align: TOP_MID
+                  x: 38
+                  y: 244
+                  width: 60
+                  height: 60
+                  styles: round_btn
+                  widgets:
+                    - label:
+                        text: "\U000F02DC" # mdi-home
+                        text_font: icons_md
+                        align: CENTER
+                  on_press:
+                    - homeassistant.action:
+                        action: remote.send_command
+                        data:
+                          command: home
+                          num_repeats: "1"
+                          delay_secs: "0.4"
+                          hold_secs: "0"
+                          entity_id: ${tv_remote}
+
+              #### Play/Pause
+              - button:
+                  id: tv_btn_playpause
+                  align: TOP_MID
+                  x: 114
+                  y: 244
+                  width: 60
+                  height: 60
+                  styles: round_btn
+                  widgets:
+                    - label:
+                        text: "\U000F040E" # mdi-play-pause
+                        text_font: icons_md
+                        align: CENTER
+                  on_press:
+                    - homeassistant.action:
+                        action: media_player.media_play_pause
+                        data:
+                          entity_id: ${tv_player}
+
+              # ── Volume pill: − | Mute | + ─────────────
+              - obj:
+                  align: TOP_MID
+                  y: 320
+                  width: 240
+                  height: 56
+                  bg_color: ${c_surface}
+                  bg_opa: COVER
+                  border_width: 0
+                  radius: 28
+                  pad_all: 0
+                  clickable: false
+                  scrollable: false
+                  scrollbar_mode: "off"
+                  widgets:
+                    - button:
+                        id: tv_btn_vol_down
+                        align: LEFT_MID
+                        width: 80
+                        height: 56
+                        styles: icon_btn
+                        widgets:
+                          - label:
+                              text: "\U000F075E" # mdi-volume-minus
+                              text_font: icons_md
+                              align: CENTER
+                        on_press:
+                          - homeassistant.action:
+                              action: media_player.volume_down
+                              data:
+                                entity_id: ${tv_volume_player}
+                    - button:
+                        id: tv_btn_mute
+                        align: CENTER
+                        width: 80
+                        height: 56
+                        styles: icon_btn
+                        widgets:
+                          - label:
+                              text: "\U000F075F" # mdi-volume-mute
+                              text_font: icons_md
+                              align: CENTER
+                        on_press:
+                          - homeassistant.action:
+                              action: media_player.volume_mute
+                              data_template:
+                                is_volume_muted: "{{ not state_attr('${tv_mute_player}', 'is_volume_muted') }}"
+                                entity_id: ${tv_mute_player}
+                    - button:
+                        id: tv_btn_vol_up
+                        align: RIGHT_MID
+                        width: 80
+                        height: 56
+                        styles: icon_btn
+                        widgets:
+                          - label:
+                              text: "\U000F075D" # mdi-volume-plus
+                              text_font: icons_md
+                              align: CENTER
+                        on_press:
+                          - homeassistant.action:
+                              action: media_player.volume_up
+                              data:
+                                entity_id: ${tv_volume_player}
+

@@ -1,0 +1,36 @@
+# Tab: Favorites — a 3-column artwork grid. Tiles come from
+# panel/items/favorite.yaml (one include per tile).
+#
+#   tab_favorites: !include { file: panel/tabs/favorites.yaml, vars: { tab_position: 4 } }
+
+esphome:
+  on_boot:
+    - priority: -10${tab_position}
+      then:
+        - lambda: |-
+            lv_obj_t *tab = lv_tabview_add_tab(id(main_tabview), "Favorites");
+            lv_obj_set_style_pad_all(tab, 0, 0);
+            lv_obj_set_scrollbar_mode(tab, LV_SCROLLBAR_MODE_OFF);
+            lv_obj_set_parent(id(content_favorites), tab);
+            // Grid: wrap tiles into rows (set here because ESPHome rejects a
+            // layout on a container defined without widgets)
+            lv_obj_set_flex_flow(id(content_favorites), LV_FLEX_FLOW_ROW_WRAP);
+            lv_obj_set_flex_align(id(content_favorites), LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+            lv_obj_set_style_pad_row(id(content_favorites), 12, 0);
+            lv_obj_set_style_pad_column(id(content_favorites), 18, 0);
+
+lvgl:
+  pages:
+    # Holding page (never shown): content_favorites is moved into the tab at boot
+    - id: holding_favorites
+      skip: true
+      widgets:
+        # 140px tiles: 3 per row (x 12/170/328), rows 12px apart; more scroll.
+        - obj:
+            id: content_favorites
+            width: 100%
+            height: 100%
+            styles: container
+            pad_top: 12
+            pad_left: 12
+            scrollbar_mode: "off"

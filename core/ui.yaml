@@ -1,0 +1,294 @@
+# Core: screen layout — status bar, tab bar, Lights tab shell, settings sheet.
+#
+# Tabs other than Lights come from tab packages (panel/tabs/*.yaml), which add
+# themselves to main_tabview at boot. Light sliders and scene chips come from
+# item packages (panel/items/*.yaml), which move into the containers below.
+
+lvgl:
+  displays:
+    - my_display
+  touchscreens:
+    - my_touchscreen
+  buffer_size: 25%
+
+  pages:
+    - id: main_page
+      widgets:
+        # Full-screen background (sheets from packages are moved in here)
+        - obj:
+            id: ui_root
+            width: 100%
+            height: 100%
+            styles: container
+            scrollbar_mode: "off"
+
+            widgets:
+              # ── Status Bar ────────────────────────────────────────
+              - obj:
+                  width: 100%
+                  height: 36
+                  align: TOP_MID
+                  styles: transparent
+                  scrollbar_mode: "off"
+                  widgets:
+                    # Weather (upper left): hidden unless the weather
+                    # package is included and HA has reported a value.
+                    # Tapping it opens the weather sheet.
+                    - button:
+                        id: btn_weather_open
+                        align: LEFT_MID
+                        x: 4
+                        width: 112
+                        height: 34
+                        bg_opa: TRANSP
+                        radius: 10
+                        pad_all: 0
+                        pressed:
+                          bg_color: ${c_surface}
+                          bg_opa: COVER
+                        hidden: true
+                        widgets:
+                          - label:
+                              id: lbl_weather_icon
+                              text: "\U000F0595" # mdi-weather-partly-cloudy
+                              text_font: icons_sm
+                              text_color: ${c_text}
+                              align: LEFT_MID
+                              x: 10
+                          - label:
+                              id: lbl_weather_temp
+                              text: "--°"
+                              text_font: font_title
+                              text_color: ${c_text}
+                              align: LEFT_MID
+                              x: 38
+                        # Tap handler is attached by the weather package
+                    - label:
+                        id: lbl_time
+                        text: "--:--"
+                        text_font: font_time
+                        text_color: ${c_text}
+                        align: CENTER
+                    - label:
+                        id: lbl_hastatus
+                        text: "\U000F05A9" # mdi-wifi
+                        text_font: icons_sm
+                        text_color: ${c_text_2}
+                        align: RIGHT_MID
+                        x: -50
+                    - button:
+                        id: btn_settings_open
+                        align: RIGHT_MID
+                        x: -6
+                        width: 40
+                        height: 34
+                        styles: icon_btn
+                        widgets:
+                          - label:
+                              text: "\U000F0493" # mdi-cog
+                              text_font: icons_sm
+                              text_color: ${c_text_2}
+                              align: CENTER
+                        on_click:
+                          - lvgl.widget.show: settings_panel
+
+              # ── Tab View (tab bar at the bottom) ──────────────────
+              - tabview:
+                  id: main_tabview
+                  width: 100%
+                  height: 444
+                  align: TOP_MID
+                  y: 36
+                  position: BOTTOM
+                  size: 12%
+                  bg_color: ${c_bg}
+                  bg_opa: COVER
+                  border_width: 0
+                  outline_width: 0
+                  pad_all: 0
+                  scrollbar_mode: "off"
+
+                  tab_style:
+                    bg_color: ${c_bg}
+                    bg_opa: COVER
+                    border_side: TOP
+                    border_width: 1
+                    border_color: ${c_separator}
+                    pad_top: 7
+                    pad_bottom: 7
+                    pad_left: 10
+                    pad_right: 10
+                    items:
+                      bg_opa: TRANSP
+                      border_width: 0
+                      outline_width: 0
+                      radius: 12
+                      text_color: ${c_text_2}
+                      text_font: font_body
+                      checked:
+                        bg_color: ${c_surface_2}
+                        bg_opa: COVER
+                        border_width: 0
+                        text_color: ${c_text}
+                      pressed:
+                        bg_color: ${c_surface}
+                        bg_opa: COVER
+
+                  tabs:
+                    # ── Tab 1: Lights (always present) ────────────
+                    - name: "Lights"
+                      id: tab_lights
+                      pad_all: 0
+                      widgets:
+                        - obj:
+                            width: 100%
+                            height: 100%
+                            styles: container
+                            scrollbar_mode: "off"
+                            widgets:
+                              - label:
+                                  id: lbl_scenes_header
+                                  text: "SCENES"
+                                  styles: section_header
+                                  align: TOP_LEFT
+                                  x: 24
+                                  y: 12
+
+                              # Scene chips (filled by panel/items/scene.yaml).
+                              # Chips grow to fill each row: 3 per row.
+                              # Flex layout is set at boot (base.yaml): ESPHome
+                              # rejects a layout on a container with no widgets.
+                              - obj:
+                                  id: scene_chips
+                                  align: TOP_MID
+                                  y: 34
+                                  width: 440
+                                  height: 106
+                                  styles: transparent
+                                  scrollbar_mode: "off"
+
+                              - label:
+                                  id: lbl_lights_header
+                                  text: "LIGHTS"
+                                  styles: section_header
+                                  align: TOP_LEFT
+                                  x: 24
+                                  y: 154
+
+                              # Light sliders (filled by panel/items/light.yaml).
+                              # Three fit; more scroll. Flex layout set at boot.
+                              - obj:
+                                  id: lights_list
+                                  align: TOP_MID
+                                  y: 176
+                                  width: 440
+                                  height: 210
+                                  styles: transparent
+                                  scrollbar_mode: "off"
+
+              # ── Settings Sheet ──────────────────────────────────────
+              - obj:
+                  id: settings_panel
+                  width: 100%
+                  height: 100%
+                  align: TOP_LEFT
+                  styles: container
+                  scrollbar_mode: "off"
+                  hidden: true
+                  widgets:
+                    - label:
+                        text: "Settings"
+                        text_font: font_title
+                        align: TOP_LEFT
+                        x: 20
+                        y: 22
+                    - button:
+                        id: btn_settings_close
+                        align: TOP_RIGHT
+                        x: -10
+                        y: 12
+                        width: 90
+                        height: 44
+                        bg_opa: TRANSP
+                        radius: 22
+                        pad_all: 0
+                        pressed:
+                          bg_color: ${c_surface}
+                          bg_opa: COVER
+                        widgets:
+                          - label:
+                              text: "Done"
+                              text_font: font_title
+                              text_color: ${c_accent}
+                              align: CENTER
+                        on_click:
+                          - lvgl.widget.hide: settings_panel
+
+                    - label:
+                        text: "DISPLAY"
+                        styles: section_header
+                        align: TOP_LEFT
+                        x: 32
+                        y: 80
+
+                    - obj:
+                        align: TOP_MID
+                        y: 102
+                        width: 448
+                        height: 118
+                        styles: card
+                        clickable: false
+                        scrollable: false
+                        scrollbar_mode: "off"
+                        widgets:
+                          - label:
+                              text: "Brightness"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 14
+                          - label:
+                              id: lbl_brightness_pct
+                              text: "100%"
+                              text_color: ${c_text_2}
+                              align: TOP_RIGHT
+                              x: -16
+                              y: 14
+                          - label:
+                              text: "\U000F00DE" # mdi-brightness-5
+                              text_font: icons_md
+                              text_color: ${c_text_2}
+                              align: BOTTOM_LEFT
+                              x: 14
+                              y: -22
+                          - slider:
+                              id: slider_brightness
+                              align: BOTTOM_MID
+                              y: -14
+                              width: 340
+                              height: 44
+                              min_value: 10
+                              max_value: 100
+                              value: 100
+                              bg_color: ${c_surface_2}
+                              radius: 14
+                              indicator:
+                                radius: 14
+                              on_value:
+                                - lambda: "id(user_brightness) = x / 100.0f;"
+                                - light.turn_on:
+                                    id: display_backlight
+                                    brightness: !lambda "return x / 100.0f;"
+                                    transition_length: 0s
+                                - lvgl.label.update:
+                                    id: lbl_brightness_pct
+                                    text: !lambda |-
+                                      char buf[8];
+                                      snprintf(buf, sizeof(buf), "%d%%", (int)x);
+                                      return std::string(buf);
+                          - label:
+                              text: "\U000F00E0" # mdi-brightness-7
+                              text_font: icons_md
+                              text_color: ${c_text_2}
+                              align: BOTTOM_RIGHT
+                              x: -14
+                              y: -22

@@ -1,0 +1,96 @@
+# Item: one fan speed slider on the Lights tab (same look as a light slider).
+#
+# Include once per fan; `slot` shares the light slots (order in the list) and
+# must not repeat a light's slot.
+#   fan_5: !include { file: panel/items/fan.yaml, vars: { slot: 5, name: "Ceiling Fan", entity: fan.primary_bedroom_ceiling_fan } }
+#
+# Uses the fan's percentage (0–100). Fans with fixed speeds (e.g. Lutron:
+# 25/50/75/100) snap to the nearest speed in HA after release.
+
+esphome:
+  on_boot:
+    - priority: -20${slot}
+      then:
+        - lambda: "lv_obj_set_parent(id(light_row_${slot}), id(lights_list));"
+
+sensor:
+  - platform: homeassistant
+    id: fan_percentage_${slot}
+    entity_id: ${entity}
+    attribute: percentage
+    on_value:
+      - if:
+          condition:
+            lambda: "return id(fan_state_${slot}).state && !isnan(x);"
+          then:
+            - lambda: "id(slider_ha_update) = true;"
+            - lvgl.slider.update:
+                id: light_slider_${slot}
+                value: !lambda "return (int)x;"
+            - lvgl.label.update:
+                id: light_pct_${slot}
+                text: !lambda 'return std::to_string((int) x) + "%";'
+            - lambda: "id(slider_ha_update) = false;"
+
+binary_sensor:
+  - platform: homeassistant
+    id: fan_state_${slot}
+    entity_id: ${entity}
+    on_state:
+      - if:
+          condition:
+            lambda: "return !x;"
+          then:
+            - lambda: "id(slider_ha_update) = true;"
+            - lvgl.slider.update:
+                id: light_slider_${slot}
+                value: 0
+            - lvgl.label.update:
+                id: light_pct_${slot}
+                text: "Off"
+            - lambda: "id(slider_ha_update) = false;"
+
+lvgl:
+  pages:
+    - id: holding_fan_${slot}
+      skip: true
+      widgets:
+        - obj:
+            id: light_row_${slot}
+            width: 440
+            height: 56
+            styles: transparent
+            scrollbar_mode: "off"
+            widgets:
+              - slider:
+                  id: light_slider_${slot}
+                  width: 100%
+                  height: 100%
+                  min_value: 0
+                  max_value: 100
+                  value: 0
+                  on_value:
+                    - lvgl.label.update:
+                        id: light_pct_${slot}
+                        text: !lambda 'return x == 0 ? std::string("Off") : std::to_string((int) x) + "%";'
+                  on_release:
+                    - if:
+                        condition:
+                          lambda: "return !id(slider_ha_update);"
+                        then:
+                          - homeassistant.action:
+                              action: fan.set_percentage
+                              data:
+                                entity_id: ${entity}
+                                percentage: !lambda "return (int)x;"
+              - label:
+                  text: "${name}"
+                  text_color: ${c_text_2}
+                  align: LEFT_MID
+                  x: 18
+              - label:
+                  id: light_pct_${slot}
+                  text: "Off"
+                  text_color: ${c_text_2}
+                  align: RIGHT_MID
+                  x: -18
