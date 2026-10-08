@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="480" viewBox="0 0 480 480" font-family="Inter, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+<rect width="480" height="480" rx="18" fill="#000"/>
+<text x="20" y="42" fill="#FFF" font-size="20" font-weight="600">Marine Forecast</text><text x="415" y="42" fill="#F2F2F7" font-size="20" font-weight="600" text-anchor="middle">Done</text>
+<rect x="20" y="70" width="440" height="46" rx="12" fill="#3A1513" stroke="#FF453A"/><text x="34" y="99" fill="#FF6961" font-size="16">Small Craft Advisory in effect</text>
+<text x="20" y="146" fill="#FFF" font-size="20" font-weight="600">Tonight</text><text x="20" y="172" fill="#8E8E93" font-size="16">West winds 10 to 20 kt. Mostly clear.</text><text x="20" y="194" fill="#8E8E93" font-size="16">Waves 1 to 3 ft.</text>
+<text x="20" y="242" fill="#FFF" font-size="20" font-weight="600">Thursday</text><text x="20" y="268" fill="#8E8E93" font-size="16">Northwest winds 10 to 15 kt. Mostly sunny.</text><text x="20" y="290" fill="#8E8E93" font-size="16">Waves 1 to 3 ft.</text>
+<text x="20" y="338" fill="#FFF" font-size="20" font-weight="600">Thursday Night</text><text x="20" y="364" fill="#8E8E93" font-size="16">West winds around 10 kt becoming south</text><text x="20" y="386" fill="#8E8E93" font-size="16">around 5 kt. Partly cloudy. Waves 1 to 2 ft.</text>
+</svg>

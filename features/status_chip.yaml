@@ -1,0 +1,85 @@
+# Feature: a status-bar chip — a small icon (and optionally a number) that
+# appears left of the connection icon while an entity is in a given state.
+#
+#   chip_garage: !include
+#     file: panel/features/status_chip.yaml
+#     vars:
+#       chip_id: garage                    # unique per chip
+#       slot: 1                            # order, 1 = rightmost
+#       entity: cover.garage_overhead_door_garage
+#       icon: "\U000F06DA"                 # MDI glyph (mdi-garage-open); codes at pictogrammers.com/library/mdi
+#       color: "0xFF9F0A"                  # icon color
+#       show_when: "open,opening"          # comma list of states, or "nonzero" for numbers
+#       show_value: "false"                # "true" shows the number next to the icon
+#
+#   chip_packages: !include
+#     file: panel/features/status_chip.yaml
+#     vars: { chip_id: packages, slot: 2, entity: input_number.package_count,
+#             icon: "\U000F03D3", color: "0xF2F2F7", show_when: "nonzero", show_value: "true" }
+#
+# About three chips fit. Each chip compiles its one icon into a tiny font.
+
+font:
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
+    id: chip_font_${chip_id}
+    size: 22
+    bpp: 4
+    glyphs: ["${icon}"]
+
+esphome:
+  on_boot:
+    - priority: -20${slot}
+      then:
+        - lambda: |-
+            lv_obj_set_parent(id(chip_${chip_id}), id(status_chips));
+            // Slot 1 is rightmost: insert each chip at the front of the row
+            lv_obj_move_to_index(id(chip_${chip_id}), 0);
+
+text_sensor:
+  - platform: homeassistant
+    id: chip_state_${chip_id}
+    entity_id: ${entity}
+    on_value:
+      - lambda: |-
+          const std::string when = "${show_when}";
+          bool show;
+          float v = atof(x.c_str());
+          if (when == "nonzero") show = v > 0.0f;
+          else show = ("," + when + ",").find("," + x + ",") != std::string::npos;
+          if (show) lv_obj_clear_flag(id(chip_${chip_id}), LV_OBJ_FLAG_HIDDEN);
+          else lv_obj_add_flag(id(chip_${chip_id}), LV_OBJ_FLAG_HIDDEN);
+          if (${show_value}) {
+            std::string t = std::to_string((int) lroundf(v));
+            lv_label_set_text(id(chip_value_${chip_id}), t.c_str());
+          }
+
+lvgl:
+  pages:
+    - id: holding_chip_${chip_id}
+      skip: true
+      widgets:
+        - obj:
+            id: chip_${chip_id}
+            width: SIZE_CONTENT
+            height: 30
+            styles: transparent
+            clickable: false
+            scrollable: false
+            hidden: true
+            layout:
+              type: FLEX
+              flex_flow: ROW
+              flex_align_main: START
+              flex_align_cross: CENTER
+              flex_align_track: CENTER
+              pad_column: 3
+            widgets:
+              - label:
+                  text: "${icon}"
+                  text_font: chip_font_${chip_id}
+                  text_color: ${color}
+              - label:
+                  id: chip_value_${chip_id}
+                  text: ""
+                  text_font: font_title
+                  text_color: ${color}

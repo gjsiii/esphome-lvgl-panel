@@ -5,6 +5,7 @@
 #     vars:
 #       weather_entity: weather.home                     # current conditions
 #       forecast_entity: sensor.panel_weather_forecast   # from HA packages/panel_weather.yaml
+#       outdoor_temp_entity: sensor.rooftop_temperature  # optional local thermometer
 #
 # The forecast sensor must exist in HA (copy packages/panel_weather.yaml);
 # without it the sheet shows current conditions and dashes for the forecast.
@@ -13,8 +14,15 @@
 substitutions:
   wind_unit: mph   # unit of the weather entity's wind_speed
   rain_unit: in    # unit of the forecast precipitation
+  # Optional local thermometer for the current temperature (e.g. a rooftop
+  # weather station); when it reports, it replaces the forecast temperature.
+  outdoor_temp_entity: "sensor.none"
 
 globals:
+  # True once the local outdoor thermometer has reported
+  - id: wx_have_outdoor
+    type: bool
+    initial_value: "false"
   # HA condition -> MDI weather glyph
   - id: wx_icon
     type: std::function<std::string(const std::string &)>
@@ -99,9 +107,25 @@ sensor:
     attribute: temperature
     on_value:
       - lambda: |-
+          // A local outdoor thermometer, once it reports, takes precedence
+          if (id(wx_have_outdoor)) return;
           char buf[8];
           if (isnan(x)) snprintf(buf, sizeof(buf), "--°");
           else snprintf(buf, sizeof(buf), "%.0f°", x);
+          lv_label_set_text(id(lbl_weather_temp), buf);
+          lv_label_set_text(id(lbl_wx_now_temp), buf);
+      - lvgl.widget.show: btn_weather_open
+
+  # Local outdoor thermometer (outdoor_temp_entity, optional)
+  - platform: homeassistant
+    id: wx_outdoor_temp
+    entity_id: ${outdoor_temp_entity}
+    on_value:
+      - lambda: |-
+          if (isnan(x)) return;
+          id(wx_have_outdoor) = true;
+          char buf[8];
+          snprintf(buf, sizeof(buf), "%.0f°", x);
           lv_label_set_text(id(lbl_weather_temp), buf);
           lv_label_set_text(id(lbl_wx_now_temp), buf);
       - lvgl.widget.show: btn_weather_open
@@ -234,12 +258,6 @@ text_sensor:
           lv_label_set_text(id(lbl_wx_updated), s.c_str());
 
 lvgl:
-  # Close the weather sheet when the screen dims
-  on_idle:
-    - timeout: ${idle_dim_timeout}
-      then:
-        - lvgl.widget.hide: weather_panel
-
   pages:
     # Holding page (never shown): weather_panel is moved onto ui_root at boot
     - id: holding_weather

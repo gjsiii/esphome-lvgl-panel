@@ -1,0 +1,84 @@
+# Item: one speaker in the Music tab's "Play on" sheet. Tap to add it to
+# (or remove it from) the music playing on this room's player.
+#
+# Include once per extra speaker; `slot` sets the order and must be unique.
+#   spk_1: !include
+#     file: panel/items/speaker.yaml
+#     vars:
+#       slot: 1
+#       name: "Kitchen"
+#       entity: media_player.kitchen          # the speaker to add (Music Assistant player)
+#       leader: media_player.family_room_2    # this room's music player (tabs/music.yaml)
+#
+# Grouping uses media_player.join / unjoin (Music Assistant / Sonos groups).
+# Needs the Music tab (tabs/music.yaml).
+
+globals:
+  - id: spk_in_${slot}
+    type: bool
+    initial_value: "false"
+
+esphome:
+  on_boot:
+    - priority: -20${slot}
+      then:
+        - lambda: "lv_obj_set_parent(id(spk_row_${slot}), id(speaker_list));"
+
+text_sensor:
+  # The leader's group, e.g. "['media_player.family_room_2', 'media_player.kitchen']"
+  - platform: homeassistant
+    id: spk_group_${slot}
+    entity_id: ${leader}
+    attribute: group_members
+    on_value:
+      - lambda: |-
+          bool in = x.find("'${entity}'") != std::string::npos;
+          id(spk_in_${slot}) = in;
+          if (in) lv_obj_clear_flag(id(spk_check_${slot}), LV_OBJ_FLAG_HIDDEN);
+          else lv_obj_add_flag(id(spk_check_${slot}), LV_OBJ_FLAG_HIDDEN);
+
+lvgl:
+  pages:
+    - id: holding_spk_${slot}
+      skip: true
+      widgets:
+        - button:
+            id: spk_row_${slot}
+            width: 440
+            height: 56
+            radius: 14
+            pad_all: 0
+            widgets:
+              - label:
+                  text: "\U000F04C3" # mdi-speaker
+                  text_font: icons_md
+                  text_color: ${c_text_2}
+                  align: LEFT_MID
+                  x: 14
+              - label:
+                  text: "${name}"
+                  align: LEFT_MID
+                  x: 54
+              - label:
+                  id: spk_check_${slot}
+                  text: "\U000F012C" # mdi-check
+                  text_font: icons_md
+                  text_color: ${c_accent}
+                  align: RIGHT_MID
+                  x: -14
+                  hidden: true
+            on_click:
+              - if:
+                  condition:
+                    lambda: "return id(spk_in_${slot});"
+                  then:
+                    - homeassistant.action:
+                        action: media_player.unjoin
+                        data:
+                          entity_id: ${entity}
+                  else:
+                    - homeassistant.action:
+                        action: media_player.join
+                        data:
+                          entity_id: ${leader}
+                          group_members: ${entity}

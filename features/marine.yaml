@@ -1,0 +1,243 @@
+# Feature: marine forecast sheet with the full text forecast, opened by
+# tapping a status-bar chip (e.g. the small-craft-advisory sailboat).
+#
+#   marine: !include
+#     file: panel/features/marine.yaml
+#     vars:
+#       marine_entity: sensor.noaa_lmz741_marine_forecast   # attributes period_1..5, forecast_1..5, advisory_text
+#       title: "Marine Forecast"
+#       open_chip_1: noaa_red      # chip_id of a status chip that opens the sheet
+#       open_chip_2: noaa_green    # a second one (repeat the first if only one)
+#
+# Expects the marine entity's attributes to be period_N / forecast_N text
+# (N = 1..5) and advisory_text (empty/None when there's no advisory).
+
+esphome:
+  on_boot:
+    - priority: -310
+      then:
+        - lambda: |-
+            lv_obj_set_parent(id(marine_panel), id(ui_root));
+            auto open = [](lv_event_t *e) {
+              lv_obj_clear_flag(id(marine_panel), LV_OBJ_FLAG_HIDDEN);
+              lv_obj_move_foreground(id(marine_panel));
+              lv_obj_scroll_to_y(id(marine_list), 0, LV_ANIM_OFF);
+            };
+            lv_obj_t *chips[2] = {id(chip_${open_chip_1}), id(chip_${open_chip_2})};
+            for (auto *c : chips) {
+              lv_obj_add_flag(c, LV_OBJ_FLAG_CLICKABLE);
+              lv_obj_add_event_cb(c, open, LV_EVENT_CLICKED, nullptr);
+            }
+
+text_sensor:
+  - platform: homeassistant
+    id: marine_advisory
+    entity_id: ${marine_entity}
+    attribute: advisory_text
+    on_value:
+      - lambda: |-
+          bool none = x.empty() || x == "None" || x == "none" || x == "null" || x == "unknown";
+          if (none) lv_obj_add_flag(id(marine_advisory_card), LV_OBJ_FLAG_HIDDEN);
+          else {
+            lv_label_set_text(id(lbl_marine_advisory), x.c_str());
+            lv_obj_clear_flag(id(marine_advisory_card), LV_OBJ_FLAG_HIDDEN);
+          }
+  - platform: homeassistant
+    id: marine_period_1
+    entity_id: ${marine_entity}
+    attribute: period_1
+    on_value:
+      - lambda: "lv_label_set_text(id(lbl_marine_p1), x.c_str());"
+  - platform: homeassistant
+    id: marine_forecast_1
+    entity_id: ${marine_entity}
+    attribute: forecast_1
+    on_value:
+      - lambda: "lv_label_set_text(id(lbl_marine_f1), x.c_str());"
+  - platform: homeassistant
+    id: marine_period_2
+    entity_id: ${marine_entity}
+    attribute: period_2
+    on_value:
+      - lambda: "lv_label_set_text(id(lbl_marine_p2), x.c_str());"
+  - platform: homeassistant
+    id: marine_forecast_2
+    entity_id: ${marine_entity}
+    attribute: forecast_2
+    on_value:
+      - lambda: "lv_label_set_text(id(lbl_marine_f2), x.c_str());"
+  - platform: homeassistant
+    id: marine_period_3
+    entity_id: ${marine_entity}
+    attribute: period_3
+    on_value:
+      - lambda: "lv_label_set_text(id(lbl_marine_p3), x.c_str());"
+  - platform: homeassistant
+    id: marine_forecast_3
+    entity_id: ${marine_entity}
+    attribute: forecast_3
+    on_value:
+      - lambda: "lv_label_set_text(id(lbl_marine_f3), x.c_str());"
+  - platform: homeassistant
+    id: marine_period_4
+    entity_id: ${marine_entity}
+    attribute: period_4
+    on_value:
+      - lambda: "lv_label_set_text(id(lbl_marine_p4), x.c_str());"
+  - platform: homeassistant
+    id: marine_forecast_4
+    entity_id: ${marine_entity}
+    attribute: forecast_4
+    on_value:
+      - lambda: "lv_label_set_text(id(lbl_marine_f4), x.c_str());"
+  - platform: homeassistant
+    id: marine_period_5
+    entity_id: ${marine_entity}
+    attribute: period_5
+    on_value:
+      - lambda: "lv_label_set_text(id(lbl_marine_p5), x.c_str());"
+  - platform: homeassistant
+    id: marine_forecast_5
+    entity_id: ${marine_entity}
+    attribute: forecast_5
+    on_value:
+      - lambda: "lv_label_set_text(id(lbl_marine_f5), x.c_str());"
+
+lvgl:
+  pages:
+    # Holding page (never shown): the sheet is moved onto ui_root at boot
+    - id: holding_marine
+      skip: true
+      widgets:
+        - obj:
+            id: marine_panel
+            width: 100%
+            height: 100%
+            align: TOP_LEFT
+            styles: container
+            scrollable: false
+            scrollbar_mode: "off"
+            hidden: true
+            widgets:
+              - label:
+                  text: "${title}"
+                  text_font: font_title
+                  align: TOP_LEFT
+                  x: 20
+                  y: 22
+              - button:
+                  align: TOP_RIGHT
+                  x: -10
+                  y: 12
+                  width: 90
+                  height: 44
+                  bg_opa: TRANSP
+                  radius: 22
+                  pad_all: 0
+                  pressed:
+                    bg_color: ${c_surface}
+                    bg_opa: COVER
+                  widgets:
+                    - label:
+                        text: "Done"
+                        text_font: font_title
+                        text_color: ${c_accent}
+                        align: CENTER
+                  on_click:
+                    - lvgl.widget.hide: marine_panel
+
+              # Scrolling list: advisory (if any), then each forecast period
+              - obj:
+                  id: marine_list
+                  align: TOP_MID
+                  y: 64
+                  width: 100%
+                  height: 416
+                  styles: transparent
+                  pad_left: 20
+                  pad_right: 20
+                  pad_bottom: 20
+                  scrollbar_mode: "off"
+                  layout:
+                    type: FLEX
+                    flex_flow: COLUMN
+                    flex_align_main: START
+                    flex_align_cross: START
+                    flex_align_track: START
+                    pad_row: 6
+                  widgets:
+                    - obj:
+                        id: marine_advisory_card
+                        width: 440
+                        height: SIZE_CONTENT
+                        bg_color: 0x3A1513
+                        bg_opa: COVER
+                        border_color: 0xFF453A
+                        border_width: 1
+                        radius: 12
+                        pad_all: 12
+                        clickable: false
+                        scrollable: false
+                        hidden: true
+                        widgets:
+                          - label:
+                              id: lbl_marine_advisory
+                              text: ""
+                              text_color: 0xFF6961
+                              long_mode: WRAP
+                              width: 414
+                    - label:
+                        id: lbl_marine_p1
+                        text: ""
+                        text_font: font_title
+                        pad_top: 6
+                    - label:
+                        id: lbl_marine_f1
+                        text: ""
+                        text_color: ${c_text_2}
+                        long_mode: WRAP
+                        width: 440
+                    - label:
+                        id: lbl_marine_p2
+                        text: ""
+                        text_font: font_title
+                        pad_top: 14
+                    - label:
+                        id: lbl_marine_f2
+                        text: ""
+                        text_color: ${c_text_2}
+                        long_mode: WRAP
+                        width: 440
+                    - label:
+                        id: lbl_marine_p3
+                        text: ""
+                        text_font: font_title
+                        pad_top: 14
+                    - label:
+                        id: lbl_marine_f3
+                        text: ""
+                        text_color: ${c_text_2}
+                        long_mode: WRAP
+                        width: 440
+                    - label:
+                        id: lbl_marine_p4
+                        text: ""
+                        text_font: font_title
+                        pad_top: 14
+                    - label:
+                        id: lbl_marine_f4
+                        text: ""
+                        text_color: ${c_text_2}
+                        long_mode: WRAP
+                        width: 440
+                    - label:
+                        id: lbl_marine_p5
+                        text: ""
+                        text_font: font_title
+                        pad_top: 14
+                    - label:
+                        id: lbl_marine_f5
+                        text: ""
+                        text_color: ${c_text_2}
+                        long_mode: WRAP
+                        width: 440

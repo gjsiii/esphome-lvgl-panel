@@ -1,0 +1,96 @@
+# Core: "About" section of the Settings sheet — firmware version, ESPHome
+# version, network, uptime — plus a Restart button. The readings are also
+# Home Assistant diagnostic entities.
+
+# Why the chip last restarted (power-on, brownout, crash, watchdog, OTA...)
+debug:
+  update_interval: 60s
+
+text_sensor:
+  - platform: debug
+    reset_reason:
+      id: about_reset_reason
+      name: Reset Reason
+      entity_category: diagnostic
+      on_value:
+        - lvgl.label.update:
+            id: lbl_about_reset
+            text: !lambda "return x;"
+
+  - platform: wifi_info
+    ip_address:
+      id: about_ip
+      name: IP Address
+      entity_category: diagnostic
+      on_value:
+        - lvgl.label.update:
+            id: lbl_about_ip
+            text: !lambda "return x;"
+    ssid:
+      id: about_ssid
+      on_value:
+        - lvgl.label.update:
+            id: lbl_about_ssid
+            text: !lambda "return x;"
+
+sensor:
+  # Resources: free internal RAM, its largest free block (fragmentation),
+  # free PSRAM, and the main loop's longest pass — to spot a panel near its
+  # limits. Updated every minute (debug: update_interval).
+  - platform: debug
+    free:
+      name: Free Memory
+      entity_category: diagnostic
+    block:
+      name: Largest Free Block
+      entity_category: diagnostic
+    psram:
+      name: Free PSRAM
+      entity_category: diagnostic
+    loop_time:
+      name: Loop Time
+      entity_category: diagnostic
+
+  - platform: wifi_signal
+    id: about_rssi
+    name: Wi-Fi Signal
+    entity_category: diagnostic
+    update_interval: 60s
+    on_value:
+      - lvgl.label.update:
+          id: lbl_about_rssi
+          text: !lambda |-
+            const char *q = x >= -55 ? "Excellent" : x >= -67 ? "Good" : x >= -75 ? "Fair" : "Weak";
+            char buf[32];
+            snprintf(buf, sizeof(buf), "%s (%.0f dBm)", q, x);
+            return std::string(buf);
+
+  - platform: uptime
+    id: about_uptime
+    name: Uptime
+    entity_category: diagnostic
+    update_interval: 60s
+    on_value:
+      - lvgl.label.update:
+          id: lbl_about_uptime
+          text: !lambda |-
+            uint32_t s = (uint32_t) x;
+            uint32_t d = s / 86400, h = (s % 86400) / 3600, m = (s % 3600) / 60;
+            char buf[32];
+            if (d > 0) snprintf(buf, sizeof(buf), "%ud %uh %um", d, h, m);
+            else snprintf(buf, sizeof(buf), "%uh %um", h, m);
+            return std::string(buf);
+
+button:
+  - platform: restart
+    id: btn_restart
+    name: Restart
+    entity_category: config
+
+esphome:
+  on_boot:
+    - priority: -310
+      then:
+        - lambda: |-
+            lv_label_set_text(id(lbl_about_esphome), ESPHOME_VERSION);
+            lv_label_set_text(id(lbl_about_name), App.get_name().c_str());

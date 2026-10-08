@@ -1,0 +1,54 @@
+# Item: one app button in the TV tab (a column right of the d-pad): a round
+# remote-style button with a single-color app logo.
+# Tapping it opens the app on the Apple TV (media_player.select_source).
+#
+# Include once per app; `slot` sets the order (1 = top left) and must be
+# unique. Four fit beside the d-pad; more scroll. Leave out all app items
+# and the TV tab shows no app column.
+#   app_1: !include
+#     file: panel/items/tv_app.yaml
+#     vars:
+#       slot: 1
+#       icon: ../www/tv_app_icons/netflix.svg   # white logo, relative to the device file
+#       source: "Netflix"                       # Apple TV source name, exactly as in HA
+#       entity: media_player.family_room_apple_tv
+#
+# App logos are trademarks, so they aren't in this repo: keep them with the
+# house's own files (e.g. /config/www/tv_app_icons/). PNG, JPG or SVG work;
+# a white logo on a transparent background matches the remote. The image is
+# compiled into the firmware.
+
+esphome:
+  on_boot:
+    - priority: -20${slot}
+      then:
+        - lambda: "lv_obj_set_parent(id(tv_app_${slot}), id(tv_apps));"
+
+image:
+  - platform: file
+    id: tv_app_icon_${slot}
+    file: ${icon}
+    type: RGB565
+    transparency: alpha_channel
+    resize: 24x24
+
+lvgl:
+  pages:
+    - id: holding_tv_app_${slot}
+      skip: true
+      widgets:
+        - button:
+            id: tv_app_${slot}
+            width: 46
+            height: 46
+            styles: round_btn
+            widgets:
+              - image:
+                  src: tv_app_icon_${slot}
+                  align: CENTER
+            on_click:
+              - homeassistant.action:
+                  action: media_player.select_source
+                  data:
+                    entity_id: ${entity}
+                    source: "${source}"

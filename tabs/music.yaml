@@ -34,6 +34,17 @@ esphome:
             lv_obj_set_scrollbar_mode(tab, LV_SCROLLBAR_MODE_OFF);
             lv_obj_set_parent(id(content_music), tab);
             id(tab_index_music) = lv_obj_get_index(tab);
+            // "Play on" sheet: onto the main screen, list in one column
+            lv_obj_set_parent(id(music_playon_panel), id(ui_root));
+            lv_obj_set_flex_flow(id(speaker_list), LV_FLEX_FLOW_COLUMN);
+            lv_obj_set_flex_align(id(speaker_list), LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START);
+            lv_obj_set_style_pad_row(id(speaker_list), 10, 0);
+    # No speaker items: no "Play on" button
+    - priority: -305
+      then:
+        - lambda: |-
+            if (lv_obj_get_child_cnt(id(speaker_list)) == 0)
+              lv_obj_add_flag(id(music_btn_playon), LV_OBJ_FLAG_HIDDEN);
 
 script:
   # Debounced album art fetch: rapid track skips restart the delay, so only
@@ -49,6 +60,11 @@ script:
             lambda: "return url != id(last_album_art_url);"
           then:
             - lambda: "id(last_album_art_url) = url;"
+            - wait_until:
+                condition:
+                  lambda: "return !id(img_busy) || millis() - id(img_busy_ms) > 15000;"
+                timeout: 15s
+            - lambda: "id(img_busy) = true; id(img_busy_ms) = millis();"
             - online_image.set_url:
                 id: album_art_image
                 url: !lambda "return url;"
@@ -87,7 +103,57 @@ sensor:
     entity_id: ${music_player}
     attribute: media_duration
 
+  # Volume slider follows the player (unless a finger is on it)
+  - platform: homeassistant
+    id: music_volume_level
+    entity_id: ${music_player}
+    attribute: volume_level
+    on_value:
+      - lambda: |-
+          if (isnan(x) || lv_obj_has_state(id(music_volume), LV_STATE_PRESSED)) return;
+          lv_slider_set_value(id(music_volume), lroundf(x * 100.0f), LV_ANIM_OFF);
+
+binary_sensor:
+  - platform: homeassistant
+    id: music_muted
+    entity_id: ${music_player}
+    attribute: is_volume_muted
+    on_state:
+      - lambda: |-
+          lv_label_set_text(id(lbl_music_mute), x ? "\U000F0581" : "\U000F057E");   // volume-off / volume-high
+          lv_obj_set_style_text_color(id(lbl_music_mute), lv_color_hex(x ? 0xFF453A : ${c_text_2}), LV_PART_MAIN);
+
+  - platform: homeassistant
+    id: music_shuffle
+    entity_id: ${music_player}
+    attribute: shuffle
+    on_state:
+      - lambda: |-
+          lv_obj_set_style_text_color(id(lbl_music_shuffle), lv_color_hex(x ? ${c_text} : ${c_text_2}), LV_PART_MAIN);
+
 text_sensor:
+  # Grouped with other speakers? Light up the "Play on" icon.
+  - platform: homeassistant
+    id: music_group
+    entity_id: ${music_player}
+    attribute: group_members
+    on_value:
+      - lambda: |-
+          bool grouped = x.find(',') != std::string::npos;   // 2+ members
+          lv_obj_set_style_text_color(id(lbl_music_playon), lv_color_hex(grouped ? ${c_text} : ${c_text_2}), LV_PART_MAIN);
+
+  - platform: homeassistant
+    id: music_repeat
+    entity_id: ${music_player}
+    attribute: repeat
+    on_value:
+      - lambda: |-
+          const char *g = "\U000F0457";                 // repeat-off
+          if (x == "one") g = "\U000F0458";             // repeat-once
+          else if (x == "all") g = "\U000F0456";        // repeat
+          lv_label_set_text(id(lbl_music_repeat), g);
+          lv_obj_set_style_text_color(id(lbl_music_repeat), lv_color_hex(x == "off" ? ${c_text_2} : ${c_text}), LV_PART_MAIN);
+
   - platform: homeassistant
     id: media_title_text
     entity_id: ${music_player}
@@ -125,7 +191,7 @@ text_sensor:
                  millis() - id(music_stopped_ms) >= ${media_autoswitch_gap_ms});
               if (!playing && id(music_playing)) id(music_stopped_ms) = millis();
               id(music_playing) = playing;
-              return start && id(tab_index_music) >= 0;
+              return start && id(tab_index_music) >= 0 && id(sw_auto_media_tabs).state;
           then:
             - lambda: "lv_tabview_set_act(id(main_tabview), id(tab_index_music), LV_ANIM_OFF);"
             - script.execute: refresh_tab_bar
@@ -145,18 +211,21 @@ text_sensor:
                   if (x.rfind("http", 0) == 0) return x;
                   return std::string("${ha_url}") + x;
 
-online_image:
-  - id: album_art_image
+image:
+  - platform: online_image
+    id: album_art_image
     url: "https://www.home-assistant.io/images/favicon-192x192.png"
     format: JPEG
     type: RGB565
     resize: [180, 180]
     on_download_finished:
+      - lambda: "id(img_busy) = false;"
       - logger.log: "Album art downloaded, updating LVGL widget"
       - lvgl.image.update:
           id: lvgl_album_art
           src: album_art_image
     on_error:
+      - lambda: "id(img_busy) = false;"
       - logger.log: "Album art download failed"
 
 lvgl:
@@ -172,6 +241,27 @@ lvgl:
             styles: container
             scrollbar_mode: "off"
             widgets:
+              # ── "Play on" (other speakers) ────────────
+              - button:
+                  id: music_btn_playon
+                  align: TOP_RIGHT
+                  x: -10
+                  y: 8
+                  width: 52
+                  height: 48
+                  styles: icon_btn
+                  widgets:
+                    - label:
+                        id: lbl_music_playon
+                        text: "\U000F0D38" # mdi-speaker-multiple
+                        text_font: icons_md
+                        text_color: ${c_text_2}
+                        align: CENTER
+                  on_click:
+                    - lambda: |-
+                        lv_obj_clear_flag(id(music_playon_panel), LV_OBJ_FLAG_HIDDEN);
+                        lv_obj_move_foreground(id(music_playon_panel));
+
               # ── Album Art (rounded) ───────────────────
               - obj:
                   align: TOP_MID
@@ -304,64 +394,151 @@ lvgl:
                         data:
                           entity_id: ${music_player}
 
-              # ── Volume: − | Mute | + ──────────────────
+              # ── Shuffle and repeat flank the transport row; below them a
+              #    full-width volume row (mute + slider) ───────────────────
               - button:
-                  id: music_btn_vol_down
+                  id: music_btn_shuffle
                   align: TOP_MID
-                  x: -112
-                  y: 350
-                  width: 64
-                  height: 38
+                  x: -194
+                  y: 288
+                  width: 48
+                  height: 48
                   styles: icon_btn
                   widgets:
                     - label:
-                        text: "\U000F075E" # mdi-volume-minus
+                        id: lbl_music_shuffle
+                        text: "\U000F049D" # mdi-shuffle
                         text_font: icons_md
                         text_color: ${c_text_2}
                         align: CENTER
                   on_click:
                     - homeassistant.action:
-                        action: media_player.volume_down
+                        action: media_player.shuffle_set
                         data:
                           entity_id: ${music_player}
+                          shuffle: !lambda 'return id(music_shuffle).state ? "false" : "true";'
 
               - button:
                   id: music_btn_mute
-                  align: TOP_MID
+                  align: TOP_LEFT
+                  x: 14
                   y: 350
-                  width: 64
+                  width: 44
                   height: 38
                   styles: icon_btn
                   widgets:
                     - label:
-                        text: "\U000F075F" # mdi-volume-mute
+                        id: lbl_music_mute
+                        text: "\U000F057E" # mdi-volume-high
                         text_font: icons_md
                         text_color: ${c_text_2}
                         align: CENTER
                   on_click:
                     - homeassistant.action:
                         action: media_player.volume_mute
-                        data_template:
-                          is_volume_muted: "{{ not state_attr('${music_player}', 'is_volume_muted') }}"
+                        data:
                           entity_id: ${music_player}
+                          is_volume_muted: !lambda 'return id(music_muted).state ? "false" : "true";'
+
+              - slider:
+                  id: music_volume
+                  align: TOP_LEFT
+                  x: 66
+                  y: 355
+                  width: 400
+                  height: 28
+                  min_value: 0
+                  max_value: 100
+                  value: 0
+                  on_release:
+                    - homeassistant.action:
+                        action: media_player.volume_set
+                        data:
+                          entity_id: ${music_player}
+                          volume_level: !lambda "return x / 100.0f;"
 
               - button:
-                  id: music_btn_vol_up
+                  id: music_btn_repeat
                   align: TOP_MID
-                  x: 112
-                  y: 350
-                  width: 64
-                  height: 38
+                  x: 194
+                  y: 288
+                  width: 48
+                  height: 48
                   styles: icon_btn
                   widgets:
                     - label:
-                        text: "\U000F075D" # mdi-volume-plus
+                        id: lbl_music_repeat
+                        text: "\U000F0457" # mdi-repeat-off
                         text_font: icons_md
                         text_color: ${c_text_2}
                         align: CENTER
                   on_click:
+                    # off -> all -> one -> off
                     - homeassistant.action:
-                        action: media_player.volume_up
+                        action: media_player.repeat_set
                         data:
                           entity_id: ${music_player}
+                          repeat: !lambda |-
+                            const std::string &r = id(music_repeat).state;
+                            if (r == "off") return std::string("all");
+                            if (r == "all") return std::string("one");
+                            return std::string("off");
 
+    # Holding page (never shown): the "Play on" sheet is moved onto ui_root
+    - id: holding_playon
+      skip: true
+      widgets:
+        - obj:
+            id: music_playon_panel
+            width: 100%
+            height: 100%
+            align: TOP_LEFT
+            styles: container
+            scrollable: false
+            scrollbar_mode: "off"
+            hidden: true
+            widgets:
+              - label:
+                  text: "Play on"
+                  text_font: font_title
+                  align: TOP_LEFT
+                  x: 20
+                  y: 22
+              - button:
+                  align: TOP_RIGHT
+                  x: -10
+                  y: 12
+                  width: 90
+                  height: 44
+                  bg_opa: TRANSP
+                  radius: 22
+                  pad_all: 0
+                  pressed:
+                    bg_color: ${c_surface}
+                    bg_opa: COVER
+                  widgets:
+                    - label:
+                        text: "Done"
+                        text_font: font_title
+                        text_color: ${c_accent}
+                        align: CENTER
+                  on_click:
+                    - lvgl.widget.hide: music_playon_panel
+              - label:
+                  text: "Tap a speaker to add it to this music, or tap again to remove it."
+                  text_font: font_caption
+                  text_color: ${c_text_2}
+                  long_mode: WRAP
+                  width: 440
+                  align: TOP_LEFT
+                  x: 20
+                  y: 66
+              # Speaker rows (items/speaker.yaml)
+              - obj:
+                  id: speaker_list
+                  align: TOP_MID
+                  y: 100
+                  width: 448
+                  height: 370
+                  styles: transparent
+                  scrollbar_mode: "off"

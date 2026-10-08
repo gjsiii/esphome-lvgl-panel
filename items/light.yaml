@@ -3,6 +3,7 @@
 # Include once per light; `slot` sets the order (1 = top) and must be unique.
 #   light_1: !include { file: panel/items/light.yaml, vars: { slot: 1, name: "Chandelier", entity: light.family_room_chandelier } }
 #
+# Tap the name to toggle the light; drag anywhere else to set brightness.
 # The slider is built on a hidden holding page and moved into `lights_list`
 # at boot. HA is updated once, when the finger lifts.
 
@@ -30,6 +31,7 @@ sensor:
                 id: light_pct_${slot}
                 text: !lambda 'return std::to_string((int) lroundf(x * 100.0f / 255.0f)) + "%";'
             - lambda: "id(slider_ha_update) = false;"
+            - script.execute: update_slider_labels
 
 binary_sensor:
   - platform: homeassistant
@@ -48,6 +50,7 @@ binary_sensor:
                 id: light_pct_${slot}
                 text: "0%"
             - lambda: "id(slider_ha_update) = false;"
+            - script.execute: update_slider_labels
 
 lvgl:
   pages:
@@ -74,6 +77,7 @@ lvgl:
                     - lvgl.label.update:
                         id: light_pct_${slot}
                         text: !lambda 'return std::to_string((int) lroundf(x * 100.0f / 255.0f)) + "%";'
+                    - script.execute: update_slider_labels
                   on_release:
                     - if:
                         condition:
@@ -95,3 +99,21 @@ lvgl:
                   text_color: ${c_text_2}
                   align: RIGHT_MID
                   x: -18
+              # Tap the name to toggle the light on/off (drag elsewhere to dim).
+              # Last child, so it sits on top of the slider's left end.
+              - button:
+                  id: light_toggle_${slot}
+                  align: LEFT_MID
+                  width: 180
+                  height: 100%
+                  radius: 16
+                  bg_opa: TRANSP
+                  pad_all: 0
+                  pressed:
+                    bg_color: ${c_text}
+                    bg_opa: 15%
+                  on_click:
+                    - homeassistant.action:
+                        action: light.toggle
+                        data:
+                          entity_id: ${entity}

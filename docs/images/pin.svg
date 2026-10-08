@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="480" viewBox="0 0 480 480" font-family="Inter, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+<rect width="480" height="480" rx="18" fill="#000"/>
+<text x="240" y="54" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">Enter PIN</text>
+<circle cx="183" cy="85" r="8" fill="#FFF" stroke="#FFF" stroke-width="2"/>
+<circle cx="221" cy="85" r="8" fill="#FFF" stroke="#FFF" stroke-width="2"/>
+<circle cx="259" cy="85" r="8" fill="none" stroke="#FFF" stroke-width="2"/>
+<circle cx="297" cy="85" r="8" fill="none" stroke="#FFF" stroke-width="2"/>
+<rect x="98" y="140" width="84" height="64" rx="32" fill="#1C1C1E"/><text x="140" y="180" fill="#FFF" font-size="22" font-weight="600" text-anchor="middle">1</text>
+<rect x="198" y="140" width="84" height="64" rx="32" fill="#1C1C1E"/><text x="240" y="180" fill="#FFF" font-size="22" font-weight="600" text-anchor="middle">2</text>
+<rect x="298" y="140" width="84" height="64" rx="32" fill="#1C1C1E"/><text x="340" y="180" fill="#FFF" font-size="22" font-weight="600" text-anchor="middle">3</text>
+<rect x="98" y="214" width="84" height="64" rx="32" fill="#1C1C1E"/><text x="140" y="254" fill="#FFF" font-size="22" font-weight="600" text-anchor="middle">4</text>
+<rect x="198" y="214" width="84" height="64" rx="32" fill="#1C1C1E"/><text x="240" y="254" fill="#FFF" font-size="22" font-weight="600" text-anchor="middle">5</text>
+<rect x="298" y="214" width="84" height="64" rx="32" fill="#1C1C1E"/><text x="340" y="254" fill="#FFF" font-size="22" font-weight="600" text-anchor="middle">6</text>
+<rect x="98" y="288" width="84" height="64" rx="32" fill="#1C1C1E"/><text x="140" y="328" fill="#FFF" font-size="22" font-weight="600" text-anchor="middle">7</text>
+<rect x="198" y="288" width="84" height="64" rx="32" fill="#1C1C1E"/><text x="240" y="328" fill="#FFF" font-size="22" font-weight="600" text-anchor="middle">8</text>
+<rect x="298" y="288" width="84" height="64" rx="32" fill="#1C1C1E"/><text x="340" y="328" fill="#FFF" font-size="22" font-weight="600" text-anchor="middle">9</text>
+<rect x="98" y="362" width="84" height="64" rx="32" fill="#1C1C1E"/><text x="140" y="402" fill="#FFF" font-size="16" font-weight="600" text-anchor="middle">Cancel</text>
+<rect x="198" y="362" width="84" height="64" rx="32" fill="#1C1C1E"/><text x="240" y="402" fill="#FFF" font-size="22" font-weight="600" text-anchor="middle">0</text>
+<rect x="298" y="362" width="84" height="64" rx="32" fill="#1C1C1E"/><text x="340" y="402" fill="#FFF" font-size="22" font-weight="600" text-anchor="middle">⌫</text>
+</svg>

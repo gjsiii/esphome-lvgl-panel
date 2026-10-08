@@ -38,7 +38,7 @@ lvgl:
                         id: btn_weather_open
                         align: LEFT_MID
                         x: 4
-                        width: 112
+                        width: 84
                         height: 34
                         bg_opa: TRANSP
                         radius: 10
@@ -63,12 +63,54 @@ lvgl:
                               align: LEFT_MID
                               x: 38
                         # Tap handler is attached by the weather package
+                    # Indoor climate (features/climate.yaml): hidden unless
+                    # included; tapping it opens the climate sheet.
+                    - button:
+                        id: btn_climate_open
+                        align: LEFT_MID
+                        x: 92
+                        width: 78
+                        height: 34
+                        bg_opa: TRANSP
+                        radius: 10
+                        pad_all: 0
+                        pressed:
+                          bg_color: ${c_surface}
+                          bg_opa: COVER
+                        hidden: true
+                        widgets:
+                          - label:
+                              id: lbl_climate_icon
+                              text: "\U000F0F54" # mdi-home-thermometer
+                              text_font: icons_sm
+                              text_color: ${c_text_2}
+                              align: LEFT_MID
+                              x: 6
+                          - label:
+                              id: lbl_climate_temp
+                              text: "--°"
+                              text_font: font_title
+                              align: LEFT_MID
+                              x: 32
+                        # Tap handler is attached by the climate package
                     - label:
                         id: lbl_time
                         text: "--:--"
                         text_font: font_time
                         text_color: ${c_text}
                         align: CENTER
+                    # Status chips (features/status_chip.yaml), right-aligned
+                    # left of the connection icon. Layout is set at boot.
+                    - obj:
+                        id: status_chips
+                        align: RIGHT_MID
+                        x: -82
+                        width: 112
+                        height: 32
+                        styles: transparent
+                        clickable: false
+                        scrollable: false
+                        scrollbar_mode: "off"
                     - label:
                         id: lbl_hastatus
                         text: "\U000F05A9" # mdi-wifi
@@ -90,7 +132,7 @@ lvgl:
                               text_color: ${c_text_2}
                               align: CENTER
                         on_click:
-                          - lvgl.widget.show: settings_panel
+                          - script.execute: open_settings   # PIN keypad if locked
 
               # ── Tab View (tab bar at the bottom) ──────────────────
               - tabview:
@@ -186,13 +228,15 @@ lvgl:
                                   styles: transparent
                                   scrollbar_mode: "off"
 
-              # ── Settings Sheet ──────────────────────────────────────
+              # ── Settings Sheet (scrolls) ────────────────────────────
+              # Values live in core/settings.yaml (also editable from HA).
               - obj:
                   id: settings_panel
                   width: 100%
                   height: 100%
                   align: TOP_LEFT
                   styles: container
+                  pad_bottom: 24
                   scrollbar_mode: "off"
                   hidden: true
                   widgets:
@@ -224,6 +268,7 @@ lvgl:
                         on_click:
                           - lvgl.widget.hide: settings_panel
 
+                    # ── Display: brightness ─────────────────────────
                     - label:
                         text: "DISPLAY"
                         styles: section_header
@@ -292,3 +337,1672 @@ lvgl:
                               align: BOTTOM_RIGHT
                               x: -14
                               y: -22
+
+                    # ── Slider color: hue / saturation / brightness ─
+                    # Also a "Slider Color" light in HA (color wheel there).
+                    - label:
+                        text: "SLIDER COLOR"
+                        styles: section_header
+                        align: TOP_LEFT
+                        x: 32
+                        y: 236
+                    - obj:
+                        id: accent_preview
+                        align: TOP_RIGHT
+                        x: -24
+                        y: 232
+                        width: 20
+                        height: 20
+                        radius: 10
+                        bg_color: ${c_accent}
+                        bg_opa: COVER
+                        border_width: 1
+                        border_color: ${c_separator}
+                        clickable: false
+
+                    - obj:
+                        align: TOP_MID
+                        y: 258
+                        width: 448
+                        height: 222
+                        styles: card
+                        clickable: false
+                        scrollable: false
+                        scrollbar_mode: "off"
+                        widgets:
+                          - label:
+                              text: "Hue"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 22
+                          # Rainbow track (LVGL gradients have 2 stops, so 6 pieces)
+                          - obj:
+                              align: TOP_LEFT
+                              x: 116
+                              y: 18
+                              width: 316
+                              height: 28
+                              radius: 14
+                              clip_corner: true
+                              bg_opa: TRANSP
+                              border_width: 0
+                              pad_all: 0
+                              clickable: false
+                              scrollable: false
+                              scrollbar_mode: "off"
+                              widgets:
+                                - obj:
+                                    align: LEFT_MID
+                                    x: 0
+                                    width: 53
+                                    height: 28
+                                    radius: 0
+                                    border_width: 0
+                                    pad_all: 0
+                                    bg_color: 0xFF0000
+                                    bg_grad_color: 0xFFFF00
+                                    bg_grad_dir: HOR
+                                    bg_opa: COVER
+                                    clickable: false
+                                    scrollable: false
+                                - obj:
+                                    align: LEFT_MID
+                                    x: 53
+                                    width: 53
+                                    height: 28
+                                    radius: 0
+                                    border_width: 0
+                                    pad_all: 0
+                                    bg_color: 0xFFFF00
+                                    bg_grad_color: 0x00FF00
+                                    bg_grad_dir: HOR
+                                    bg_opa: COVER
+                                    clickable: false
+                                    scrollable: false
+                                - obj:
+                                    align: LEFT_MID
+                                    x: 106
+                                    width: 53
+                                    height: 28
+                                    radius: 0
+                                    border_width: 0
+                                    pad_all: 0
+                                    bg_color: 0x00FF00
+                                    bg_grad_color: 0x00FFFF
+                                    bg_grad_dir: HOR
+                                    bg_opa: COVER
+                                    clickable: false
+                                    scrollable: false
+                                - obj:
+                                    align: LEFT_MID
+                                    x: 159
+                                    width: 53
+                                    height: 28
+                                    radius: 0
+                                    border_width: 0
+                                    pad_all: 0
+                                    bg_color: 0x00FFFF
+                                    bg_grad_color: 0x0000FF
+                                    bg_grad_dir: HOR
+                                    bg_opa: COVER
+                                    clickable: false
+                                    scrollable: false
+                                - obj:
+                                    align: LEFT_MID
+                                    x: 212
+                                    width: 53
+                                    height: 28
+                                    radius: 0
+                                    border_width: 0
+                                    pad_all: 0
+                                    bg_color: 0x0000FF
+                                    bg_grad_color: 0xFF00FF
+                                    bg_grad_dir: HOR
+                                    bg_opa: COVER
+                                    clickable: false
+                                    scrollable: false
+                                - obj:
+                                    align: LEFT_MID
+                                    x: 265
+                                    width: 51
+                                    height: 28
+                                    radius: 0
+                                    border_width: 0
+                                    pad_all: 0
+                                    bg_color: 0xFF00FF
+                                    bg_grad_color: 0xFF0000
+                                    bg_grad_dir: HOR
+                                    bg_opa: COVER
+                                    clickable: false
+                                    scrollable: false
+                          - slider:
+                              id: slider_hue
+                              align: TOP_LEFT
+                              x: 116
+                              y: 18
+                              width: 316
+                              height: 28
+                              min_value: 0
+                              max_value: 359
+                              value: 0
+                              radius: 14
+                              bg_color: 0xFF0000
+                              bg_grad_color: 0xFFFFFF
+                              bg_grad_dir: HOR
+                              bg_opa: TRANSP
+                              indicator:
+                                bg_opa: TRANSP
+                              knob:
+                                bg_color: 0xFFFFFF
+                                bg_opa: COVER
+                                border_color: 0x000000
+                                border_width: 1
+                                border_opa: 40%
+                                radius: 14
+                                pad_all: 2
+                              on_value:
+                                - script.execute: set_accent_from_sliders
+                          - label:
+                              text: "Saturation"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 74
+                          - slider:
+                              id: slider_sat
+                              align: TOP_LEFT
+                              x: 116
+                              y: 70
+                              width: 316
+                              height: 28
+                              min_value: 0
+                              max_value: 100
+                              value: 0
+                              radius: 14
+                              bg_color: 0xFFFFFF
+                              bg_grad_color: 0xFFFFFF
+                              bg_grad_dir: HOR
+                              bg_opa: COVER
+                              indicator:
+                                bg_opa: TRANSP
+                              knob:
+                                bg_color: 0xFFFFFF
+                                bg_opa: COVER
+                                border_color: 0x000000
+                                border_width: 1
+                                border_opa: 40%
+                                radius: 14
+                                pad_all: 2
+                              on_value:
+                                - script.execute: set_accent_from_sliders
+                          - label:
+                              text: "Brightness"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 126
+                          - slider:
+                              id: slider_bri
+                              align: TOP_LEFT
+                              x: 116
+                              y: 122
+                              width: 316
+                              height: 28
+                              min_value: 5
+                              max_value: 100
+                              value: 95
+                              radius: 14
+                              bg_color: 0x000000
+                              bg_grad_color: 0xFFFFFF
+                              bg_grad_dir: HOR
+                              bg_opa: COVER
+                              indicator:
+                                bg_opa: TRANSP
+                              knob:
+                                bg_color: 0xFFFFFF
+                                bg_opa: COVER
+                                border_color: 0x000000
+                                border_width: 1
+                                border_opa: 40%
+                                radius: 14
+                                pad_all: 2
+                              on_value:
+                                - script.execute: set_accent_from_sliders
+                          - label:
+                              text: "Text on fill"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 178
+                          - obj:
+                              align: TOP_LEFT
+                              x: 116
+                              y: 170
+                              width: 316
+                              height: 38
+                              radius: 10
+                              bg_color: ${c_surface_2}
+                              bg_opa: COVER
+                              border_width: 0
+                              pad_all: 0
+                              clickable: false
+                              scrollable: false
+                              scrollbar_mode: "off"
+                              widgets:
+                                - button:
+                                    id: seg_txt_0
+                                    align: LEFT_MID
+                                    x: 3
+                                    width: 104
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "Auto"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_slider_text
+                                          option: "Auto"
+                                - button:
+                                    id: seg_txt_1
+                                    align: LEFT_MID
+                                    x: 106
+                                    width: 104
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "Light"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_slider_text
+                                          option: "Light"
+                                - button:
+                                    id: seg_txt_2
+                                    align: LEFT_MID
+                                    x: 209
+                                    width: 104
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "Dark"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_slider_text
+                                          option: "Dark"
+
+                    # ── Screen timing ───────────────────────────────
+                    - label:
+                        text: "SCREEN"
+                        styles: section_header
+                        align: TOP_LEFT
+                        x: 32
+                        y: 498
+
+                    - obj:
+                        align: TOP_MID
+                        y: 520
+                        width: 448
+                        height: 272
+                        styles: card
+                        clickable: false
+                        scrollable: false
+                        scrollbar_mode: "off"
+                        widgets:
+                          - label:
+                              text: "Dim after"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 14
+                          # Segmented control
+                          - obj:
+                              align: TOP_LEFT
+                              x: 16
+                              y: 40
+                              width: 416
+                              height: 38
+                              radius: 10
+                              bg_color: ${c_surface_2}
+                              bg_opa: COVER
+                              border_width: 0
+                              pad_all: 0
+                              clickable: false
+                              scrollable: false
+                              scrollbar_mode: "off"
+                              widgets:
+                                - button:
+                                    id: seg_dim_0
+                                    align: LEFT_MID
+                                    x: 3
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "15 s"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_dim_after
+                                          option: "15 s"
+                                - button:
+                                    id: seg_dim_1
+                                    align: LEFT_MID
+                                    x: 85
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "30 s"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_dim_after
+                                          option: "30 s"
+                                - button:
+                                    id: seg_dim_2
+                                    align: LEFT_MID
+                                    x: 167
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "1 min"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_dim_after
+                                          option: "1 min"
+                                - button:
+                                    id: seg_dim_3
+                                    align: LEFT_MID
+                                    x: 249
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "2 min"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_dim_after
+                                          option: "2 min"
+                                - button:
+                                    id: seg_dim_4
+                                    align: LEFT_MID
+                                    x: 331
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "Never"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_dim_after
+                                          option: "Never"
+                          - label:
+                              text: "Turn off after"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 102
+                          - obj:
+                              align: TOP_LEFT
+                              x: 16
+                              y: 128
+                              width: 416
+                              height: 38
+                              radius: 10
+                              bg_color: ${c_surface_2}
+                              bg_opa: COVER
+                              border_width: 0
+                              pad_all: 0
+                              clickable: false
+                              scrollable: false
+                              scrollbar_mode: "off"
+                              widgets:
+                                - button:
+                                    id: seg_off_0
+                                    align: LEFT_MID
+                                    x: 3
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "1 min"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_off_after
+                                          option: "1 min"
+                                - button:
+                                    id: seg_off_1
+                                    align: LEFT_MID
+                                    x: 85
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "5 min"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_off_after
+                                          option: "5 min"
+                                - button:
+                                    id: seg_off_2
+                                    align: LEFT_MID
+                                    x: 167
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "10 min"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_off_after
+                                          option: "10 min"
+                                - button:
+                                    id: seg_off_3
+                                    align: LEFT_MID
+                                    x: 249
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "30 min"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_off_after
+                                          option: "30 min"
+                                - button:
+                                    id: seg_off_4
+                                    align: LEFT_MID
+                                    x: 331
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "Never"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_off_after
+                                          option: "Never"
+                          - label:
+                              text: "Sleep screen"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 190
+                          - obj:
+                              align: TOP_LEFT
+                              x: 16
+                              y: 216
+                              width: 416
+                              height: 38
+                              radius: 10
+                              bg_color: ${c_surface_2}
+                              bg_opa: COVER
+                              border_width: 0
+                              pad_all: 0
+                              clickable: false
+                              scrollable: false
+                              scrollbar_mode: "off"
+                              widgets:
+                                - button:
+                                    id: seg_sleep_0
+                                    align: LEFT_MID
+                                    x: 3
+                                    width: 137
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "Blank"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_sleep_screen
+                                          option: "Blank"
+                                - button:
+                                    id: seg_sleep_1
+                                    align: LEFT_MID
+                                    x: 140
+                                    width: 137
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "Clock"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_sleep_screen
+                                          option: "Clock"
+                                - button:
+                                    id: seg_sleep_2
+                                    align: LEFT_MID
+                                    x: 277
+                                    width: 137
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "Red clock"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_sleep_screen
+                                          option: "Red clock"
+
+                    # ── Night (schedule) ────────────────────────────
+                    - label:
+                        text: "NIGHT"
+                        styles: section_header
+                        align: TOP_LEFT
+                        x: 32
+                        y: 808
+
+                    - obj:
+                        align: TOP_MID
+                        y: 830
+                        width: 448
+                        height: 344
+                        styles: card
+                        clickable: false
+                        scrollable: false
+                        scrollbar_mode: "off"
+                        widgets:
+                          - label:
+                              text: "Night mode"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 17
+                          - switch:
+                              id: lv_sw_night
+                              align: TOP_RIGHT
+                              x: -16
+                              y: 12
+                              width: 52
+                              height: 30
+                              on_click:
+                                - lambda: |-
+                                    if (lv_obj_has_state(id(lv_sw_night), LV_STATE_CHECKED)) id(sw_night).turn_on();
+                                    else id(sw_night).turn_off();
+                          - obj:   # divider
+                              align: TOP_RIGHT
+                              y: 54
+                              width: 432
+                              height: 1
+                              bg_color: ${c_separator}
+                              bg_opa: COVER
+                              border_width: 0
+                              radius: 0
+                              clickable: false
+                          - label:
+                              text: "Starts"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 66
+                          - obj:
+                              align: TOP_LEFT
+                              x: 16
+                              y: 92
+                              width: 416
+                              height: 38
+                              radius: 10
+                              bg_color: ${c_surface_2}
+                              bg_opa: COVER
+                              border_width: 0
+                              pad_all: 0
+                              clickable: false
+                              scrollable: false
+                              scrollbar_mode: "off"
+                              widgets:
+                                - button:
+                                    id: seg_nstart_0
+                                    align: LEFT_MID
+                                    x: 3
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "8 PM"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_night_start
+                                          option: "8 PM"
+                                - button:
+                                    id: seg_nstart_1
+                                    align: LEFT_MID
+                                    x: 85
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "9 PM"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_night_start
+                                          option: "9 PM"
+                                - button:
+                                    id: seg_nstart_2
+                                    align: LEFT_MID
+                                    x: 167
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "10 PM"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_night_start
+                                          option: "10 PM"
+                                - button:
+                                    id: seg_nstart_3
+                                    align: LEFT_MID
+                                    x: 249
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "11 PM"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_night_start
+                                          option: "11 PM"
+                                - button:
+                                    id: seg_nstart_4
+                                    align: LEFT_MID
+                                    x: 331
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "12 AM"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_night_start
+                                          option: "12 AM"
+                          - label:
+                              text: "Ends"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 146
+                          - obj:
+                              align: TOP_LEFT
+                              x: 16
+                              y: 172
+                              width: 416
+                              height: 38
+                              radius: 10
+                              bg_color: ${c_surface_2}
+                              bg_opa: COVER
+                              border_width: 0
+                              pad_all: 0
+                              clickable: false
+                              scrollable: false
+                              scrollbar_mode: "off"
+                              widgets:
+                                - button:
+                                    id: seg_nend_0
+                                    align: LEFT_MID
+                                    x: 3
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "5 AM"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_night_end
+                                          option: "5 AM"
+                                - button:
+                                    id: seg_nend_1
+                                    align: LEFT_MID
+                                    x: 85
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "6 AM"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_night_end
+                                          option: "6 AM"
+                                - button:
+                                    id: seg_nend_2
+                                    align: LEFT_MID
+                                    x: 167
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "7 AM"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_night_end
+                                          option: "7 AM"
+                                - button:
+                                    id: seg_nend_3
+                                    align: LEFT_MID
+                                    x: 249
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "8 AM"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_night_end
+                                          option: "8 AM"
+                                - button:
+                                    id: seg_nend_4
+                                    align: LEFT_MID
+                                    x: 331
+                                    width: 82
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "9 AM"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_night_end
+                                          option: "9 AM"
+                          - label:
+                              text: "Night brightness"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 226
+                          - obj:
+                              align: TOP_LEFT
+                              x: 16
+                              y: 252
+                              width: 416
+                              height: 38
+                              radius: 10
+                              bg_color: ${c_surface_2}
+                              bg_opa: COVER
+                              border_width: 0
+                              pad_all: 0
+                              clickable: false
+                              scrollable: false
+                              scrollbar_mode: "off"
+                              widgets:
+                                - button:
+                                    id: seg_nlevel_0
+                                    align: LEFT_MID
+                                    x: 3
+                                    width: 137
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "20%"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_night_level
+                                          option: "20%"
+                                - button:
+                                    id: seg_nlevel_1
+                                    align: LEFT_MID
+                                    x: 140
+                                    width: 137
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "30%"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_night_level
+                                          option: "30%"
+                                - button:
+                                    id: seg_nlevel_2
+                                    align: LEFT_MID
+                                    x: 277
+                                    width: 137
+                                    height: 32
+                                    radius: 8
+                                    pad_all: 0
+                                    bg_opa: TRANSP
+                                    checked:
+                                      bg_color: ${c_selected}
+                                      bg_opa: COVER
+                                    widgets:
+                                      - label:
+                                          text: "45%"
+                                          align: CENTER
+                                    on_click:
+                                      - select.set:
+                                          id: sel_night_level
+                                          option: "45%"
+                          - label:
+                              text: "At night the screen stays at or below this brightness and sleeps to the red clock."
+                              text_font: font_caption
+                              text_color: ${c_text_2}
+                              long_mode: WRAP
+                              width: 416
+                              align: TOP_LEFT
+                              x: 16
+                              y: 302
+
+                    # ── Options ─────────────────────────────────────
+                    - label:
+                        text: "OPTIONS"
+                        styles: section_header
+                        align: TOP_LEFT
+                        x: 32
+                        y: 1190
+
+                    - obj:
+                        align: TOP_MID
+                        y: 1212
+                        width: 448
+                        height: 216
+                        styles: card
+                        clickable: false
+                        scrollable: false
+                        scrollbar_mode: "off"
+                        widgets:
+                          - label:
+                              text: "24-hour clock"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 17
+                          - switch:
+                              id: lv_sw_clock_24h
+                              align: TOP_RIGHT
+                              x: -16
+                              y: 12
+                              width: 52
+                              height: 30
+                              on_click:
+                                - lambda: |-
+                                    if (lv_obj_has_state(id(lv_sw_clock_24h), LV_STATE_CHECKED)) id(sw_clock_24h).turn_on();
+                                    else id(sw_clock_24h).turn_off();
+                          - obj:   # divider
+                              align: TOP_RIGHT
+                              y: 54
+                              width: 432
+                              height: 1
+                              bg_color: ${c_separator}
+                              bg_opa: COVER
+                              border_width: 0
+                              radius: 0
+                              clickable: false
+                          - label:
+                              text: "Auto-open TV & Music"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 71
+                          - switch:
+                              id: lv_sw_auto_media
+                              align: TOP_RIGHT
+                              x: -16
+                              y: 66
+                              width: 52
+                              height: 30
+                              on_click:
+                                - lambda: |-
+                                    if (lv_obj_has_state(id(lv_sw_auto_media), LV_STATE_CHECKED)) id(sw_auto_media_tabs).turn_on();
+                                    else id(sw_auto_media_tabs).turn_off();
+                          - obj:   # divider
+                              align: TOP_RIGHT
+                              y: 108
+                              width: 432
+                              height: 1
+                              bg_color: ${c_separator}
+                              bg_opa: COVER
+                              border_width: 0
+                              radius: 0
+                              clickable: false
+                          - label:
+                              text: "Messages wake at full brightness"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 125
+                          - switch:
+                              id: lv_sw_msg_full
+                              align: TOP_RIGHT
+                              x: -16
+                              y: 120
+                              width: 52
+                              height: 30
+                              on_click:
+                                - lambda: |-
+                                    if (lv_obj_has_state(id(lv_sw_msg_full), LV_STATE_CHECKED)) id(sw_msg_full).turn_on();
+                                    else id(sw_msg_full).turn_off();
+                          - obj:   # divider
+                              align: TOP_RIGHT
+                              y: 162
+                              width: 432
+                              height: 1
+                              bg_color: ${c_separator}
+                              bg_opa: COVER
+                              border_width: 0
+                              radius: 0
+                              clickable: false
+                          - label:
+                              text: "Lock settings with PIN"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 179
+                          - switch:
+                              id: lv_sw_pin_lock
+                              align: TOP_RIGHT
+                              x: -16
+                              y: 174
+                              width: 52
+                              height: 30
+                              on_click:
+                                - if:
+                                    condition:
+                                      lambda: "return lv_obj_has_state(id(lv_sw_pin_lock), LV_STATE_CHECKED);"
+                                    then:
+                                      # Turning on: choose a PIN first (switch ticks once it's set)
+                                      - lambda: "lv_obj_clear_state(id(lv_sw_pin_lock), LV_STATE_CHECKED);"
+                                      - script.execute: pin_choose
+                                    else:
+                                      - switch.turn_off: sw_pin_lock
+
+                    # ── About ───────────────────────────────────────
+                    - label:
+                        text: "ABOUT"
+                        styles: section_header
+                        align: TOP_LEFT
+                        x: 32
+                        y: 1444
+
+                    - obj:
+                        align: TOP_MID
+                        y: 1466
+                        width: 448
+                        height: 332
+                        styles: card
+                        clickable: false
+                        scrollable: false
+                        scrollbar_mode: "off"
+                        widgets:
+                          - label:
+                              text: "Device"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 14
+                          - label:
+                              id: lbl_about_name
+                              text: "--"
+                              text_color: ${c_text_2}
+                              text_align: RIGHT
+                              long_mode: DOT
+                              width: 260
+                              align: TOP_RIGHT
+                              x: -16
+                              y: 14
+                          - label:
+                              text: "Panel version"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 54
+                          - label:
+                              id: lbl_about_version
+                              text: "${panel_version}"
+                              text_color: ${c_text_2}
+                              text_align: RIGHT
+                              long_mode: DOT
+                              width: 260
+                              align: TOP_RIGHT
+                              x: -16
+                              y: 54
+                          - label:
+                              text: "ESPHome"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 94
+                          - label:
+                              id: lbl_about_esphome
+                              text: "--"
+                              text_color: ${c_text_2}
+                              text_align: RIGHT
+                              long_mode: DOT
+                              width: 260
+                              align: TOP_RIGHT
+                              x: -16
+                              y: 94
+                          - label:
+                              text: "IP address"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 134
+                          - label:
+                              id: lbl_about_ip
+                              text: "--"
+                              text_color: ${c_text_2}
+                              text_align: RIGHT
+                              long_mode: DOT
+                              width: 260
+                              align: TOP_RIGHT
+                              x: -16
+                              y: 134
+                          - label:
+                              text: "Wi-Fi network"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 174
+                          - label:
+                              id: lbl_about_ssid
+                              text: "--"
+                              text_color: ${c_text_2}
+                              text_align: RIGHT
+                              long_mode: DOT
+                              width: 260
+                              align: TOP_RIGHT
+                              x: -16
+                              y: 174
+                          - label:
+                              text: "Wi-Fi signal"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 214
+                          - label:
+                              id: lbl_about_rssi
+                              text: "--"
+                              text_color: ${c_text_2}
+                              text_align: RIGHT
+                              long_mode: DOT
+                              width: 260
+                              align: TOP_RIGHT
+                              x: -16
+                              y: 214
+                          - label:
+                              text: "Uptime"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 254
+                          - label:
+                              id: lbl_about_uptime
+                              text: "--"
+                              text_color: ${c_text_2}
+                              text_align: RIGHT
+                              long_mode: DOT
+                              width: 260
+                              align: TOP_RIGHT
+                              x: -16
+                              y: 254
+                          - label:
+                              text: "Last restart"
+                              align: TOP_LEFT
+                              x: 16
+                              y: 294
+                          - label:
+                              id: lbl_about_reset
+                              text: "--"
+                              text_color: ${c_text_2}
+                              text_align: RIGHT
+                              long_mode: DOT
+                              width: 260
+                              align: TOP_RIGHT
+                              x: -16
+                              y: 294
+
+                    # Restart (hold, so a stray tap can't reboot the panel)
+                    - button:
+                        align: TOP_MID
+                        y: 1814
+                        width: 448
+                        height: 50
+                        styles: card
+                        pressed:
+                          bg_color: ${c_surface_2}
+                        widgets:
+                          - label:
+                              text: "Hold to restart"
+                              text_color: 0xFF453A
+                              align: CENTER
+                        on_long_press:
+                          - button.press: btn_restart
+
+              # ── PIN keypad (Settings lock; core/settings.yaml) ──────
+              - obj:
+                  id: pin_panel
+                  width: 100%
+                  height: 100%
+                  align: TOP_LEFT
+                  styles: container
+                  scrollable: false
+                  scrollbar_mode: "off"
+                  hidden: true
+                  widgets:
+                    - label:
+                        id: lbl_pin_title
+                        text: "Enter PIN"
+                        text_font: font_title
+                        align: TOP_MID
+                        y: 34
+                    # Four dots, filled as digits are typed
+                    - obj:
+                        align: TOP_MID
+                        y: 76
+                        width: 136
+                        height: 18
+                        styles: transparent
+                        clickable: false
+                        scrollable: false
+                        widgets:
+                          - obj:
+                              id: pin_dot_0
+                              align: LEFT_MID
+                              x: 2
+                              width: 18
+                              height: 18
+                              radius: 9
+                              bg_color: ${c_text}
+                              bg_opa: TRANSP
+                              border_color: ${c_text}
+                              border_width: 2
+                              clickable: false
+                          - obj:
+                              id: pin_dot_1
+                              align: LEFT_MID
+                              x: 40
+                              width: 18
+                              height: 18
+                              radius: 9
+                              bg_color: ${c_text}
+                              bg_opa: TRANSP
+                              border_color: ${c_text}
+                              border_width: 2
+                              clickable: false
+                          - obj:
+                              id: pin_dot_2
+                              align: LEFT_MID
+                              x: 78
+                              width: 18
+                              height: 18
+                              radius: 9
+                              bg_color: ${c_text}
+                              bg_opa: TRANSP
+                              border_color: ${c_text}
+                              border_width: 2
+                              clickable: false
+                          - obj:
+                              id: pin_dot_3
+                              align: LEFT_MID
+                              x: 116
+                              width: 18
+                              height: 18
+                              radius: 9
+                              bg_color: ${c_text}
+                              bg_opa: TRANSP
+                              border_color: ${c_text}
+                              border_width: 2
+                              clickable: false
+                    - label:
+                        id: lbl_pin_msg
+                        text: ""
+                        text_color: 0xFF453A
+                        align: TOP_MID
+                        y: 104
+                        hidden: true
+                    - button:
+                        align: TOP_MID
+                        x: -100
+                        y: 140
+                        width: 84
+                        height: 64
+                        radius: 32
+                        pad_all: 0
+                        widgets:
+                          - label:
+                              text: "1"
+                              text_font: font_time
+                              align: CENTER
+                        on_click:
+                          - script.execute:
+                              id: pin_key
+                              k: 1
+                    - button:
+                        align: TOP_MID
+                        x: 0
+                        y: 140
+                        width: 84
+                        height: 64
+                        radius: 32
+                        pad_all: 0
+                        widgets:
+                          - label:
+                              text: "2"
+                              text_font: font_time
+                              align: CENTER
+                        on_click:
+                          - script.execute:
+                              id: pin_key
+                              k: 2
+                    - button:
+                        align: TOP_MID
+                        x: 100
+                        y: 140
+                        width: 84
+                        height: 64
+                        radius: 32
+                        pad_all: 0
+                        widgets:
+                          - label:
+                              text: "3"
+                              text_font: font_time
+                              align: CENTER
+                        on_click:
+                          - script.execute:
+                              id: pin_key
+                              k: 3
+                    - button:
+                        align: TOP_MID
+                        x: -100
+                        y: 214
+                        width: 84
+                        height: 64
+                        radius: 32
+                        pad_all: 0
+                        widgets:
+                          - label:
+                              text: "4"
+                              text_font: font_time
+                              align: CENTER
+                        on_click:
+                          - script.execute:
+                              id: pin_key
+                              k: 4
+                    - button:
+                        align: TOP_MID
+                        x: 0
+                        y: 214
+                        width: 84
+                        height: 64
+                        radius: 32
+                        pad_all: 0
+                        widgets:
+                          - label:
+                              text: "5"
+                              text_font: font_time
+                              align: CENTER
+                        on_click:
+                          - script.execute:
+                              id: pin_key
+                              k: 5
+                    - button:
+                        align: TOP_MID
+                        x: 100
+                        y: 214
+                        width: 84
+                        height: 64
+                        radius: 32
+                        pad_all: 0
+                        widgets:
+                          - label:
+                              text: "6"
+                              text_font: font_time
+                              align: CENTER
+                        on_click:
+                          - script.execute:
+                              id: pin_key
+                              k: 6
+                    - button:
+                        align: TOP_MID
+                        x: -100
+                        y: 288
+                        width: 84
+                        height: 64
+                        radius: 32
+                        pad_all: 0
+                        widgets:
+                          - label:
+                              text: "7"
+                              text_font: font_time
+                              align: CENTER
+                        on_click:
+                          - script.execute:
+                              id: pin_key
+                              k: 7
+                    - button:
+                        align: TOP_MID
+                        x: 0
+                        y: 288
+                        width: 84
+                        height: 64
+                        radius: 32
+                        pad_all: 0
+                        widgets:
+                          - label:
+                              text: "8"
+                              text_font: font_time
+                              align: CENTER
+                        on_click:
+                          - script.execute:
+                              id: pin_key
+                              k: 8
+                    - button:
+                        align: TOP_MID
+                        x: 100
+                        y: 288
+                        width: 84
+                        height: 64
+                        radius: 32
+                        pad_all: 0
+                        widgets:
+                          - label:
+                              text: "9"
+                              text_font: font_time
+                              align: CENTER
+                        on_click:
+                          - script.execute:
+                              id: pin_key
+                              k: 9
+                    - button:
+                        align: TOP_MID
+                        x: -100
+                        y: 362
+                        width: 84
+                        height: 64
+                        radius: 32
+                        pad_all: 0
+                        widgets:
+                          - label:
+                              text: "Cancel"
+                              text_font: font_body
+                              align: CENTER
+                        on_click:
+                          - script.execute:
+                              id: pin_key
+                              k: 11
+                    - button:
+                        align: TOP_MID
+                        x: 0
+                        y: 362
+                        width: 84
+                        height: 64
+                        radius: 32
+                        pad_all: 0
+                        widgets:
+                          - label:
+                              text: "0"
+                              text_font: font_time
+                              align: CENTER
+                        on_click:
+                          - script.execute:
+                              id: pin_key
+                              k: 0
+                    - button:
+                        align: TOP_MID
+                        x: 100
+                        y: 362
+                        width: 84
+                        height: 64
+                        radius: 32
+                        pad_all: 0
+                        widgets:
+                          - label:
+                              text: "\U000F0B5C"
+                              text_font: icons_md
+                              align: CENTER
+                        on_click:
+                          - script.execute:
+                              id: pin_key
+                              k: 10
+
+              # ── Night clock (Sleep screen = Clock / Red clock) ──────
+              # Shown instead of a blank screen when the panel goes to
+              # sleep; it covers everything so a tap only wakes the panel.
+              - obj:
+                  id: night_clock
+                  width: 100%
+                  height: 100%
+                  align: TOP_LEFT
+                  styles: container
+                  scrollable: false
+                  scrollbar_mode: "off"
+                  hidden: true
+                  widgets:
+                    # Moved a few pixels every minute (core/base.yaml)
+                    - obj:
+                        id: night_clock_box
+                        align: CENTER
+                        width: 440
+                        height: 200
+                        styles: transparent
+                        clickable: false
+                        scrollable: false
+                        widgets:
+                          - label:
+                              id: lbl_night_time
+                              text: "--:--"
+                              text_font: font_clock_xl
+                              align: TOP_MID
+                              y: 10
+                          - label:
+                              id: lbl_night_date
+                              text: ""
+                              text_font: font_title
+                              align: TOP_MID
+                              y: 150
+
+  # ── Message banner (core/messages.yaml) ──────────────────────────────────
+  # On the top layer: above every page and sheet, and not closed on dim.
+  top_layer:
+    widgets:
+      - button:
+          id: msg_banner
+          align: TOP_MID
+          y: 6
+          width: 456
+          height: 84
+          radius: 18
+          bg_color: ${c_surface_2}
+          bg_opa: COVER
+          border_color: ${c_separator}
+          border_width: 1
+          pad_all: 0
+          hidden: true
+          pressed:
+            bg_color: ${c_separator}
+          widgets:
+            - label:
+                id: lbl_msg_icon
+                text: "\U000F02FC"
+                text_font: icons_md
+                align: LEFT_MID
+                x: 18
+            - label:
+                id: lbl_msg_title
+                text: ""
+                text_font: font_title
+                long_mode: DOT
+                width: 370
+                align: TOP_LEFT
+                x: 64
+                y: 12
+            - label:
+                id: lbl_msg_text
+                text: ""
+                text_color: ${c_text_2}
+                long_mode: DOT
+                width: 370
+                height: 40
+                align: TOP_LEFT
+                x: 64
+                y: 40
+          on_click:
+            - script.execute: msg_hide

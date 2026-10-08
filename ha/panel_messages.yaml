@@ -1,0 +1,69 @@
+# LVGL panel messages
+#
+# script.panel_message shows a banner on one or more panels, with defaults for
+# the optional fields (the panels' own ESPHome actions require every field).
+#
+#   action: script.panel_message
+#   data:
+#     panels: [esp-family-room-480x480, esp-g-bedside-4848s040]
+#     title: Washer done
+#     message: Time to move the laundry to the dryer.   # optional
+#     icon: washer                                      # optional (default info)
+#     seconds: 30                                       # optional (default 15; 0 = until tapped)
+#
+# Install: copy into HA's /config/packages/ (see panel_weather.yaml for how to
+# enable packages), then reload scripts or restart HA.
+
+script:
+  panel_message:
+    alias: Panel message
+    description: Show a message banner on one or more LVGL panels.
+    icon: mdi:message-badge
+    mode: parallel
+    fields:
+      panels:
+        name: Panels
+        description: ESPHome device names of the panels (e.g. esp-family-room-480x480).
+        required: true
+        example: esp-family-room-480x480
+        selector:
+          text:
+            multiple: true
+      title:
+        name: Title
+        required: true
+        example: Washer done
+        selector:
+          text:
+      message:
+        name: Message
+        example: Time to move the laundry to the dryer.
+        selector:
+          text:
+            multiline: true
+      icon:
+        name: Icon
+        default: info
+        selector:
+          select:
+            options: [info, alert, bell, door, gate, mail, washer, car, check]
+      seconds:
+        name: Seconds on screen
+        description: 0 keeps it until tapped.
+        default: 15
+        selector:
+          number:
+            min: 0
+            max: 3600
+            unit_of_measurement: s
+    sequence:
+      - repeat:
+          for_each: "{{ panels if panels is list else [panels] }}"
+          sequence:
+            - action: "esphome.{{ repeat.item | replace('-', '_') }}_show_message"
+              continue_on_error: true
+              data:
+                title: "{{ title }}"
+                message: "{{ message | default('') }}"
+                icon: "{{ icon | default('info') }}"
+                seconds: "{{ seconds | default(15) | int }}"

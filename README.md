@@ -1,137 +1,84 @@
 # esphome-lvgl-panel
 
-A shared ESPHome + LVGL wall/bedside panel for Home Assistant, styled after
-iOS and Android: dark theme, neutral off-white accent, bottom tab bar.
+A touch panel for Home Assistant, built with ESPHome and LVGL, that looks and
+feels like a phone: dark theme, clean typography, big touch targets. One
+shared design runs on every panel in the house (and in other houses), while
+each panel keeps its own rooms, lights, speakers and TV.
 
-Each display has a short file of its own (name, secrets, which tabs and which
-entities). Everything else — layout, styling, behavior — lives in this repo,
-so a fix made once reaches every display on its next install.
+| Lights | TV | Music | Favorites |
+|:---:|:---:|:---:|:---:|
+| ![Lights tab](docs/images/lights.svg) | ![TV tab](docs/images/tv.svg) | ![Music tab](docs/images/music.svg) | ![Favorites tab](docs/images/favorites.svg) |
 
-## Features
+| Weather | Climate | Settings | Night clock |
+|:---:|:---:|:---:|:---:|
+| ![Weather sheet](docs/images/weather.svg) | ![Climate sheet](docs/images/climate.svg) | ![Settings](docs/images/settings.svg) | ![Night clock](docs/images/night-clock.svg) |
 
-- **Status bar** — time, outside temperature + condition, HA connection icon, settings.
-- **Lights tab** — scene chips and iOS Control Center-style sliders for lights and fans.
-  Rooms with no scenes get the whole tab for sliders.
-- **TV tab** — Apple TV remote (d-pad, power, back, home, play/pause, volume pill)
-  with now-playing artwork and title.
-- **Music tab** — Now Playing for a Music Assistant / media player: artwork,
-  title, artist, progress, transport and volume.
-- **Favorites tab** — artwork grid that plays playlists or stations.
-- **Weather sheet** — tap the weather in the status bar: current conditions,
-  humidity/wind/UV, the next 15 hours (every 3 h) and 5 days.
-- **Media tabs select themselves** when their player starts playing.
-- **Screen care** — dims after 30 s, backlight off after 5 min, wake on touch
-  (the waking tap never presses a hidden button) or optional presence; nightly
-  anti-burn; brightness setting remembered across reboots.
+*Illustrations drawn to the panel's real layout and colors; photos welcome.*
+
+## What it does
+
+- **Lights** — scene buttons and big iOS-style sliders for lights and fans. Tap a
+  name to toggle, drag to dim.
+- **TV** — an Apple TV remote (d-pad, home, back, play/pause, skip, volume),
+  app buttons, and the artwork of whatever is playing.
+- **Music** — Now Playing for a Music Assistant or Sonos speaker: artwork,
+  progress, play/pause, volume, shuffle, repeat, and **Play on** to group other
+  speakers.
+- **Favorites** — a grid of playlists and stations, one tap to play.
+- **Status bar** — time, outside weather, indoor temperature, small status
+  icons (garage open, packages waiting, …) and the HA connection.
+- **Weather** — current conditions, the next 15 hours and 5 days.
+- **Climate** — a thermostat dial with Off / Heat / Cool / Auto.
+- **Camera pop-ups** — the gate opens or the doorbell rings, and the camera
+  appears.
+- **Messages** — Home Assistant automations can put a banner on any panel
+  ("Washer done", "Mail arrived").
+- **Screen care** — dims, sleeps or shows a night clock; night mode; nightly
+  anti-burn.
+- **Settings on the panel and in Home Assistant** — brightness, slider color,
+  screen timing, night mode, 24-hour clock, PIN lock, and an About page.
+- **TV and Music tabs open themselves** when something starts playing.
+
+Every feature is optional and every list (scenes, lights, apps, speakers,
+favorites, status icons) has as many entries as a room needs.
 
 ## Hardware
 
 | Board | File |
 |---|---|
-| Guition ESP32-S3-4848S040 (480×480, ST7701S + GT911) | `hardware/guition-4848s040.yaml` |
+| Guition ESP32-S3-4848S040 (4″, 480×480, ST7701S display, GT911 touch, 16 MB flash, 8 MB PSRAM) | `hardware/guition-4848s040.yaml` |
 
-Requires ESPHome 2026.9.0 or newer.
+Requires ESPHome **2026.9.0** or newer and Home Assistant with the ESPHome
+integration. Music features work best with
+[Music Assistant](https://music-assistant.io/).
 
-## Quick start (new display)
+## Documentation
 
-1. Copy [`examples/display-template.yaml`](examples/display-template.yaml) into
-   your HA's `/config/esphome/` and edit the lines marked ◀.
+| Guide | What's in it |
+|---|---|
+| [Getting started](docs/getting-started.md) | From a new board to a working panel, step by step. |
+| [Using the panel](docs/features.md) | Every screen and feature, and how to set each one up. |
+| [Display file reference](docs/display-file.md) | Every file you can include and every setting it takes. |
+| [Home Assistant side](docs/home-assistant.md) | The HA packages, the entities each panel adds, messages, automation examples. |
+| [Customizing and extending](docs/customizing.md) | Colors, fonts, and how to write your own tabs and items. |
+| [Troubleshooting](docs/troubleshooting.md) | Common problems and fixes. |
+| [Changelog](CHANGELOG.md) | What changed in each release. |
+
+## Quick start
+
+1. Flash nothing yet — first copy [`examples/display-template.yaml`](examples/display-template.yaml)
+   into your Home Assistant's `/config/esphome/` and fill in the lines marked ◀.
 2. Add the secrets it names to `/config/esphome/secrets.yaml`.
-   Generate an API key with `head -c 32 /dev/urandom | base64`.
-3. For the weather sheet's forecast, copy [`ha/panel_weather.yaml`](ha/panel_weather.yaml)
-   into HA's `/config/packages/` (see the file header) and restart HA.
-4. Install from the ESPHome dashboard, adopt the device in HA, then in the
-   ESPHome integration's options turn on
-   **"Allow the device to perform Home Assistant actions."**
+3. Copy [`ha/panel_weather.yaml`](ha/panel_weather.yaml) and
+   [`ha/panel_messages.yaml`](ha/panel_messages.yaml) into HA's `/config/packages/`
+   and restart Home Assistant.
+4. Install over USB from the ESPHome dashboard (first time only), adopt the
+   device in HA, and turn on **"Allow the device to perform Home Assistant
+   actions"** in its ESPHome integration options.
 
-## How a display file uses this repo
-
-**From GitHub (other houses)** — one package with a list of files:
-
-```yaml
-packages:
-  panel:
-    url: https://github.com/gjsiii/esphome-lvgl-panel
-    ref: v0.1.0
-    refresh: 1d
-    files:
-      - hardware/guition-4848s040.yaml
-      - core/core.yaml
-      - path: items/light.yaml
-        vars: { slot: 1, name: "Ceiling", entity: light.living_room_ceiling }
-```
-
-**From a local checkout (development)** — clone into `/config/esphome/panel/`
-and include files directly; edits take effect on the next install:
-
-```yaml
-packages:
-  hardware: !include panel/hardware/guition-4848s040.yaml
-  core: !include panel/core/core.yaml
-  light_1: !include { file: panel/items/light.yaml, vars: { slot: 1, name: "Ceiling", entity: light.living_room_ceiling } }
-```
-
-## Reference
-
-### Required substitutions (device file)
-
-| Name | Meaning |
-|---|---|
-| `api_key` | HA API encryption key (`!secret`) |
-| `wifi_ssid`, `wifi_password` | Wi-Fi (`!secret`) |
-| `ap_password` | Fallback hotspot password, 8+ characters (`!secret`) |
-| `ha_url` | HA address used for artwork URLs, e.g. `http://192.168.0.10:8123` |
-
-Optional: `ota_password`, `idle_dim_timeout` (30s), `idle_off_timeout` (5min),
-`idle_dim_brightness` ("0.30"), `media_autoswitch_gap_ms` ("15000"), and any
-palette color from `core/theme.yaml` (`c_bg`, `c_surface`, `c_accent`, …).
-
-### Items (Lights and Favorites tabs)
-
-| File | Vars | Notes |
-|---|---|---|
-| `items/scene.yaml` | `slot`, `name`, `entity` | Chips, 3 per row; a row of 2 gets wider chips. |
-| `items/light.yaml` | `slot`, `name`, `entity` | Brightness slider; sends to HA when released. |
-| `items/fan.yaml` | `slot`, `name`, `entity` | Percentage slider; shares slot numbers with lights. |
-| `items/favorite.yaml` | `slot`, `name`, `image`, `media_content_id`, `player`, `shuffle` | `image` is relative to the device file and compiled in. Use `shuffle: "false"` for radio. |
-
-`slot` sets the order (1 = first) and must be unique within each kind
-(lights and fans share one numbering).
-
-### Tabs
-
-Lights is always tab 1. Other tabs take `tab_position` (2–9) for their order.
-
-| File | Vars |
-|---|---|
-| `tabs/tv_appletv.yaml` | `tab_position`, `tv_remote`, `tv_player`, `tv_volume_player`, `tv_mute_player` |
-| `tabs/music.yaml` | `tab_position`, `music_player` |
-| `tabs/favorites.yaml` | `tab_position` |
-
-### Features
-
-| File | Vars | Notes |
-|---|---|---|
-| `features/weather.yaml` | `weather_entity`, `forecast_entity` | Status-bar weather + weather sheet. Optional substitutions `wind_unit` (mph), `rain_unit` (in). |
-| `features/presence_wake.yaml` | `presence_entity` | Wakes a sleeping screen (dimmed) when presence turns on. |
-
-## Updating
-
-1. Make and test changes on a local-checkout display.
-2. Update `CHANGELOG.md` and the `version` in `core/base.yaml`, commit, and tag
-   (`git tag v0.2.0 && git push --tags`).
-3. At each house, change `ref:` to the new tag and choose **Update All** in the
-   ESPHome dashboard.
-
-## How it works (for contributors)
-
-ESPHome merges package lists by `id` only at the top level, so a package can't
-add widgets inside the shared tab view directly. Instead each tab/item package
-builds its widgets on a hidden "holding" page, and an `on_boot` lambda moves
-them into place (`lv_tabview_add_tab` + `lv_obj_set_parent`). Boot priorities
-order the moves: tabs `-10<tab_position>`, items `-20<slot>`, final layout
-`-300` (see `core/base.yaml`).
+The full walk-through is in [Getting started](docs/getting-started.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). App logos and artwork you add to your panels are
+not part of this repository.

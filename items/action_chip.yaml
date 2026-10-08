@@ -1,0 +1,37 @@
+# Item: a chip on the Lights tab that runs any Home Assistant action on an
+# entity (or comma-separated entities) — e.g. an "Off" chip for a room that
+# has no "off" scene. Shares the scene chips' row, slots and look.
+#
+#   scene_5: !include
+#     file: panel/items/action_chip.yaml
+#     vars:
+#       slot: 5                       # unique among scene chips and action chips
+#       name: "Off"
+#       action: light.turn_off
+#       entity: "light.kitchen, light.lamp"
+
+esphome:
+  on_boot:
+    - priority: -20${slot}
+      then:
+        - lambda: "lv_obj_set_parent(id(scene_chip_${slot}), id(scene_chips));"
+
+lvgl:
+  pages:
+    - id: holding_scene_${slot}
+      skip: true
+      widgets:
+        - button:
+            id: scene_chip_${slot}
+            width: 140
+            height: 48
+            styles: chip
+            widgets:
+              - label:
+                  text: "${name}"
+                  align: CENTER
+            on_click:
+              - homeassistant.action:
+                  action: ${action}
+                  data:
+                    entity_id: ${entity}

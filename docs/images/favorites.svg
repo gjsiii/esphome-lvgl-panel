@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="480" viewBox="0 0 480 480" font-family="Inter, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+<rect width="480" height="480" rx="18" fill="#000"/>
+<g transform="translate(24 18)" stroke="#FFF" stroke-width="2" stroke-linecap="round"><circle r="4.5" fill="none"/><path d="M0 -9v2.5M0 6.5V9M-9 0h2.5M6.5 0H9M-6.4 -6.4l1.8 1.8M4.6 4.6l1.8 1.8M-6.4 6.4l1.8-1.8M4.6 -4.6l1.8-1.8"/></g>
+<text x="38" y="25" fill="#FFF" font-size="20" font-weight="600">70°</text>
+<g transform="translate(106 18)" fill="none" stroke="#8E8E93" stroke-width="2" stroke-linejoin="round"><path d="M-8 0L0 -7L8 0V8H-8Z"/><path d="M0 1v4" stroke-linecap="round"/></g>
+<text x="124" y="25" fill="#FFF" font-size="20" font-weight="600">72°</text>
+<text x="240" y="26" fill="#FFF" font-size="22" font-weight="600" text-anchor="middle">8:42pm</text>
+<g transform="translate(412 19)" fill="none" stroke="#8E8E93" stroke-width="2.2" stroke-linecap="round"><path d="M-9 -3a13 13 0 0 1 18 0"/><path d="M-5.5 1a8 8 0 0 1 11 0"/><circle cx="0" cy="5" r="1.6" fill="#8E8E93" stroke="none"/></g>
+<g transform="translate(456 18)"><circle r="7.5" fill="none" stroke="#8E8E93" stroke-width="3.5" stroke-dasharray="3.4 2.5"/><circle r="4.2" fill="none" stroke="#8E8E93" stroke-width="2"/></g>
+<rect x="12" y="48" width="140" height="140" rx="12" fill="#355C7D"/><text x="82" y="210" fill="#FFF" font-size="13" font-weight="500" text-anchor="middle">Peaceful Piano</text>
+<rect x="170" y="48" width="140" height="140" rx="12" fill="#C06C84"/><text x="240" y="210" fill="#FFF" font-size="13" font-weight="500" text-anchor="middle">Party Starters</text>
+<rect x="328" y="48" width="140" height="140" rx="12" fill="#6C5B7B"/><text x="398" y="210" fill="#FFF" font-size="13" font-weight="500" text-anchor="middle">Spa</text>
+<rect x="12" y="232" width="140" height="140" rx="12" fill="#2A9D8F"/><text x="82" y="394" fill="#FFF" font-size="13" font-weight="500" text-anchor="middle">Peaceful Ireland</text>
+<rect x="170" y="232" width="140" height="140" rx="12" fill="#E9C46A"/><text x="240" y="394" fill="#FFF" font-size="13" font-weight="500" text-anchor="middle">Molly’s KA Songs</text>
+<rect x="328" y="232" width="140" height="140" rx="12" fill="#264653"/><text x="398" y="394" fill="#FFF" font-size="13" font-weight="500" text-anchor="middle">Let’s Golf</text>
+<rect x="0" y="424" width="480" height="56" fill="#000"/><rect x="0" y="424" width="480" height="1" fill="#38383A"/>
+<text x="67" y="458" fill="#8E8E93" font-size="16" font-weight="500" text-anchor="middle">Lights</text>
+<text x="182" y="458" fill="#8E8E93" font-size="16" font-weight="500" text-anchor="middle">TV</text>
+<text x="297" y="458" fill="#8E8E93" font-size="16" font-weight="500" text-anchor="middle">Music</text>
+<rect x="358" y="432" width="109" height="40" rx="12" fill="#2C2C2E"/>
+<text x="412" y="458" fill="#FFF" font-size="16" font-weight="500" text-anchor="middle">Favorites</text>
+</svg>

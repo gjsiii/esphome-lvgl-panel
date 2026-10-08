@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="480" viewBox="0 0 480 480" font-family="Inter, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+<rect width="480" height="480" rx="18" fill="#000"/>
+<g transform="translate(24 18)" stroke="#FFF" stroke-width="2" stroke-linecap="round"><circle r="4.5" fill="none"/><path d="M0 -9v2.5M0 6.5V9M-9 0h2.5M6.5 0H9M-6.4 -6.4l1.8 1.8M4.6 4.6l1.8 1.8M-6.4 6.4l1.8-1.8M4.6 -4.6l1.8-1.8"/></g>
+<text x="38" y="25" fill="#FFF" font-size="20" font-weight="600">70°</text>
+<g transform="translate(106 18)" fill="none" stroke="#8E8E93" stroke-width="2" stroke-linejoin="round"><path d="M-8 0L0 -7L8 0V8H-8Z"/><path d="M0 1v4" stroke-linecap="round"/></g>
+<text x="124" y="25" fill="#FFF" font-size="20" font-weight="600">72°</text>
+<text x="240" y="26" fill="#FFF" font-size="22" font-weight="600" text-anchor="middle">8:42pm</text>
+<g transform="translate(412 19)" fill="none" stroke="#8E8E93" stroke-width="2.2" stroke-linecap="round"><path d="M-9 -3a13 13 0 0 1 18 0"/><path d="M-5.5 1a8 8 0 0 1 11 0"/><circle cx="0" cy="5" r="1.6" fill="#8E8E93" stroke="none"/></g>
+<g transform="translate(456 18)"><circle r="7.5" fill="none" stroke="#8E8E93" stroke-width="3.5" stroke-dasharray="3.4 2.5"/><circle r="4.2" fill="none" stroke="#8E8E93" stroke-width="2"/></g>
+<defs><linearGradient id="art" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3A6073"/><stop offset="1" stop-color="#16222A"/></linearGradient></defs>
+<rect x="150" y="42" width="180" height="180" rx="14" fill="url(#art)"/><text x="240" y="138" fill="#FFF" font-size="13" text-anchor="middle" opacity=".7">album art</text>
+<circle cx="444" cy="68" r="0"/><g transform="translate(444 68)" fill="#8E8E93"><rect x="-11" y="-9" width="9" height="18" rx="2"/><rect x="2" y="-9" width="9" height="18" rx="2"/></g>
+<text x="240" y="251" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">The Gold Ring</text><text x="240" y="276" fill="#8E8E93" font-size="16" text-anchor="middle">Liam O’Flynn</text>
+<rect x="40" y="286" width="400" height="4" rx="2" fill="#38383A"/><rect x="40" y="286" width="150" height="4" rx="2" fill="#F2F2F7"/>
+<text x="40" y="309" fill="#8E8E93" font-size="13">1:27</text><text x="440" y="309" fill="#8E8E93" font-size="13" text-anchor="end">3:51</text>
+<text x="46" y="356" fill="#FFF" font-size="20" text-anchor="middle">⇄</text><text x="128" y="358" fill="#FFF" font-size="26" text-anchor="middle">⏮</text>
+<circle cx="240" cy="348" r="32" fill="#F2F2F7"/><g fill="#000"><rect x="228" y="334" width="8" height="28" rx="2"/><rect x="244" y="334" width="8" height="28" rx="2"/></g>
+<text x="352" y="358" fill="#FFF" font-size="26" text-anchor="middle">⏭</text><text x="434" y="356" fill="#8E8E93" font-size="20" text-anchor="middle">↻</text>
+<text x="36" y="410" fill="#8E8E93" font-size="18" text-anchor="middle">🔈</text><rect x="66" y="391" width="400" height="28" rx="14" fill="#1C1C1E"/><rect x="66" y="391" width="140" height="28" rx="14" fill="#F2F2F7"/>
+<rect x="0" y="424" width="480" height="56" fill="#000"/><rect x="0" y="424" width="480" height="1" fill="#38383A"/>
+<text x="67" y="458" fill="#8E8E93" font-size="16" font-weight="500" text-anchor="middle">Lights</text>
+<text x="182" y="458" fill="#8E8E93" font-size="16" font-weight="500" text-anchor="middle">TV</text>
+<rect x="243" y="432" width="109" height="40" rx="12" fill="#2C2C2E"/>
+<text x="297" y="458" fill="#FFF" font-size="16" font-weight="500" text-anchor="middle">Music</text>
+<text x="412" y="458" fill="#8E8E93" font-size="16" font-weight="500" text-anchor="middle">Favorites</text>
+</svg>

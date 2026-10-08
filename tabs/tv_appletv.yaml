@@ -37,6 +37,10 @@ esphome:
             lv_obj_set_scrollbar_mode(tab, LV_SCROLLBAR_MODE_OFF);
             lv_obj_set_parent(id(content_tv), tab);
             id(tab_index_tv) = lv_obj_get_index(tab);
+            // App buttons (items/tv_app.yaml): one column, 10px apart
+            lv_obj_set_flex_flow(id(tv_apps), LV_FLEX_FLOW_COLUMN);
+            lv_obj_set_flex_align(id(tv_apps), LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+            lv_obj_set_style_pad_row(id(tv_apps), 10, 0);
 
 script:
   # Debounced Apple TV artwork fetch (downloads briefly block the UI)
@@ -51,6 +55,11 @@ script:
             lambda: "return url != id(last_tv_art_url);"
           then:
             - lambda: "id(last_tv_art_url) = url;"
+            - wait_until:
+                condition:
+                  lambda: "return !id(img_busy) || millis() - id(img_busy_ms) > 15000;"
+                timeout: 15s
+            - lambda: "id(img_busy) = true; id(img_busy_ms) = millis();"
             - online_image.set_url:
                 id: tv_art_image
                 url: !lambda "return url;"
@@ -84,7 +93,7 @@ text_sensor:
                  millis() - id(tv_stopped_ms) >= ${media_autoswitch_gap_ms});
               if (!playing && id(tv_playing)) id(tv_stopped_ms) = millis();
               id(tv_playing) = playing;
-              return start && id(tab_index_tv) >= 0;
+              return start && id(tab_index_tv) >= 0 && id(sw_auto_media_tabs).state;
           then:
             - lambda: "lv_tabview_set_act(id(main_tabview), id(tab_index_tv), LV_ANIM_OFF);"
             - script.execute: refresh_tab_bar
@@ -137,18 +146,21 @@ text_sensor:
     on_value:
       - script.execute: update_tv_now_playing
 
-online_image:
+image:
   # Now-playing artwork (corner thumbnail)
-  - id: tv_art_image
+  - platform: online_image
+    id: tv_art_image
     url: "https://www.home-assistant.io/images/favicon-192x192.png"
     format: JPEG
     type: RGB565
     resize: [104, 104]
     on_download_finished:
+      - lambda: "id(img_busy) = false;"
       - lvgl.image.update:
           id: img_tv_art
           src: tv_art_image
     on_error:
+      - lambda: "id(img_busy) = false;"
       - logger.log: "Apple TV art download failed"
 
 lvgl:
@@ -512,3 +524,56 @@ lvgl:
                               data:
                                 entity_id: ${tv_volume_player}
 
+
+              # ── Skip back / forward (either side of the volume pill) ─
+              - button:
+                  id: tv_btn_skip_back
+                  align: TOP_MID
+                  x: -164
+                  y: 320
+                  width: 56
+                  height: 56
+                  styles: round_btn
+                  widgets:
+                    - label:
+                        text: "\U000F045F" # mdi-rewind
+                        text_font: icons_md
+                        align: CENTER
+                  on_press:
+                    - homeassistant.action:
+                        action: remote.send_command
+                        data:
+                          command: skip_backward
+                          entity_id: ${tv_remote}
+
+              - button:
+                  id: tv_btn_skip_fwd
+                  align: TOP_MID
+                  x: 164
+                  y: 320
+                  width: 56
+                  height: 56
+                  styles: round_btn
+                  widgets:
+                    - label:
+                        text: "\U000F0211" # mdi-fast-forward
+                        text_font: icons_md
+                        align: CENTER
+                  on_press:
+                    - homeassistant.action:
+                        action: remote.send_command
+                        data:
+                          command: skip_forward
+                          entity_id: ${tv_remote}
+
+              # ── Apps (right of the d-pad; filled by items/tv_app.yaml) ─
+              # One centered column of round buttons; omit the app items for none.
+              - obj:
+                  id: tv_apps
+                  align: TOP_RIGHT
+                  x: -42
+                  y: 11
+                  width: 46
+                  height: 214
+                  styles: transparent
+                  scrollbar_mode: "off"

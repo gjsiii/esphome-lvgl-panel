@@ -1,0 +1,516 @@
+# Feature: thermostat. The status bar shows the indoor temperature (house
+# icon: orange while heating, blue while cooling); tapping it opens a climate
+# sheet with a dial, − / + buttons and Off / Heat / Cool / Auto modes.
+#
+#   climate: !include
+#     file: panel/features/climate.yaml
+#     vars:
+#       climate_entity: climate.first_floor
+#       climate_name: "First Floor"
+#
+# Targets are sent to HA about a second after the last tap or drag, so
+# several taps become one change. Auto = HA's heat_cool mode (heat-to and
+# cool-to targets).
+
+substitutions:
+  climate_min: "50"   # dial range (°)
+  climate_max: "90"
+
+globals:
+  - id: clim_target
+    type: float
+    initial_value: "70"
+  - id: clim_low
+    type: float
+    initial_value: "68"
+  - id: clim_high
+    type: float
+    initial_value: "74"
+  # Ignore HA's echo of the old target for a moment after a local change
+  - id: clim_edit_until
+    type: uint32_t
+    initial_value: "0"
+
+esphome:
+  on_boot:
+    - priority: -150
+      then:
+        - lambda: |-
+            lv_obj_set_parent(id(climate_panel), id(ui_root));
+            lv_obj_add_event_cb(id(btn_climate_open), [](lv_event_t *e) {
+              lv_obj_clear_flag(id(climate_panel), LV_OBJ_FLAG_HIDDEN);
+              lv_obj_move_foreground(id(climate_panel));
+            }, LV_EVENT_CLICKED, nullptr);
+
+sensor:
+  - platform: homeassistant
+    id: clim_current
+    entity_id: ${climate_entity}
+    attribute: current_temperature
+    on_value:
+      - lvgl.widget.show: btn_climate_open
+      - script.execute: clim_refresh
+  - platform: homeassistant
+    id: clim_ha_target
+    entity_id: ${climate_entity}
+    attribute: temperature
+    on_value:
+      - lambda: |-
+          if (!isnan(x) && (int32_t) (id(clim_edit_until) - millis()) <= 0) id(clim_target) = x;
+      - script.execute: clim_refresh
+  - platform: homeassistant
+    id: clim_ha_low
+    entity_id: ${climate_entity}
+    attribute: target_temp_low
+    on_value:
+      - lambda: |-
+          if (!isnan(x) && (int32_t) (id(clim_edit_until) - millis()) <= 0) id(clim_low) = x;
+      - script.execute: clim_refresh
+  - platform: homeassistant
+    id: clim_ha_high
+    entity_id: ${climate_entity}
+    attribute: target_temp_high
+    on_value:
+      - lambda: |-
+          if (!isnan(x) && (int32_t) (id(clim_edit_until) - millis()) <= 0) id(clim_high) = x;
+      - script.execute: clim_refresh
+
+text_sensor:
+  - platform: homeassistant
+    id: clim_mode
+    entity_id: ${climate_entity}
+    on_value:
+      - script.execute: clim_refresh
+  - platform: homeassistant
+    id: clim_action
+    entity_id: ${climate_entity}
+    attribute: hvac_action
+    on_value:
+      - script.execute: clim_refresh
+
+script:
+  # Redraw everything from the current values
+  - id: clim_refresh
+    mode: restart
+    then:
+      - lambda: |-
+          const std::string &mode = id(clim_mode).state;
+          const std::string &act = id(clim_action).state;
+          float cur = id(clim_current).state;
+          char buf[48];
+          // Status bar: indoor temperature, icon colored by what it's doing
+          if (!isnan(cur)) { snprintf(buf, sizeof(buf), "%.0f°", cur); lv_label_set_text(id(lbl_climate_temp), buf); }
+          uint32_t ic = act == "heating" ? 0xFF9F0A : act == "cooling" ? 0x0A84FF : ${c_text_2};
+          lv_obj_set_style_text_color(id(lbl_climate_icon), lv_color_hex(ic), LV_PART_MAIN);
+          // Mode color for the dial
+          uint32_t mc = mode == "heat" ? 0xFF9F0A : mode == "cool" ? 0x0A84FF : 0x30D158;
+          bool single = (mode == "heat" || mode == "cool");
+          bool range = (mode == "heat_cool");
+          // Dial (heat / cool)
+          if (single) {
+            lv_obj_clear_flag(id(clim_arc), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_style_arc_color(id(clim_arc), lv_color_hex(mc), LV_PART_INDICATOR);
+            if (!lv_obj_has_state(id(clim_arc), LV_STATE_PRESSED))
+              lv_arc_set_value(id(clim_arc), lroundf(id(clim_target)));
+            snprintf(buf, sizeof(buf), "%.0f°", id(clim_target));
+            lv_label_set_text(id(lbl_clim_target), buf);
+          } else {
+            lv_obj_add_flag(id(clim_arc), LV_OBJ_FLAG_HIDDEN);
+          }
+          if (single) lv_obj_clear_flag(id(lbl_clim_target), LV_OBJ_FLAG_HIDDEN);
+          else lv_obj_add_flag(id(lbl_clim_target), LV_OBJ_FLAG_HIDDEN);
+          if (single) { lv_obj_clear_flag(id(clim_minus), LV_OBJ_FLAG_HIDDEN); lv_obj_clear_flag(id(clim_plus), LV_OBJ_FLAG_HIDDEN); }
+          else { lv_obj_add_flag(id(clim_minus), LV_OBJ_FLAG_HIDDEN); lv_obj_add_flag(id(clim_plus), LV_OBJ_FLAG_HIDDEN); }
+          // Auto (heat_cool): two rows
+          if (range) {
+            lv_obj_clear_flag(id(clim_range), LV_OBJ_FLAG_HIDDEN);
+            snprintf(buf, sizeof(buf), "%.0f°", id(clim_low));  lv_label_set_text(id(lbl_clim_low), buf);
+            snprintf(buf, sizeof(buf), "%.0f°", id(clim_high)); lv_label_set_text(id(lbl_clim_high), buf);
+          } else {
+            lv_obj_add_flag(id(clim_range), LV_OBJ_FLAG_HIDDEN);
+          }
+          // Off: a big "Off"
+          if (mode == "off") lv_obj_clear_flag(id(lbl_clim_off), LV_OBJ_FLAG_HIDDEN);
+          else lv_obj_add_flag(id(lbl_clim_off), LV_OBJ_FLAG_HIDDEN);
+          // "Now 72° · Cooling"
+          std::string a = act == "heating" ? "Heating" : act == "cooling" ? "Cooling" :
+                          act == "idle" ? "Idle" : act == "off" ? "Off" : act == "fan" ? "Fan" : "";
+          if (!isnan(cur)) snprintf(buf, sizeof(buf), "Now %.0f°%s%s", cur, a.empty() ? "" : "  ·  ", a.c_str());
+          else snprintf(buf, sizeof(buf), "%s", a.c_str());
+          lv_label_set_text(id(lbl_clim_now), buf);
+          // Mode segments
+          static const char *modes[4] = {"off", "heat", "cool", "heat_cool"};
+          lv_obj_t *seg[4] = {id(clim_seg_0), id(clim_seg_1), id(clim_seg_2), id(clim_seg_3)};
+          for (int k = 0; k < 4; k++) {
+            if (mode == modes[k]) lv_obj_add_state(seg[k], LV_STATE_CHECKED);
+            else lv_obj_clear_state(seg[k], LV_STATE_CHECKED);
+          }
+
+  # A local change: hold off HA's echo, redraw, and send after a short pause
+  - id: clim_changed
+    then:
+      - lambda: "id(clim_edit_until) = millis() + 4000;"
+      - script.execute: clim_refresh
+      - script.execute: clim_send
+
+  - id: clim_send
+    mode: restart
+    then:
+      - delay: 1s
+      - if:
+          condition:
+            lambda: 'return id(clim_mode).state == "heat_cool";'
+          then:
+            - homeassistant.action:
+                action: climate.set_temperature
+                data:
+                  entity_id: ${climate_entity}
+                  target_temp_low: !lambda "return id(clim_low);"
+                  target_temp_high: !lambda "return id(clim_high);"
+          else:
+            - homeassistant.action:
+                action: climate.set_temperature
+                data:
+                  entity_id: ${climate_entity}
+                  temperature: !lambda "return id(clim_target);"
+
+  - id: clim_set_mode
+    parameters:
+      hvac: string
+    then:
+      - homeassistant.action:
+          action: climate.set_hvac_mode
+          data:
+            entity_id: ${climate_entity}
+            hvac_mode: !lambda "return hvac;"
+
+lvgl:
+  pages:
+    # Holding page (never shown): the sheet is moved onto ui_root at boot
+    - id: holding_climate
+      skip: true
+      widgets:
+        - obj:
+            id: climate_panel
+            width: 100%
+            height: 100%
+            align: TOP_LEFT
+            styles: container
+            scrollable: false
+            scrollbar_mode: "off"
+            hidden: true
+            widgets:
+              # ── Header ────────────────────────────────────────────
+              - label:
+                  text: "${climate_name}"
+                  text_font: font_title
+                  align: TOP_LEFT
+                  x: 20
+                  y: 22
+              - button:
+                  align: TOP_RIGHT
+                  x: -10
+                  y: 12
+                  width: 90
+                  height: 44
+                  bg_opa: TRANSP
+                  radius: 22
+                  pad_all: 0
+                  pressed:
+                    bg_color: ${c_surface}
+                    bg_opa: COVER
+                  widgets:
+                    - label:
+                        text: "Done"
+                        text_font: font_title
+                        text_color: ${c_accent}
+                        align: CENTER
+                  on_click:
+                    - lvgl.widget.hide: climate_panel
+
+              # ── Dial (heat / cool) ────────────────────────────────
+              - arc:
+                  id: clim_arc
+                  align: TOP_MID
+                  y: 66
+                  width: 250
+                  height: 250
+                  min_value: ${climate_min}
+                  max_value: ${climate_max}
+                  value: 70
+                  start_angle: 135
+                  end_angle: 45
+                  adjustable: true
+                  arc_width: 18
+                  arc_color: ${c_surface}
+                  arc_rounded: true
+                  indicator:
+                    arc_width: 18
+                    arc_color: ${c_accent}
+                    arc_rounded: true
+                  knob:
+                    bg_color: 0xFFFFFF
+                    bg_opa: COVER
+                    pad_all: 4
+                  on_value:
+                    - lambda: |-
+                        id(clim_target) = x;
+                        id(clim_edit_until) = millis() + 4000;
+                        char buf[8];
+                        snprintf(buf, sizeof(buf), "%d°", (int) x);
+                        lv_label_set_text(id(lbl_clim_target), buf);
+                  on_release:
+                    - script.execute: clim_changed
+              - label:
+                  id: lbl_clim_target
+                  text: "--°"
+                  text_font: font_temp_xl
+                  align: TOP_MID
+                  y: 140
+              - label:
+                  id: lbl_clim_off
+                  text: "Off"
+                  text_font: font_title
+                  text_color: ${c_text_2}
+                  align: TOP_MID
+                  y: 170
+                  hidden: true
+              - label:
+                  id: lbl_clim_now
+                  text: ""
+                  text_font: font_caption
+                  text_color: ${c_text_2}
+                  align: TOP_MID
+                  y: 232
+              # − / + either side of the dial
+              - button:
+                  id: clim_minus
+                  align: TOP_MID
+                  x: -176
+                  y: 260
+                  width: 56
+                  height: 56
+                  styles: round_btn
+                  widgets:
+                    - label:
+                        text: "\U000F0374" # mdi-minus
+                        text_font: icons_md
+                        align: CENTER
+                  on_click:
+                    - lambda: "id(clim_target) = std::max((float) ${climate_min}, id(clim_target) - 1);"
+                    - script.execute: clim_changed
+              - button:
+                  id: clim_plus
+                  align: TOP_MID
+                  x: 176
+                  y: 260
+                  width: 56
+                  height: 56
+                  styles: round_btn
+                  widgets:
+                    - label:
+                        text: "\U000F0415" # mdi-plus
+                        text_font: icons_md
+                        align: CENTER
+                  on_click:
+                    - lambda: "id(clim_target) = std::min((float) ${climate_max}, id(clim_target) + 1);"
+                    - script.execute: clim_changed
+
+              # ── Auto (heat_cool): heat-to and cool-to rows ────────
+              - obj:
+                  id: clim_range
+                  align: TOP_MID
+                  y: 92
+                  width: 448
+                  height: 128
+                  styles: card
+                  clickable: false
+                  scrollable: false
+                  hidden: true
+                  widgets:
+                    - label:
+                        text: "Heat to"
+                        text_color: 0xFF9F0A
+                        align: TOP_LEFT
+                        x: 18
+                        y: 26
+                    - label:
+                        id: lbl_clim_low
+                        text: "--°"
+                        text_font: font_title
+                        align: TOP_LEFT
+                        x: 140
+                        y: 23
+                    - button:
+                        align: TOP_RIGHT
+                        x: -84
+                        y: 14
+                        width: 52
+                        height: 44
+                        styles: round_btn
+                        bg_color: ${c_surface_2}
+                        widgets:
+                          - label:
+                              text: "\U000F0374"
+                              text_font: icons_md
+                              align: CENTER
+                        on_click:
+                          - lambda: "id(clim_low) -= 1;"
+                          - script.execute: clim_changed
+                    - button:
+                        align: TOP_RIGHT
+                        x: -16
+                        y: 14
+                        width: 52
+                        height: 44
+                        styles: round_btn
+                        bg_color: ${c_surface_2}
+                        widgets:
+                          - label:
+                              text: "\U000F0415"
+                              text_font: icons_md
+                              align: CENTER
+                        on_click:
+                          - lambda: "id(clim_low) += 1;"
+                          - script.execute: clim_changed
+                    - label:
+                        text: "Cool to"
+                        text_color: 0x0A84FF
+                        align: TOP_LEFT
+                        x: 18
+                        y: 84
+                    - label:
+                        id: lbl_clim_high
+                        text: "--°"
+                        text_font: font_title
+                        align: TOP_LEFT
+                        x: 140
+                        y: 81
+                    - button:
+                        align: TOP_RIGHT
+                        x: -84
+                        y: 72
+                        width: 52
+                        height: 44
+                        styles: round_btn
+                        bg_color: ${c_surface_2}
+                        widgets:
+                          - label:
+                              text: "\U000F0374"
+                              text_font: icons_md
+                              align: CENTER
+                        on_click:
+                          - lambda: "id(clim_high) -= 1;"
+                          - script.execute: clim_changed
+                    - button:
+                        align: TOP_RIGHT
+                        x: -16
+                        y: 72
+                        width: 52
+                        height: 44
+                        styles: round_btn
+                        bg_color: ${c_surface_2}
+                        widgets:
+                          - label:
+                              text: "\U000F0415"
+                              text_font: icons_md
+                              align: CENTER
+                        on_click:
+                          - lambda: "id(clim_high) += 1;"
+                          - script.execute: clim_changed
+
+              # ── Mode: Off | Heat | Cool | Auto ────────────────────
+              - obj:
+                  align: TOP_MID
+                  y: 392
+                  width: 448
+                  height: 50
+                  radius: 12
+                  bg_color: ${c_surface}
+                  bg_opa: COVER
+                  border_width: 0
+                  pad_all: 0
+                  clickable: false
+                  scrollable: false
+                  scrollbar_mode: "off"
+                  widgets:
+                    - button:
+                        id: clim_seg_0
+                        align: LEFT_MID
+                        x: 4
+                        width: 110
+                        height: 42
+                        radius: 9
+                        pad_all: 0
+                        bg_opa: TRANSP
+                        checked:
+                          bg_color: ${c_selected}
+                          bg_opa: COVER
+                        widgets:
+                          - label:
+                              text: "Off"
+                              align: CENTER
+                        on_click:
+                          - script.execute:
+                              id: clim_set_mode
+                              hvac: "off"
+                    - button:
+                        id: clim_seg_1
+                        align: LEFT_MID
+                        x: 114
+                        width: 110
+                        height: 42
+                        radius: 9
+                        pad_all: 0
+                        bg_opa: TRANSP
+                        checked:
+                          bg_color: ${c_selected}
+                          bg_opa: COVER
+                        widgets:
+                          - label:
+                              text: "Heat"
+                              align: CENTER
+                        on_click:
+                          - script.execute:
+                              id: clim_set_mode
+                              hvac: "heat"
+                    - button:
+                        id: clim_seg_2
+                        align: LEFT_MID
+                        x: 224
+                        width: 110
+                        height: 42
+                        radius: 9
+                        pad_all: 0
+                        bg_opa: TRANSP
+                        checked:
+                          bg_color: ${c_selected}
+                          bg_opa: COVER
+                        widgets:
+                          - label:
+                              text: "Cool"
+                              align: CENTER
+                        on_click:
+                          - script.execute:
+                              id: clim_set_mode
+                              hvac: "cool"
+                    - button:
+                        id: clim_seg_3
+                        align: LEFT_MID
+                        x: 334
+                        width: 110
+                        height: 42
+                        radius: 9
+                        pad_all: 0
+                        bg_opa: TRANSP
+                        checked:
+                          bg_color: ${c_selected}
+                          bg_opa: COVER
+                        widgets:
+                          - label:
+                              text: "Auto"
+                              align: CENTER
+                        on_click:
+                          - script.execute:
+                              id: clim_set_mode
+                              hvac: "heat_cool"

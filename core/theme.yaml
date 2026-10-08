@@ -13,6 +13,9 @@ substitutions:
   c_text_2: "0x8E8E93"      # secondary text, captions, unselected tabs
   c_accent: "0xF2F2F7"      # slider fill, progress, play button, "Done"
   c_on_accent: "0x000000"   # icons/text drawn on the accent color
+  c_selected: "0x636366"    # selected segment in a segmented control
+  # The slider/progress/switch color is a user setting (core/settings.yaml);
+  # c_accent is its default and the color of "Done" and the play button.
 
 font:
   # ── Text (Inter: closest open font to SF Pro / Roboto) ─────────────────────
@@ -40,6 +43,13 @@ font:
     bpp: 4
     glyphs: "0123456789:-apm"
 
+  # Night clock: very large, thin digits
+  - file: "gfonts://Inter@200"
+    id: font_clock_xl
+    size: 120
+    bpp: 4
+    glyphs: "0123456789:"
+
   # Weather sheet: big current temperature
   - file: "gfonts://Inter@300"
     id: font_temp_xl
@@ -56,6 +66,7 @@ font:
         "\U000F0493", # mdi-cog
         "\U000F05A9", # mdi-wifi
         "\U000F05AA", # mdi-wifi-off (HA disconnected)
+        "\U000F0F54", # mdi-home-thermometer (climate readout)
         # Weather conditions (HA weather states)
         "\U000F0599", # mdi-weather-sunny            sunny
         "\U000F0594", # mdi-weather-night            clear-night
@@ -88,6 +99,31 @@ font:
         "\U000F075D", # mdi-volume-plus
         "\U000F00DE", # mdi-brightness-5 (low)
         "\U000F00E0", # mdi-brightness-7 (high)
+        "\U000F0374", # mdi-minus
+        "\U000F0415", # mdi-plus
+        "\U000F0D38", # mdi-speaker-multiple
+        "\U000F04C3", # mdi-speaker
+        "\U000F012C", # mdi-check
+        "\U000F0B5C", # mdi-backspace-outline (PIN keypad)
+        # Music / TV controls
+        "\U000F049D", # mdi-shuffle
+        "\U000F0456", # mdi-repeat
+        "\U000F0457", # mdi-repeat-off
+        "\U000F0458", # mdi-repeat-once
+        "\U000F057E", # mdi-volume-high
+        "\U000F0581", # mdi-volume-off
+        "\U000F045F", # mdi-rewind
+        "\U000F0211", # mdi-fast-forward
+        # Message banner icons (core/messages.yaml)
+        "\U000F02FC", # mdi-information          info
+        "\U000F0026", # mdi-alert                alert
+        "\U000F009A", # mdi-bell                 bell
+        "\U000F081C", # mdi-door-open            door
+        "\U000F0299", # mdi-gate                 gate
+        "\U000F01EE", # mdi-email                mail
+        "\U000F072A", # mdi-washing-machine      washer
+        "\U000F010B", # mdi-car                  car
+        "\U000F05E0", # mdi-check-circle         check
         # Weather conditions (weather sheet forecast rows)
         "\U000F0599", "\U000F0594", "\U000F0595", "\U000F0590", "\U000F0591",
         "\U000F0592", "\U000F0593", "\U000F067E", "\U000F0596", "\U000F0597",
@@ -163,6 +199,20 @@ lvgl:
         bg_color: ${c_accent}
         bg_opa: COVER
         radius: 2
+    switch:
+      bg_color: ${c_separator}
+      bg_opa: COVER
+      border_width: 0
+      outline_width: 0
+      indicator:
+        checked:
+          bg_color: ${c_accent}
+          bg_opa: COVER
+      knob:
+        bg_color: 0xFFFFFF
+        bg_opa: COVER
+        border_width: 0
+        shadow_width: 0
     label:
       text_color: ${c_text}
 

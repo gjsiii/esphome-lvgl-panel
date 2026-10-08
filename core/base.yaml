@@ -4,10 +4,11 @@
 # Substitutions below are defaults; a device file can override any of them.
 
 substitutions:
-  # ── Screen idle (saves backlight life) ─────────────────────────────────────
-  idle_dim_timeout: 30s        # untouched this long -> dim
-  idle_off_timeout: 5min       # untouched this long -> backlight off
+  # ── Screen idle (timing is a setting; see core/settings.yaml) ──────────────
   idle_dim_brightness: "0.30"  # dim level (never brighter than the user's setting)
+
+  # Version of these shared files (shown in Settings → About)
+  panel_version: "0.2.0"
 
   # ── Home Assistant ─────────────────────────────────────────────────────────
   ha_url: "http://homeassistant.local:8123"  # prefix for HA-relative artwork URLs
@@ -19,7 +20,7 @@ esphome:
   min_version: 2026.9.0
   project:
     name: gjsiii.esphome-lvgl-panel
-    version: "0.1.0"
+    version: "${panel_version}"
   on_boot:
     # Flex layouts for the containers that item packages fill. Set here because
     # ESPHome rejects a layout on a container defined without widgets.
@@ -35,6 +36,10 @@ esphome:
             lv_obj_set_flex_flow(id(lights_list), LV_FLEX_FLOW_COLUMN);
             lv_obj_set_flex_align(id(lights_list), LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START);
             lv_obj_set_style_pad_row(id(lights_list), 10, 0);
+            // Status chips: a right-aligned row in the status bar
+            lv_obj_set_flex_flow(id(status_chips), LV_FLEX_FLOW_ROW);
+            lv_obj_set_flex_align(id(status_chips), LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+            lv_obj_set_style_pad_column(id(status_chips), 12, 0);
     # Runs after every tab/item package has added itself (priorities -101..-299)
     - priority: -300
       then:
@@ -100,9 +105,6 @@ esphome:
 
 logger:
 
-web_server:
-  port: 80
-
 # HTTP fetches block the main loop (and touch) while waiting, so cap the wait
 http_request:
   timeout: 2s
@@ -133,13 +135,24 @@ globals:
     type: bool
     initial_value: "false"
 
+  # One image download at a time (album art, TV art, camera pop-ups): large
+  # downloads at once can exhaust memory or trip the watchdog. Released when
+  # the image arrives or fails, or after 15 s as a safety net.
+  - id: img_busy
+    type: bool
+    initial_value: "false"
+  - id: img_busy_ms
+    type: uint32_t
+    initial_value: "0"
+
   # Backlight level chosen in Settings (0.1–1.0), kept across reboots
   - id: user_brightness
     type: float
     restore_value: true
     initial_value: "1.0"
 
-  # Screen idle state: 0 = active, 1 = dimmed, 2 = off (LVGL paused)
+  # Screen idle state: 0 = active, 1 = dimmed, 2 = off (LVGL paused),
+  # 3 = night clock showing (core/settings.yaml)
   - id: screen_state
     type: int
     initial_value: "0"
@@ -160,6 +173,47 @@ script:
                 lv_color_hex(i == active ? ${c_text} : ${c_text_2}), LV_STATE_DEFAULT);
           }
 
+  # Status-bar clock: "2:30pm", or "14:30" with the 24-Hour Clock setting
+  - id: update_clock
+    mode: restart
+    then:
+      - lvgl.label.update:
+          id: lbl_time
+          text: !lambda |-
+            auto t = id(ha_time).now();
+            if (!t.is_valid()) return std::string("--:--");
+            char buf[16];
+            if (id(sw_clock_24h).state) {
+              t.strftime(buf, sizeof(buf), "%H:%M");
+              return std::string(buf);
+            }
+            t.strftime(buf, sizeof(buf), "%I:%M%p");
+            std::string s(buf);
+            std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+            if (s[0] == '0') s.erase(0, 1);
+            return s;
+      # Night clock (only while showing): big time, date, and a small
+      # position shift each minute so no pixels stay lit in one spot
+      - if:
+          condition:
+            lambda: "return id(screen_state) == 3;"
+          then:
+            - lambda: |-
+                auto t = id(ha_time).now();
+                if (!t.is_valid()) return;
+                char buf[32];
+                if (id(sw_clock_24h).state) t.strftime(buf, sizeof(buf), "%H:%M");
+                else {
+                  t.strftime(buf, sizeof(buf), "%I:%M");
+                  if (buf[0] == '0') memmove(buf, buf + 1, strlen(buf));
+                }
+                lv_label_set_text(id(lbl_night_time), buf);
+                t.strftime(buf, sizeof(buf), "%A, %B ");
+                std::string d = std::string(buf) + std::to_string(t.day_of_month);
+                lv_label_set_text(id(lbl_night_date), d.c_str());
+                int m = t.minute;
+                lv_obj_align(id(night_clock_box), LV_ALIGN_CENTER, ((m * 7) % 41) - 20, ((m * 13) % 61) - 30);
+
   # Wake the screen. full=true: user's brightness (touch);
   # full=false: dim level (presence). Restarts the idle timers.
   - id: screen_wake
@@ -175,10 +229,13 @@ script:
       - light.turn_on:
           id: display_backlight
           brightness: !lambda |-
-            if (full) return id(user_brightness);
-            return std::min(${idle_dim_brightness}f, id(user_brightness));
+            // At night (Night mode), never brighter than the night level
+            float u = id(night_now) ? std::min(id(user_brightness), id(night_level)) : id(user_brightness);
+            if (full) return u;
+            return std::min(${idle_dim_brightness}f, u);
           transition_length: 250ms
       - lambda: |-
+          lv_obj_add_flag(id(night_clock), LV_OBJ_FLAG_HIDDEN);
           id(screen_state) = full ? 0 : 1;
           lv_disp_trig_activity(NULL);
 
@@ -223,12 +280,12 @@ touchscreen:
             - script.execute:
                 id: screen_wake
                 full: true
-    # Off: wake on release, so the waking tap never presses a hidden button
-    # (LVGL is paused while off and ignores the touch).
+    # Off or night clock: wake on release, so the waking tap never presses a
+    # hidden button (LVGL is paused while off; the night clock covers the UI).
     on_release:
       - if:
           condition:
-            lambda: "return id(screen_state) == 2;"
+            lambda: "return id(screen_state) >= 2;"
           then:
             - script.execute:
                 id: screen_wake
@@ -237,44 +294,4 @@ touchscreen:
 interval:
   - interval: 10s
     then:
-      - lvgl.label.update:
-          id: lbl_time
-          text: !lambda |-
-            auto t = id(ha_time).now();
-            if (t.is_valid()) {
-              char buf[16];
-              t.strftime(buf, sizeof(buf), "%I:%M%p");
-              std::string s(buf);
-              std::transform(s.begin(), s.end(), s.begin(), ::tolower);
-              if (s[0] == '0') s.erase(0, 1);
-              return s;
-            }
-            return std::string("--:--");
-
-lvgl:
-  # ── Screen idle: dim, then backlight off (touch or presence wakes it) ──────
-  on_idle:
-    - timeout: ${idle_dim_timeout}
-      then:
-        # Close the Settings sheet so the panel returns to its tabs
-        - lvgl.widget.hide: settings_panel
-        - if:
-            condition:
-              lambda: "return id(screen_state) == 0;"
-            then:
-              - light.turn_on:
-                  id: display_backlight
-                  brightness: !lambda "return std::min(${idle_dim_brightness}f, id(user_brightness));"
-                  transition_length: 1s
-              - lambda: "id(screen_state) = 1;"
-    - timeout: ${idle_off_timeout}
-      then:
-        - if:
-            condition:
-              lambda: "return id(screen_state) != 2;"
-            then:
-              - light.turn_off:
-                  id: display_backlight
-                  transition_length: 1s
-              - lvgl.pause:
-              - lambda: "id(screen_state) = 2;"
+      - script.execute: update_clock

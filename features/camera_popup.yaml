@@ -1,0 +1,200 @@
+# Feature: camera pop-up. When an entity turns on (gate opens, doorbell
+# pressed, motion...), the panel wakes and shows a live-refreshing snapshot.
+#
+#   popup_gate: !include
+#     file: panel/features/camera_popup.yaml
+#     vars:
+#       popup_id: gate                                    # unique per pop-up
+#       title: "Front Gate"
+#       trigger_entity: binary_sensor.exterior_front_front_gate
+#       camera_entity: camera.reolink_front_door_fluent
+#
+# Include it once per trigger. It closes on Dismiss, on a tap of the image, or
+# after camera_popup_seconds; the snapshot refreshes every
+# camera_refresh_seconds (each refresh briefly blocks touch while it downloads,
+# so don't go much lower than 5 s). Snapshots come through HA's camera proxy
+# (uses ha_url), which scales them to the frame first.
+
+substitutions:
+  camera_popup_seconds: "60"
+  camera_refresh_seconds: "5"
+
+globals:
+  - id: popup_until_${popup_id}
+    type: uint32_t
+    initial_value: "0"
+
+esphome:
+  on_boot:
+    - priority: -150
+      then:
+        # Move the sheet onto the main screen (built on a holding page)
+        - lambda: "lv_obj_set_parent(id(popup_${popup_id}), id(ui_root));"
+
+binary_sensor:
+  - platform: homeassistant
+    id: popup_trigger_${popup_id}
+    entity_id: ${trigger_entity}
+    on_press:
+      - script.execute: popup_show_${popup_id}
+
+text_sensor:
+  # /api/camera_proxy/<camera>?token=... (HA rotates the token every ~5 min)
+  - platform: homeassistant
+    id: popup_picture_${popup_id}
+    entity_id: ${camera_entity}
+    attribute: entity_picture
+
+image:
+  - platform: online_image
+    id: popup_image_${popup_id}
+    url: "https://www.home-assistant.io/images/favicon-192x192.png"
+    format: JPEG
+    type: RGB565
+    resize: [448, 252]
+    on_download_finished:
+      - lambda: "id(img_busy) = false;"
+      - lvgl.image.update:
+          id: popup_img_${popup_id}
+          src: popup_image_${popup_id}
+      - lambda: |-
+          lv_obj_clear_flag(id(popup_img_${popup_id}), LV_OBJ_FLAG_HIDDEN);
+          lv_obj_add_flag(id(lbl_popup_loading_${popup_id}), LV_OBJ_FLAG_HIDDEN);
+    on_error:
+      - lambda: "id(img_busy) = false;"
+      - logger.log: "Camera pop-up (${popup_id}) snapshot failed"
+
+script:
+  - id: popup_show_${popup_id}
+    mode: restart
+    then:
+      - lambda: |-
+          id(popup_until_${popup_id}) = millis() + ${camera_popup_seconds} * 1000UL;
+          auto t = id(ha_time).now();
+          if (t.is_valid()) {
+            char buf[16];
+            if (id(sw_clock_24h).state) t.strftime(buf, sizeof(buf), "%H:%M");
+            else {
+              t.strftime(buf, sizeof(buf), "%I:%M%p");
+              for (char *p = buf; *p; p++) *p = tolower(*p);
+              if (buf[0] == '0') memmove(buf, buf + 1, strlen(buf));
+            }
+            lv_label_set_text(id(lbl_popup_time_${popup_id}), buf);
+          }
+          // Hide the previous visit's frame until the first new one arrives
+          lv_obj_add_flag(id(popup_img_${popup_id}), LV_OBJ_FLAG_HIDDEN);
+          lv_obj_clear_flag(id(lbl_popup_loading_${popup_id}), LV_OBJ_FLAG_HIDDEN);
+          lv_obj_clear_flag(id(popup_${popup_id}), LV_OBJ_FLAG_HIDDEN);
+          lv_obj_move_foreground(id(popup_${popup_id}));
+      - script.execute:
+          id: screen_wake
+          full: true
+      # Refresh the snapshot until dismissed or timed out; keep the screen awake
+      - while:
+          condition:
+            lambda: |-
+              return !lv_obj_has_flag(id(popup_${popup_id}), LV_OBJ_FLAG_HIDDEN) &&
+                     (int32_t) (id(popup_until_${popup_id}) - millis()) > 0;
+          then:
+            - lambda: "lv_disp_trig_activity(NULL);"
+            - if:
+                condition:
+                  lambda: "return !id(popup_picture_${popup_id}).state.empty();"
+                then:
+                  - wait_until:
+                      condition:
+                        lambda: "return !id(img_busy) || millis() - id(img_busy_ms) > 15000;"
+                      timeout: 15s
+                  - lambda: "id(img_busy) = true; id(img_busy_ms) = millis();"
+                  - online_image.set_url:
+                      id: popup_image_${popup_id}
+                      url: !lambda |-
+                        std::string p = id(popup_picture_${popup_id}).state;
+                        if (p.rfind("http", 0) != 0) p = std::string("${ha_url}") + p;
+                        // Ask HA to scale the snapshot to the frame (a full-resolution
+                        // camera image takes seconds to download and decode, enough
+                        // to exhaust memory or trip the watchdog); the time stamp
+                        // makes every refresh fetch a new frame.
+                        return p + "&width=448&height=252&t=" + std::to_string(millis());
+            - delay: ${camera_refresh_seconds}s
+      - lvgl.widget.hide: popup_${popup_id}
+
+  - id: popup_hide_${popup_id}
+    then:
+      - script.stop: popup_show_${popup_id}
+      - lvgl.widget.hide: popup_${popup_id}
+
+lvgl:
+  pages:
+    # Holding page (never shown): the sheet is moved onto ui_root at boot
+    - id: holding_popup_${popup_id}
+      skip: true
+      widgets:
+        - obj:
+            id: popup_${popup_id}
+            width: 100%
+            height: 100%
+            align: TOP_LEFT
+            styles: container
+            scrollable: false
+            scrollbar_mode: "off"
+            hidden: true
+            widgets:
+              - label:
+                  text: "${title}"
+                  text_font: font_title
+                  align: TOP_LEFT
+                  x: 20
+                  y: 22
+              - label:
+                  id: lbl_popup_time_${popup_id}
+                  text: ""
+                  text_color: ${c_text_2}
+                  align: TOP_RIGHT
+                  x: -20
+                  y: 25
+              # Snapshot (tap to dismiss)
+              - button:
+                  align: TOP_MID
+                  y: 66
+                  width: 448
+                  height: 252
+                  styles: art_frame
+                  radius: 14
+                  pressed:
+                    bg_color: ${c_surface}
+                  widgets:
+                    - image:
+                        id: popup_img_${popup_id}
+                        src: popup_image_${popup_id}
+                        align: CENTER
+                    # Shown until the first snapshot of this visit arrives
+                    - label:
+                        id: lbl_popup_loading_${popup_id}
+                        text: "Loading camera…"
+                        text_color: ${c_text_2}
+                        align: CENTER
+                        hidden: true
+                  on_click:
+                    - script.execute: popup_hide_${popup_id}
+              - label:
+                  text: "Live · updates every ${camera_refresh_seconds} s"
+                  text_font: font_caption
+                  text_color: ${c_text_2}
+                  align: TOP_MID
+                  y: 328
+              - button:
+                  align: TOP_MID
+                  y: 368
+                  width: 220
+                  height: 56
+                  radius: 28
+                  bg_color: ${c_surface_2}
+                  pad_all: 0
+                  widgets:
+                    - label:
+                        text: "Dismiss"
+                        text_font: font_title
+                        align: CENTER
+                  on_click:
+                    - script.execute: popup_hide_${popup_id}

@@ -31,6 +31,7 @@ sensor:
                 id: light_pct_${slot}
                 text: !lambda 'return std::to_string((int) x) + "%";'
             - lambda: "id(slider_ha_update) = false;"
+            - script.execute: update_slider_labels
 
 binary_sensor:
   - platform: homeassistant
@@ -49,6 +50,7 @@ binary_sensor:
                 id: light_pct_${slot}
                 text: "Off"
             - lambda: "id(slider_ha_update) = false;"
+            - script.execute: update_slider_labels
 
 lvgl:
   pages:
@@ -73,6 +75,7 @@ lvgl:
                     - lvgl.label.update:
                         id: light_pct_${slot}
                         text: !lambda 'return x == 0 ? std::string("Off") : std::to_string((int) x) + "%";'
+                    - script.execute: update_slider_labels
                   on_release:
                     - if:
                         condition:
@@ -94,3 +97,21 @@ lvgl:
                   text_color: ${c_text_2}
                   align: RIGHT_MID
                   x: -18
+              # Tap the name to toggle the fan on/off (drag elsewhere to set speed).
+              # Last child, so it sits on top of the slider's left end.
+              - button:
+                  id: light_toggle_${slot}
+                  align: LEFT_MID
+                  width: 180
+                  height: 100%
+                  radius: 16
+                  bg_opa: TRANSP
+                  pad_all: 0
+                  pressed:
+                    bg_color: ${c_text}
+                    bg_opa: 15%
+                  on_click:
+                    - homeassistant.action:
+                        action: fan.toggle
+                        data:
+                          entity_id: ${entity}

@@ -1,0 +1,93 @@
+# Core: messages from Home Assistant, shown as a banner at the top.
+#
+# Each panel gets two actions in HA (device name with "-" -> "_"):
+#
+#   action: esphome.esp_family_room_480x480_show_message
+#   data:
+#     title: "Washer done"
+#     message: "Time to move the laundry to the dryer."
+#     icon: washer      # info alert bell door gate mail washer car check
+#     seconds: 30       # 0 = stays until tapped
+#
+#   action: esphome.esp_family_room_480x480_clear_message
+#
+# HA's ESPHome actions need every field, so ha/panel_messages.yaml adds a
+# `script.panel_message` with defaults that can send to several panels.
+#
+# A message wakes a sleeping panel to its dim level, or to the Settings
+# brightness with "Messages wake at full brightness" on. Tap the banner to
+# dismiss it; a new message replaces the current one.
+
+api:
+  actions:
+    - action: show_message
+      variables:
+        title: string
+        message: string
+        icon: string
+        seconds: int
+      then:
+        - script.execute:
+            id: msg_show
+            title: !lambda "return title;"
+            message: !lambda "return message;"
+            icon: !lambda "return icon;"
+            seconds: !lambda "return seconds;"
+    - action: clear_message
+      then:
+        - script.execute: msg_hide
+
+script:
+  - id: msg_show
+    mode: restart
+    parameters:
+      title: string
+      message: string
+      icon: string
+      seconds: int
+    then:
+      - lambda: |-
+          const char *glyph = "\U000F02FC";                       // info
+          if (icon == "alert" || icon == "warning") glyph = "\U000F0026";
+          else if (icon == "bell")   glyph = "\U000F009A";
+          else if (icon == "door")   glyph = "\U000F081C";
+          else if (icon == "gate")   glyph = "\U000F0299";
+          else if (icon == "mail")   glyph = "\U000F01EE";
+          else if (icon == "washer") glyph = "\U000F072A";
+          else if (icon == "car")    glyph = "\U000F010B";
+          else if (icon == "check")  glyph = "\U000F05E0";
+          lv_label_set_text(id(lbl_msg_icon), glyph);
+          lv_label_set_text(id(lbl_msg_title), title.c_str());
+          lv_label_set_text(id(lbl_msg_text), message.c_str());
+          // No message text: center the title vertically
+          lv_obj_set_y(id(lbl_msg_title), message.empty() ? 27 : 12);
+          lv_obj_clear_flag(id(msg_banner), LV_OBJ_FLAG_HIDDEN);
+      # Wake the screen: to the Settings brightness if "Messages Wake at Full
+      # Brightness" is on (also from dimmed or the night clock); otherwise a
+      # blank panel wakes to the dim level.
+      - if:
+          condition:
+            lambda: "return id(sw_msg_full).state && id(screen_state) != 0;"
+          then:
+            - script.execute:
+                id: screen_wake
+                full: true
+          else:
+            - if:
+                condition:
+                  lambda: "return id(screen_state) == 2;"
+                then:
+                  - script.execute:
+                      id: screen_wake
+                      full: false
+      - if:
+          condition:
+            lambda: "return seconds > 0;"
+          then:
+            - delay: !lambda "return seconds * 1000;"
+            - lvgl.widget.hide: msg_banner
+
+  - id: msg_hide
+    then:
+      - script.stop: msg_show
+      - lvgl.widget.hide: msg_banner
