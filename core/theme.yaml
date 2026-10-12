@@ -50,12 +50,12 @@ font:
     bpp: 4
     glyphs: "0123456789:"
 
-  # Weather sheet: big current temperature
+  # Weather sheet: big current temperature; snow report: big inches
   - file: "gfonts://Inter@300"
     id: font_temp_xl
     size: 72
     bpp: 4
-    glyphs: "0123456789-°"
+    glyphs: "0123456789-°.\""
 
   # ── Icons (Material Design Icons) ──────────────────────────────────────────
   - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
@@ -67,6 +67,7 @@ font:
         "\U000F05A9", # mdi-wifi
         "\U000F05AA", # mdi-wifi-off (HA disconnected)
         "\U000F0F54", # mdi-home-thermometer (climate readout)
+        "\U000F0717", # mdi-snowflake (snow report chip)
         # Weather conditions (HA weather states)
         "\U000F0599", # mdi-weather-sunny            sunny
         "\U000F0594", # mdi-weather-night            clear-night
@@ -105,6 +106,9 @@ font:
         "\U000F04C3", # mdi-speaker
         "\U000F012C", # mdi-check
         "\U000F0B5C", # mdi-backspace-outline (PIN keypad)
+        "\U000F0AE0", # mdi-spray-bottle (cleaning mode)
+        "\U000F0717", # mdi-snowflake (snow report)
+        "\U000F06B0", # mdi-update (update notice)
         # Music / TV controls
         "\U000F049D", # mdi-shuffle
         "\U000F0456", # mdi-repeat
@@ -136,6 +140,7 @@ font:
     size: 72
     bpp: 4
     glyphs: [
+        "\U000F0717", # mdi-snowflake (snow report decoration)
         "\U000F0599", "\U000F0594", "\U000F0595", "\U000F0590", "\U000F0591",
         "\U000F0592", "\U000F0593", "\U000F067E", "\U000F0596", "\U000F0597",
         "\U000F0598", "\U000F067F", "\U000F059D", "\U000F059E", "\U000F05D6",
@@ -154,6 +159,7 @@ font:
         "\U000F04AD", # mdi-skip-next
         "\U000F040A", # mdi-play
         "\U000F03E4", # mdi-pause
+        "\U000F0AE0", # mdi-spray-bottle (cleaning mode)
       ]
 
 lvgl:

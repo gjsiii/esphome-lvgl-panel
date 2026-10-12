@@ -7,6 +7,7 @@ local `!include` form and every option.
 
 - [The status bar](#the-status-bar)
 - [Lights tab](#lights-tab)
+- [Light color sheet](#light-color-sheet)
 - [TV tab](#tv-tab)
 - [Music tab and Play on](#music-tab-and-play-on)
 - [Favorites tab](#favorites-tab)
@@ -14,12 +15,15 @@ local `!include` form and every option.
 - [Climate](#climate)
 - [Status icons (chips)](#status-icons-chips)
 - [Marine forecast](#marine-forecast)
+- [Snow report](#snow-report)
 - [Camera pop-ups](#camera-pop-ups)
 - [Messages from Home Assistant](#messages-from-home-assistant)
 - [Settings](#settings)
 - [Screen dimming, sleep and the night clock](#screen-dimming-sleep-and-the-night-clock)
 - [Night mode](#night-mode)
 - [PIN lock](#pin-lock)
+- [Cleaning mode](#cleaning-mode)
+- [Updates](#updates)
 - [About and restart](#about-and-restart)
 
 ---
@@ -45,14 +49,20 @@ Always the first tab.
 wider buttons). Rooms without scenes hide the SCENES section and give the
 sliders the whole tab.
 
-**Lights and fans** — Control Center-style sliders.
+**Lights, fans and shades** — Control Center-style sliders.
 
 - **Drag** anywhere to set brightness (or fan speed); Home Assistant is updated
   once, when you lift your finger.
-- **Tap the name** to toggle the light on/off.
+- **Tap the name** to toggle the light on/off (shades: open/close, or stop
+  while moving).
+- **Hold the name** of a light with color or white tones to open its
+  [color sheet](#light-color-sheet).
 - The percentage follows changes made anywhere else (wall switch, app, HA).
 - Fans show **Off** at 0; fans with fixed speeds (e.g. Lutron 25/50/75/100)
   snap to the nearest speed.
+- Shades, blinds and curtains show **Closed**, a percentage, or **Open**;
+  drag to set the position. Covers without positions: drag fully right to
+  open, fully left to close.
 - Three sliders fit; more scroll.
 
 ```yaml
@@ -64,15 +74,38 @@ sliders the whole tab.
   vars: { slot: 1, name: "Ceiling", entity: light.living_room_ceiling }
 - path: items/fan.yaml
   vars: { slot: 2, name: "Fan", entity: fan.living_room }
+- path: items/cover.yaml                 # shade, blind or curtain
+  vars: { slot: 3, name: "Shade", entity: cover.living_room_shade }
 ```
 
 `slot` sets the order. Scene chips and action chips share one numbering;
-lights and fans share another.
+lights, fans and shades share another. With shades in the list you may want
+the heading to say so: set `lights_title: "LIGHTS & SHADES"` in `substitutions`.
 
-> **Tip — scenes that span several systems.** If a scene only covers some of
-> a room's lights (for example Hue scenes and Lutron dimmers), write an HA
-> script that sets the other lights and then activates the scene, and point an
-> `action_chip` at it with `action: script.turn_on`.
+> **Tip — scenes that span several systems.** If a room mixes Hue scenes and
+> Lutron dimmers, make an HA scene for the Lutron levels and give the chip
+> both: `action: scene.turn_on`, `entity: "scene.relax_lutron, scene.relax_hue"`.
+> See [Room scenes with several lighting systems](home-assistant.md#room-scenes-with-several-lighting-systems).
+
+## Light color sheet
+
+Hold a light's name on the Lights tab. The sheet shows:
+
+- **Brightness** — drag to 0 to turn the light off.
+- **Warmth** — warm (left) to cool (right), for lights with white tones.
+- **Color** — a rainbow hue slider, a saturation slider (white to full
+  color) and a row of quick swatches: white, then seven colors. White sets
+  a neutral 4000 K on lights with white tones (zero saturation otherwise).
+
+Sections the light doesn't support are hidden, and lights that only dim
+don't open the sheet. The power button (yellow while on) toggles the light.
+Changes are sent when you lift your finger, and the sheet follows changes
+made elsewhere while it's open. Nothing to add to the display file: every
+`items/light.yaml` light gets it.
+
+> **Groups of bulbs.** Use the bulbs' own group (for Hue, a room or zone) so
+> the sheet gets warmth and color. A template light only gets them if it
+> defines `temperature` / `hs` and `set_temperature` / `set_hs`.
 
 ## TV tab
 
@@ -262,6 +295,34 @@ The entity needs `period_N` / `forecast_N` attributes (N = 1 to 5) and an
 `advisory_text` attribute (empty or `None` when there's no advisory). Any
 text source shaped like that works.
 
+## Snow report
+
+A winter-themed ski report for a mountain house. A snowflake chip in the
+status bar shows the last 24 hours of new snow; tap it for the sheet: new
+snow (24 hours, 48 hours, 72 hours, 7 days), base and summit depth, season
+total, lifts and runs open, and opening day (or "Open for the season").
+
+```yaml
+- path: features/snow_report.yaml
+  vars:
+    title: "Breckenridge"
+    chip_slot: 5                       # status-chip order (1 = rightmost)
+    chip_show: "nonzero"               # or "always"
+    new_24h_entity: sensor.resort_new_snow_24h
+    new_48h_entity: sensor.resort_new_snow_48h
+    new_72h_entity: sensor.resort_new_snow_72h
+    new_7d_entity: sensor.resort_new_snow_7d
+    base_entity: sensor.resort_base_depth
+    summit_entity: sensor.resort_summit_depth
+    season_entity: sensor.resort_season_snowfall
+    lifts_entity: sensor.resort_lifts_open      # attribute `total` = all lifts
+    runs_entity: sensor.resort_runs_open        # attribute `total` = all runs
+    opening_entity: sensor.resort_opening_date  # YYYY-MM-DD
+```
+
+Values are inches. Any entity you don't have can name one that doesn't exist;
+it shows "-". `chip_show: "nonzero"` shows the chip only after new snow.
+
 ## Camera pop-ups
 
 ![Camera pop-up](images/camera-popup.svg)
@@ -387,11 +448,27 @@ rooms and rentals.
 **Settings PIN Lock** or clear **Settings PIN**. Automations can lock and
 unlock the panel the same way.
 
+## Cleaning mode
+
+Tap the **spray bottle** at the top of Settings (or press **Cleaning Mode** on
+the panel's device page in Home Assistant). Touch is ignored for 30 seconds
+while a countdown shows, then everything works again by itself.
+
+## Updates
+
+With `ha/panel_updates.yaml` installed in Home Assistant, Settings shows a
+green **Update available** card at the top when a newer version of these
+files has been released, and About shows "up to date" or the new version.
+To update, change `ref:` in the display file's `packages` to the new tag and
+install. Without the HA package nothing is shown. (Display files on another
+sensor name can set `update_entity` in `substitutions`.)
+
 ## About and restart
 
 At the bottom of Settings: device name, panel version, ESPHome version, IP
 address, Wi-Fi network and signal, uptime, and the reason for the **last
 restart** (useful for spotting power problems — see
 [Troubleshooting](troubleshooting.md)). **Hold to restart** reboots the panel
-(holding prevents accidental restarts). IP, signal, uptime, reset reason and
+(holding prevents accidental restarts). Below it, **About this project** shows
+a QR code and the link to this repository. IP, signal, uptime, reset reason and
 Restart are also in Home Assistant.

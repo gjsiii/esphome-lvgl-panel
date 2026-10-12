@@ -8,7 +8,16 @@ substitutions:
   idle_dim_brightness: "0.30"  # dim level (never brighter than the user's setting)
 
   # Version of these shared files (shown in Settings → About)
-  panel_version: "0.2.0"
+  panel_version: "0.3.0"
+  project_name: "esphome-lvgl-panel"
+  project_url: "https://github.com/gjsiii/esphome-lvgl-panel"
+
+  # Lights tab heading above the sliders (e.g. "LIGHTS & SHADES")
+  lights_title: "LIGHTS"
+
+  # HA sensor with the newest released version of these files (shown in
+  # Settings when it's newer than panel_version; see ha/panel_updates.yaml)
+  update_entity: sensor.esphome_lvgl_panel_latest
 
   # ── Home Assistant ─────────────────────────────────────────────────────────
   ha_url: "http://homeassistant.local:8123"  # prefix for HA-relative artwork URLs

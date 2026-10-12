@@ -12,5 +12,7 @@ packages:
   settings: !include settings.yaml
   messages: !include messages.yaml
   about: !include about.yaml
+  updates: !include updates.yaml
+  light_sheet: !include light_sheet.yaml
   theme: !include theme.yaml
   ui: !include ui.yaml

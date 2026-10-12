@@ -10,6 +10,7 @@ in `configuration.yaml`), then restart Home Assistant.
 |---|---|---|
 | `panel_weather.yaml` | `sensor.panel_weather_forecast` — state: time of the last update; attributes `hourly` and `daily` (compact text the panels read). Refreshed every 30 minutes with `weather.get_forecasts`. | The weather sheet's forecast. Change `source:` to your weather entity. |
 | `panel_messages.yaml` | `script.panel_message` | Sending banners to several panels with optional fields. |
+| `panel_updates.yaml` | `sensor.esphome_lvgl_panel_latest` — the newest released version (from GitHub tags, every 6 hours). | The update notice in Settings. Optional. |
 
 One forecast sensor serves every panel in the house.
 
@@ -144,32 +145,51 @@ actions:
 
 (Entity IDs depend on each panel's name — check its device page.)
 
-## Room scripts with several lighting systems
+## Room scenes with several lighting systems
 
-Scene chips call `scene.turn_on`. If a room mixes systems — say Hue bulbs with
-Hue scenes plus Lutron dimmers — write a script per scene that sets the other
-lights and then activates the Hue scene, and point an `action_chip` at it:
+A room often mixes systems, for example Hue bulbs with Hue scenes plus Lutron
+dimmers. You don't need a script: make an ordinary HA scene for the other
+lights and turn it on **together with** the Hue scene. An `action_chip`
+accepts a comma-separated list of entities:
 
 ```yaml
-script:
-  bedroom_relax:
-    alias: Bedroom Relax
-    sequence:
-      - action: light.turn_on
-        target: { entity_id: light.bedroom_ceiling }   # a Lutron dimmer
-        data: { brightness_pct: 25 }
-      - action: scene.turn_on
-        target: { entity_id: scene.bedroom_relax }     # the Hue scene
+# scenes.yaml (or Settings → Scenes)
+- id: bedroom_relax_lutron
+  name: Bedroom Relax (Lutron)
+  entities:
+    light.bedroom_ceiling: { state: 'on', brightness: 64 }   # 25%
+    light.bedroom_lamp: { state: 'on', brightness: 140 }     # 55%
 ```
 
 ```yaml
 # display file
 - path: items/action_chip.yaml
-  vars: { slot: 1, name: "Relax", action: script.turn_on, entity: script.bedroom_relax }
+  vars: { slot: 1, name: "Relax", action: scene.turn_on, entity: "scene.bedroom_relax_lutron, scene.bedroom_relax" }
 ```
 
-**Smart bulbs behind a dimmer?** If a wall dimmer powers smart bulbs, keep the
-dimmer at 100% (or off) and dim the bulbs. A
-[template light](https://www.home-assistant.io/integrations/light.template/)
-whose `turn_on` powers the dimmer, waits for the bulbs to come online, and then
-sets them makes a single slider for the pair.
+An "Off" chip can be a single HA scene that turns every light in the room off.
+Use a script instead only when the steps must happen in order or wait for
+something.
+
+**Lights that follow another light.** If an automation makes some lights
+mirror another (say Hue lamps follow a Lutron lamp's wall dimmer or Pico),
+it will repaint the Hue scene a moment after the chip changes the Lutron
+lamp. Skip the automation for a few seconds after your scenes. A scene's
+state is the time it was last turned on:
+
+```yaml
+condition:
+  - condition: template
+    value_template: >-
+      {{ expand('scene.bedroom_relax_lutron', 'scene.bedroom_off')
+         | map(attribute='state') | map('as_datetime', none) | reject('none')
+         | select('gt', now() - timedelta(seconds=10)) | list | count == 0 }}
+```
+
+**Smart bulbs behind a dimmer?** Keep them powered all the time: replace the
+dimmer with a plain switch you leave on (or wire the bulbs straight through),
+and control the bulbs instead. Group them in their own app (for Hue, a room
+or zone such as `light.east_table_lamps`) and use that group for the slider.
+Hue groups support warmth and color, so holding the name opens the full
+[color sheet](features.md#light-color-sheet). Bulbs whose power is cut drop
+off the network, so the panel can't turn them back on.

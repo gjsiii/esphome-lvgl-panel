@@ -1,0 +1,32 @@
+# Home Assistant package: the newest released version of esphome-lvgl-panel,
+# for the update notice in each panel's Settings (core/updates.yaml).
+#
+# Install: copy to /config/packages/panel_updates.yaml (with
+# `homeassistant: packages: !include_dir_named packages` in configuration.yaml)
+# and restart HA. Creates sensor.esphome_lvgl_panel_latest, e.g. "0.3.0".
+#
+# Reads the repo's version tags from GitHub every 6 hours (well inside
+# GitHub's limit of 60 unauthenticated requests an hour) and keeps the
+# highest vX.Y.Z.
+
+sensor:
+  - platform: rest
+    name: ESPHome LVGL Panel Latest
+    unique_id: esphome_lvgl_panel_latest
+    icon: mdi:update
+    resource: https://api.github.com/repos/gjsiii/esphome-lvgl-panel/tags?per_page=100
+    headers:
+      Accept: application/vnd.github+json
+      User-Agent: home-assistant-esphome-lvgl-panel
+    scan_interval: 21600
+    value_template: >-
+      {% set ns = namespace(best='', key=-1) %}
+      {% for t in value_json if t.name is defined %}
+        {% set v = t.name | regex_replace('^[vV]', '') %}
+        {% if v is match('^\d+\.\d+\.\d+$') %}
+          {% set p = v.split('.') %}
+          {% set k = (p[0] | int) * 1000000 + (p[1] | int) * 1000 + (p[2] | int) %}
+          {% if k > ns.key %}{% set ns.best = v %}{% set ns.key = k %}{% endif %}
+        {% endif %}
+      {% endfor %}
+      {{ ns.best if ns.best else this.state | default('unknown') }}

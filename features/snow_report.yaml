@@ -1,0 +1,532 @@
+# Feature: ski-resort snow report — a snowflake chip in the status bar with
+# the last 24 hours of new snow, and a winter-themed sheet (tap the chip)
+# with new snow, depths, season total, lifts/runs open and opening day.
+#
+#   snow: !include
+#     file: panel/features/snow_report.yaml
+#     vars:
+#       title: "Breckenridge"
+#       chip_slot: 5                  # status-chip order (1 = rightmost)
+#       chip_show: "always"           # "always", or "nonzero" (only after new snow)
+#       new_24h_entity: sensor.breckenridge_new_snow_24h
+#       new_48h_entity: sensor.breckenridge_new_snow_48h
+#       new_72h_entity: sensor.breckenridge_new_snow_72h
+#       new_7d_entity: sensor.breckenridge_new_snow_7d
+#       base_entity: sensor.breckenridge_base_depth
+#       summit_entity: sensor.breckenridge_summit_depth
+#       season_entity: sensor.breckenridge_season_snowfall
+#       lifts_entity: sensor.breckenridge_lifts_open    # state = open, attribute `total`
+#       runs_entity: sensor.breckenridge_runs_open      # state = open, attribute `total`
+#       opening_entity: sensor.breckenridge_opening_date  # YYYY-MM-DD
+#
+# Snow values are inches. Any entity that doesn't exist (or is unavailable)
+# shows "-". Any source works (e.g. template sensors from a resort report or
+# a ski-conditions integration) as long as the values are numbers in inches.
+
+esphome:
+  on_boot:
+    - priority: -20${chip_slot}
+      then:
+        - lambda: |-
+            lv_obj_set_parent(id(chip_snow), id(status_chips));
+            // Slot 1 is rightmost: insert each chip at the front of the row
+            lv_obj_move_to_index(id(chip_snow), 0);
+    - priority: -150
+      then:
+        - lambda: "lv_obj_set_parent(id(snow_panel), id(ui_root));"
+
+sensor:
+  - platform: homeassistant
+    id: snow_24h
+    entity_id: ${new_24h_entity}
+    on_value: { script.execute: snow_render }
+  - platform: homeassistant
+    id: snow_48h
+    entity_id: ${new_48h_entity}
+    on_value: { script.execute: snow_render }
+  - platform: homeassistant
+    id: snow_72h
+    entity_id: ${new_72h_entity}
+    on_value: { script.execute: snow_render }
+  - platform: homeassistant
+    id: snow_7d
+    entity_id: ${new_7d_entity}
+    on_value: { script.execute: snow_render }
+  - platform: homeassistant
+    id: snow_base
+    entity_id: ${base_entity}
+    on_value: { script.execute: snow_render }
+  - platform: homeassistant
+    id: snow_summit
+    entity_id: ${summit_entity}
+    on_value: { script.execute: snow_render }
+  - platform: homeassistant
+    id: snow_season
+    entity_id: ${season_entity}
+    on_value: { script.execute: snow_render }
+  - platform: homeassistant
+    id: snow_lifts
+    entity_id: ${lifts_entity}
+    on_value: { script.execute: snow_render }
+  - platform: homeassistant
+    id: snow_lifts_total
+    entity_id: ${lifts_entity}
+    attribute: total
+    on_value: { script.execute: snow_render }
+  - platform: homeassistant
+    id: snow_runs
+    entity_id: ${runs_entity}
+    on_value: { script.execute: snow_render }
+  - platform: homeassistant
+    id: snow_runs_total
+    entity_id: ${runs_entity}
+    attribute: total
+    on_value: { script.execute: snow_render }
+
+text_sensor:
+  - platform: homeassistant
+    id: snow_opening
+    entity_id: ${opening_entity}
+    on_value: { script.execute: snow_render }
+
+script:
+  # Redraw the chip and the sheet from the latest values (coalesces bursts)
+  - id: snow_render
+    mode: restart
+    then:
+      - delay: 200ms
+      - lambda: |-
+          auto inch = [](float v) -> std::string {
+            if (isnan(v)) return "-";
+            char b[16];
+            if (v < 10.0f && fabsf(v - roundf(v)) >= 0.05f) snprintf(b, sizeof(b), "%.1f\"", v);
+            else snprintf(b, sizeof(b), "%d\"", (int) lroundf(v));
+            return b;
+          };
+          float n24 = id(snow_24h).state;
+          std::string s24 = inch(n24);
+          lv_label_set_text(id(lbl_snow_24h), s24.c_str());
+          lv_label_set_text(id(lbl_chip_snow), s24.c_str());
+          lv_label_set_text(id(lbl_snow_48h), inch(id(snow_48h).state).c_str());
+          lv_label_set_text(id(lbl_snow_72h), inch(id(snow_72h).state).c_str());
+          lv_label_set_text(id(lbl_snow_7d), inch(id(snow_7d).state).c_str());
+          lv_label_set_text(id(lbl_snow_base), inch(id(snow_base).state).c_str());
+          lv_label_set_text(id(lbl_snow_summit), inch(id(snow_summit).state).c_str());
+          lv_label_set_text(id(lbl_snow_season), inch(id(snow_season).state).c_str());
+
+          // Chip: always, or only after new snow
+          bool show = std::string("${chip_show}") == "always" || (!isnan(n24) && n24 > 0.0f);
+          if (show) lv_obj_clear_flag(id(chip_snow), LV_OBJ_FLAG_HIDDEN);
+          else lv_obj_add_flag(id(chip_snow), LV_OBJ_FLAG_HIDDEN);
+
+          // Lifts / runs: "12 of 35" and a fill bar
+          auto open_row = [](float open, float total, lv_obj_t *lbl, lv_obj_t *fill) {
+            char b[24];
+            if (isnan(open)) snprintf(b, sizeof(b), "-");
+            else if (isnan(total) || total <= 0) snprintf(b, sizeof(b), "%d", (int) open);
+            else snprintf(b, sizeof(b), "%d of %d", (int) open, (int) total);
+            lv_label_set_text(lbl, b);
+            float pct = (isnan(open) || isnan(total) || total <= 0) ? 0 : std::min(1.0f, open / total);
+            lv_obj_set_width(fill, (int32_t) lroundf(pct * 404));
+          };
+          open_row(id(snow_lifts).state, id(snow_lifts_total).state, id(lbl_snow_lifts), id(snow_lifts_fill));
+          open_row(id(snow_runs).state, id(snow_runs_total).state, id(lbl_snow_runs), id(snow_runs_fill));
+
+          // Season status: open, or the opening day ("2026-11-06" -> "Nov 6")
+          float lifts = id(snow_lifts).state;
+          std::string d = id(snow_opening).state;
+          int y, m, dd;
+          static const char *months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+          char st[48];
+          if (!isnan(lifts) && lifts > 0) snprintf(st, sizeof(st), "Open for the season");
+          else if (sscanf(d.c_str(), "%d-%d-%d", &y, &m, &dd) == 3 && m >= 1 && m <= 12)
+            snprintf(st, sizeof(st), "Opening day  %s %d, %d", months[m - 1], dd, y);
+          else snprintf(st, sizeof(st), "Closed for the season");
+          lv_label_set_text(id(lbl_snow_status), st);
+
+  - id: snow_open
+    then:
+      - lambda: |-
+          lv_obj_clear_flag(id(snow_panel), LV_OBJ_FLAG_HIDDEN);
+          lv_obj_move_foreground(id(snow_panel));
+
+lvgl:
+  pages:
+    # Holding page (never shown): the chip moves into the status bar and the
+    # sheet onto ui_root at boot
+    - id: holding_snow
+      skip: true
+      widgets:
+        # ── Status-bar chip: snowflake + last 24 h ──────────────────────
+        - obj:
+            id: chip_snow
+            width: SIZE_CONTENT
+            height: 30
+            styles: transparent
+            scrollable: false
+            hidden: true
+            layout:
+              type: FLEX
+              flex_flow: ROW
+              flex_align_main: START
+              flex_align_cross: CENTER
+              flex_align_track: CENTER
+              pad_column: 3
+            widgets:
+              - label:
+                  text: "\U000F0717" # mdi-snowflake
+                  text_font: icons_sm
+                  text_color: 0x9FD3FF
+              - label:
+                  id: lbl_chip_snow
+                  text: "-"
+                  text_font: font_title
+                  text_color: 0x9FD3FF
+            on_click:
+              - script.execute: snow_open
+
+        # ── Snow report sheet (winter night: navy gradient, ice blue) ───
+        - obj:
+            id: snow_panel
+            width: 100%
+            height: 100%
+            align: TOP_LEFT
+            bg_color: 0x0A1830
+            bg_grad_color: 0x1E3F6E
+            bg_grad_dir: VER
+            bg_opa: COVER
+            border_width: 0
+            radius: 0
+            pad_all: 0
+            scrollable: false
+            scrollbar_mode: "off"
+            hidden: true
+            widgets:
+              # Big faint snowflakes behind everything
+              - label:
+                  text: "\U000F0717"
+                  text_font: icons_wx_xl
+                  text_color: 0xFFFFFF
+                  text_opa: 7%
+                  align: TOP_RIGHT
+                  x: -112
+                  y: -8
+              - label:
+                  text: "\U000F0717"
+                  text_font: icons_wx_xl
+                  text_color: 0xFFFFFF
+                  text_opa: 5%
+                  align: BOTTOM_LEFT
+                  x: -18
+                  y: 22
+
+              - label:
+                  text: "\U000F0717" # mdi-snowflake
+                  text_font: icons_md
+                  text_color: 0x9FD3FF
+                  align: TOP_LEFT
+                  x: 18
+                  y: 18
+              - label:
+                  text: "${title}"
+                  text_font: font_title
+                  align: TOP_LEFT
+                  x: 54
+                  y: 22
+              - button:
+                  align: TOP_RIGHT
+                  x: -10
+                  y: 12
+                  width: 90
+                  height: 44
+                  bg_opa: TRANSP
+                  radius: 22
+                  pad_all: 0
+                  pressed:
+                    bg_color: 0xFFFFFF
+                    bg_opa: 10%
+                  widgets:
+                    - label:
+                        text: "Done"
+                        text_font: font_title
+                        text_color: 0x9FD3FF
+                        align: CENTER
+                  on_click:
+                    - lvgl.widget.hide: snow_panel
+
+              # ── New snow: 24 h big, then 48 h / 72 h / 7 days ───────────
+              - obj:
+                  align: TOP_MID
+                  y: 68
+                  width: 440
+                  height: 136
+                  bg_color: 0x10274A
+                  bg_opa: 85%
+                  border_color: 0x2E5487
+                  border_width: 1
+                  radius: 18
+                  pad_all: 0
+                  clickable: false
+                  scrollable: false
+                  scrollbar_mode: "off"
+                  widgets:
+                    - label:
+                        text: "NEW SNOW  ·  24 HOURS"
+                        text_font: font_caption
+                        text_color: 0x9FD3FF
+                        text_letter_space: 1
+                        align: TOP_LEFT
+                        x: 18
+                        y: 16
+                    - label:
+                        id: lbl_snow_24h
+                        text: "-"
+                        text_font: font_temp_xl
+                        align: TOP_LEFT
+                        x: 14
+                        y: 38
+                    - obj:
+                        align: TOP_LEFT
+                        x: 250
+                        y: 18
+                        width: 1
+                        height: 100
+                        bg_color: 0x2E5487
+                        bg_opa: COVER
+                        border_width: 0
+                        radius: 0
+                        pad_all: 0
+                        clickable: false
+                    - label:
+                        text: "48 hours"
+                        text_color: 0x9FB6D6
+                        align: TOP_LEFT
+                        x: 268
+                        y: 22
+                    - label:
+                        id: lbl_snow_48h
+                        text: "-"
+                        text_font: font_title
+                        align: TOP_RIGHT
+                        x: -18
+                        y: 20
+                    - label:
+                        text: "72 hours"
+                        text_color: 0x9FB6D6
+                        align: TOP_LEFT
+                        x: 268
+                        y: 58
+                    - label:
+                        id: lbl_snow_72h
+                        text: "-"
+                        text_font: font_title
+                        align: TOP_RIGHT
+                        x: -18
+                        y: 56
+                    - label:
+                        text: "7 days"
+                        text_color: 0x9FB6D6
+                        align: TOP_LEFT
+                        x: 268
+                        y: 94
+                    - label:
+                        id: lbl_snow_7d
+                        text: "-"
+                        text_font: font_title
+                        align: TOP_RIGHT
+                        x: -18
+                        y: 92
+
+              # ── Depths and season total ─────────────────────────────────
+              - obj:
+                  align: TOP_LEFT
+                  x: 20
+                  y: 216
+                  width: 140
+                  height: 92
+                  bg_color: 0x10274A
+                  bg_opa: 85%
+                  border_color: 0x2E5487
+                  border_width: 1
+                  radius: 16
+                  pad_all: 0
+                  clickable: false
+                  scrollable: false
+                  widgets:
+                    - label:
+                        text: "BASE"
+                        text_font: font_caption
+                        text_color: 0x9FD3FF
+                        text_letter_space: 1
+                        align: TOP_LEFT
+                        x: 14
+                        y: 14
+                    - label:
+                        id: lbl_snow_base
+                        text: "-"
+                        text_font: font_title
+                        align: TOP_LEFT
+                        x: 14
+                        y: 48
+              - obj:
+                  align: TOP_LEFT
+                  x: 170
+                  y: 216
+                  width: 140
+                  height: 92
+                  bg_color: 0x10274A
+                  bg_opa: 85%
+                  border_color: 0x2E5487
+                  border_width: 1
+                  radius: 16
+                  pad_all: 0
+                  clickable: false
+                  scrollable: false
+                  widgets:
+                    - label:
+                        text: "SUMMIT"
+                        text_font: font_caption
+                        text_color: 0x9FD3FF
+                        text_letter_space: 1
+                        align: TOP_LEFT
+                        x: 14
+                        y: 14
+                    - label:
+                        id: lbl_snow_summit
+                        text: "-"
+                        text_font: font_title
+                        align: TOP_LEFT
+                        x: 14
+                        y: 48
+              - obj:
+                  align: TOP_LEFT
+                  x: 320
+                  y: 216
+                  width: 140
+                  height: 92
+                  bg_color: 0x10274A
+                  bg_opa: 85%
+                  border_color: 0x2E5487
+                  border_width: 1
+                  radius: 16
+                  pad_all: 0
+                  clickable: false
+                  scrollable: false
+                  widgets:
+                    - label:
+                        text: "SEASON"
+                        text_font: font_caption
+                        text_color: 0x9FD3FF
+                        text_letter_space: 1
+                        align: TOP_LEFT
+                        x: 14
+                        y: 14
+                    - label:
+                        id: lbl_snow_season
+                        text: "-"
+                        text_font: font_title
+                        align: TOP_LEFT
+                        x: 14
+                        y: 48
+
+              # ── Lifts and runs open (plain objects, not LVGL bars, so the
+              #    Settings slider color doesn't repaint them) ──────────────
+              - obj:
+                  align: TOP_MID
+                  y: 320
+                  width: 440
+                  height: 104
+                  bg_color: 0x10274A
+                  bg_opa: 85%
+                  border_color: 0x2E5487
+                  border_width: 1
+                  radius: 16
+                  pad_all: 0
+                  clickable: false
+                  scrollable: false
+                  scrollbar_mode: "off"
+                  widgets:
+                    - label:
+                        text: "Lifts open"
+                        align: TOP_LEFT
+                        x: 18
+                        y: 14
+                    - label:
+                        id: lbl_snow_lifts
+                        text: "-"
+                        text_color: 0x9FB6D6
+                        align: TOP_RIGHT
+                        x: -18
+                        y: 14
+                    - obj:
+                        align: TOP_LEFT
+                        x: 18
+                        y: 40
+                        width: 404
+                        height: 6
+                        bg_color: 0x0A1830
+                        bg_opa: COVER
+                        border_width: 0
+                        radius: 3
+                        pad_all: 0
+                        clickable: false
+                        scrollable: false
+                        widgets:
+                          - obj:
+                              id: snow_lifts_fill
+                              align: LEFT_MID
+                              width: 0
+                              height: 6
+                              bg_color: 0x9FD3FF
+                              bg_opa: COVER
+                              border_width: 0
+                              radius: 3
+                              pad_all: 0
+                              clickable: false
+                    - label:
+                        text: "Runs open"
+                        align: TOP_LEFT
+                        x: 18
+                        y: 58
+                    - label:
+                        id: lbl_snow_runs
+                        text: "-"
+                        text_color: 0x9FB6D6
+                        align: TOP_RIGHT
+                        x: -18
+                        y: 58
+                    - obj:
+                        align: TOP_LEFT
+                        x: 18
+                        y: 84
+                        width: 404
+                        height: 6
+                        bg_color: 0x0A1830
+                        bg_opa: COVER
+                        border_width: 0
+                        radius: 3
+                        pad_all: 0
+                        clickable: false
+                        scrollable: false
+                        widgets:
+                          - obj:
+                              id: snow_runs_fill
+                              align: LEFT_MID
+                              width: 0
+                              height: 6
+                              bg_color: 0x9FD3FF
+                              bg_opa: COVER
+                              border_width: 0
+                              radius: 3
+                              pad_all: 0
+                              clickable: false
+
+              - label:
+                  id: lbl_snow_status
+                  text: ""
+                  text_font: font_caption
+                  text_color: 0x9FD3FF
+                  text_letter_space: 1
+                  align: TOP_MID
+                  y: 440

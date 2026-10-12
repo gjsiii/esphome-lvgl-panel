@@ -22,7 +22,7 @@ esphome:                       # 2. the panel's identity
 packages:                      # 3. the shared files it's built from
   panel:
     url: https://github.com/gjsiii/esphome-lvgl-panel
-    ref: v0.2.0
+    ref: v0.3.0
     refresh: 1d
     files:
       - hardware/guition-4848s040.yaml      # always
@@ -71,6 +71,8 @@ Set in the display file's `substitutions:`.
 | `idle_dim_brightness` | `"0.30"` | Dim level. |
 | `night_clock_brightness` | `"0.25"` | Backlight behind the night clock. The backlight is gamma-corrected: below about 0.15 the LEDs barely light. |
 | `media_autoswitch_gap_ms` | `"15000"` | A media tab only opens itself if playback starts after being stopped this long (ignores the gap between tracks). |
+| `lights_title` | `"LIGHTS"` | Heading above the sliders on the Lights tab, e.g. `"LIGHTS & SHADES"`. |
+| `update_entity` | `sensor.esphome_lvgl_panel_latest` | HA sensor with the newest released version, for the update notice (`ha/panel_updates.yaml`). |
 | `camera_popup_seconds`, `camera_refresh_seconds` | `"60"`, `"5"` | Camera pop-up duration and refresh interval. |
 | `climate_min`, `climate_max` | `"50"`, `"90"` | Thermostat dial range. |
 | `wind_unit`, `rain_unit` | `mph`, `in` | Units shown on the weather sheet. |
@@ -98,9 +100,10 @@ Items are repeated: include one per light, scene, app, speaker or favorite.
 | File | Vars | Group | Notes |
 |---|---|---|---|
 | `items/scene.yaml` | `slot`, `name`, `entity` | scene chips | `scene.turn_on`. |
-| `items/action_chip.yaml` | `slot`, `name`, `action`, `entity` | scene chips | Any HA action, e.g. `light.turn_off` or `script.turn_on`. `entity` may be a comma-separated list. |
-| `items/light.yaml` | `slot`, `name`, `entity` | sliders | Brightness slider; tap the name to toggle. |
+| `items/action_chip.yaml` | `slot`, `name`, `action`, `entity` | scene chips | Any HA action, e.g. `light.turn_off`, `scene.turn_on` or `script.turn_on`. `entity` may be a comma-separated list (e.g. an HA scene plus a Hue scene). |
+| `items/light.yaml` | `slot`, `name`, `entity` | sliders | Brightness slider; tap the name to toggle, hold it for the color sheet. |
 | `items/fan.yaml` | `slot`, `name`, `entity` | sliders | Fan speed (percentage) slider. |
+| `items/cover.yaml` | `slot`, `name`, `entity` | sliders | Shade / blind / curtain position slider; tap the name to open, close or stop. |
 | `items/tv_app.yaml` | `slot`, `icon`, `source`, `entity` | TV apps | `icon`: path to an image relative to the display file; `source`: the Apple TV source name. |
 | `items/speaker.yaml` | `slot`, `name`, `entity`, `leader` | Play on | `leader` is this room's `music_player`. |
 | `items/favorite.yaml` | `slot`, `name`, `image`, `media_content_id`, `player`, `shuffle` | favorites | `image` relative to the display file; `shuffle: "true"` / `"false"`. |
@@ -115,6 +118,7 @@ Each feature is included at most once, except camera pop-ups and status chips.
 | `features/climate.yaml` | `climate_entity`, `climate_name` | Indoor temperature and the thermostat sheet. |
 | `features/status_chip.yaml` | `chip_id`, `slot`, `entity`, `icon`, `color`, `show_when`, `show_value` | One per status icon. See [Status icons](features.md#status-icons-chips). |
 | `features/marine.yaml` | `marine_entity`, `title`, `open_chip_1`, `open_chip_2` | Full-text forecast sheet opened from status chips. |
+| `features/snow_report.yaml` | `title`, `chip_slot`, `chip_show`, `new_24h_entity`, `new_48h_entity`, `new_72h_entity`, `new_7d_entity`, `base_entity`, `summit_entity`, `season_entity`, `lifts_entity`, `runs_entity`, `opening_entity` | Snowflake chip (24 h new snow) and the ski report sheet. See [Snow report](features.md#snow-report). |
 | `features/camera_popup.yaml` | `popup_id`, `title`, `trigger_entity`, `camera_entity` | One per trigger. |
 | `features/presence_wake.yaml` | `presence_entity` | Wake on presence. |
 
@@ -144,7 +148,7 @@ esphome:
 packages:
   panel:
     url: https://github.com/gjsiii/esphome-lvgl-panel
-    ref: v0.2.0
+    ref: v0.3.0
     refresh: 1d
     files:
       - hardware/guition-4848s040.yaml

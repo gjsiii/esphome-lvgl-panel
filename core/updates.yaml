@@ -1,0 +1,81 @@
+# Core: update notice — when HA reports a newer release of these shared files
+# than this panel was built from, show a card at the top of Settings and a
+# note in About. Nothing appears if the HA sensor doesn't exist.
+#
+# HA side: ha/panel_updates.yaml (a REST sensor that reads the newest version
+# tag from GitHub). The entity is set by the `update_entity` substitution
+# (default sensor.esphome_lvgl_panel_latest, in core/base.yaml).
+
+text_sensor:
+  - platform: homeassistant
+    id: panel_latest
+    entity_id: ${update_entity}
+    on_value:
+      - script.execute: update_notice
+
+script:
+  - id: update_notice
+    mode: restart
+    then:
+      - if:
+          condition:
+            lambda: "return id(ui_ready);"
+          then:
+            - lambda: |-
+                // "v1.2.3" / "1.2.3-dev" -> 1002003 (-1 if not a version)
+                auto key = [](const std::string &v, bool *pre) -> long {
+                  const char *s = v.c_str();
+                  if (*s == 'v' || *s == 'V') s++;
+                  int a = 0, b = 0, c = 0;
+                  if (sscanf(s, "%d.%d.%d", &a, &b, &c) < 2) return -1;
+                  if (pre) *pre = strchr(s, '-') != nullptr;
+                  return a * 1000000L + b * 1000L + c;
+                };
+                bool dev = false;
+                const std::string mine_s = "${panel_version}";
+                long mine = key(mine_s, &dev);
+                std::string latest = id(panel_latest).state;
+                if (!latest.empty() && (latest[0] == 'v' || latest[0] == 'V')) latest.erase(0, 1);
+                long theirs = key(latest, nullptr);
+                // A release is newer than a pre-release of the same number
+                bool newer = theirs > 0 && (theirs > mine || (theirs == mine && dev));
+
+                // Show/hide the card, moving everything below it to match
+                static bool shown = false;
+                if (newer != shown) {
+                  const int32_t shift = 86;   // card height + gap
+                  uint32_t n = lv_obj_get_child_cnt(id(settings_panel));
+                  for (uint32_t k = 0; k < n; k++) {
+                    lv_obj_t *c = lv_obj_get_child(id(settings_panel), k);
+                    if (c == id(update_card)) continue;
+                    int32_t y = lv_obj_get_style_y(c, LV_PART_MAIN);
+                    if (y >= 80) lv_obj_set_y(c, y + (newer ? shift : -shift));
+                  }
+                  if (newer) lv_obj_clear_flag(id(update_card), LV_OBJ_FLAG_HIDDEN);
+                  else lv_obj_add_flag(id(update_card), LV_OBJ_FLAG_HIDDEN);
+                  shown = newer;
+                }
+
+                char buf[160];
+                if (newer) {
+                  snprintf(buf, sizeof(buf),
+                           "v%s is out (this panel has %s). Change ref: to v%s in the display file and install.",
+                           latest.c_str(), mine_s.c_str(), latest.c_str());
+                  lv_label_set_text(id(lbl_update_text), buf);
+                  snprintf(buf, sizeof(buf), "Version %s  ·  v%s available", mine_s.c_str(), latest.c_str());
+                  lv_obj_set_style_text_color(id(lbl_project_status), lv_color_hex(0x30D158), LV_PART_MAIN);
+                } else if (theirs > 0 && theirs == mine) {
+                  snprintf(buf, sizeof(buf), "Version %s  ·  up to date", mine_s.c_str());
+                  lv_obj_set_style_text_color(id(lbl_project_status), lv_color_hex(${c_text_2}), LV_PART_MAIN);
+                } else {
+                  snprintf(buf, sizeof(buf), "Version %s", mine_s.c_str());
+                  lv_obj_set_style_text_color(id(lbl_project_status), lv_color_hex(${c_text_2}), LV_PART_MAIN);
+                }
+                lv_label_set_text(id(lbl_project_status), buf);
+
+esphome:
+  on_boot:
+    # After ui_ready is set (core/settings.yaml, -310)
+    - priority: -320
+      then:
+        - script.execute: update_notice

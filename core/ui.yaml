@@ -211,7 +211,7 @@ lvgl:
 
                               - label:
                                   id: lbl_lights_header
-                                  text: "LIGHTS"
+                                  text: "${lights_title}"
                                   styles: section_header
                                   align: TOP_LEFT
                                   x: 24
@@ -267,6 +267,67 @@ lvgl:
                               align: CENTER
                         on_click:
                           - lvgl.widget.hide: settings_panel
+
+                    # Cleaning mode (touch off for 30 s), next to Done
+                    - button:
+                        id: btn_clean_screen
+                        align: TOP_RIGHT
+                        x: -104
+                        y: 12
+                        width: 44
+                        height: 44
+                        styles: icon_btn
+                        pressed:
+                          bg_color: ${c_surface}
+                          bg_opa: COVER
+                        widgets:
+                          - label:
+                              text: "\U000F0AE0" # mdi-spray-bottle
+                              text_font: icons_md
+                              text_color: ${c_text_2}
+                              align: CENTER
+                        on_click:
+                          - script.execute: cleaning_mode
+
+                    # ── Update notice (core/settings.yaml: update_notice) ──
+                    # Hidden until HA reports a newer release; then the
+                    # rest of the sheet moves down to make room for it.
+                    - obj:
+                        id: update_card
+                        align: TOP_MID
+                        y: 80
+                        width: 448
+                        height: 74
+                        styles: card
+                        border_color: 0x30D158
+                        border_width: 1
+                        clickable: false
+                        scrollable: false
+                        scrollbar_mode: "off"
+                        hidden: true
+                        widgets:
+                          - label:
+                              text: "\U000F06B0" # mdi-update
+                              text_font: icons_md
+                              text_color: 0x30D158
+                              align: LEFT_MID
+                              x: 16
+                          - label:
+                              id: lbl_update_title
+                              text: "Update available"
+                              align: TOP_LEFT
+                              x: 58
+                              y: 13
+                          - label:
+                              id: lbl_update_text
+                              text: ""
+                              text_font: font_caption
+                              text_color: ${c_text_2}
+                              long_mode: WRAP
+                              width: 374
+                              align: TOP_LEFT
+                              x: 58
+                              y: 36
 
                     # ── Display: brightness ─────────────────────────
                     - label:
@@ -1636,6 +1697,81 @@ lvgl:
                         on_long_press:
                           - button.press: btn_restart
 
+                    # ── About this project ──────────────────────────
+                    - label:
+                        text: "ABOUT THIS PROJECT"
+                        styles: section_header
+                        align: TOP_LEFT
+                        x: 32
+                        y: 1888
+                    - obj:
+                        align: TOP_MID
+                        y: 1910
+                        width: 448
+                        height: 176
+                        styles: card
+                        clickable: false
+                        scrollable: false
+                        scrollbar_mode: "off"
+                        widgets:
+                          # QR code on a white tile (quiet zone for scanners)
+                          - obj:
+                              align: TOP_LEFT
+                              x: 16
+                              y: 16
+                              width: 144
+                              height: 144
+                              bg_color: 0xFFFFFF
+                              bg_opa: COVER
+                              border_width: 0
+                              radius: 10
+                              pad_all: 0
+                              clickable: false
+                              scrollable: false
+                              widgets:
+                                - qrcode:
+                                    text: "${project_url}"
+                                    size: 128
+                                    dark_color: 0x000000
+                                    light_color: 0xFFFFFF
+                                    align: CENTER
+                          - label:
+                              text: "${project_name}"
+                              text_font: font_title
+                              long_mode: WRAP
+                              width: 260
+                              align: TOP_LEFT
+                              x: 176
+                              y: 22
+                          - label:
+                              text: "${project_url}"
+                              text_font: font_caption
+                              text_color: ${c_text_2}
+                              long_mode: WRAP
+                              width: 260
+                              align: TOP_LEFT
+                              x: 176
+                              y: 54
+                          - label:
+                              text: "Scan for the code, setup guides and updates."
+                              text_font: font_caption
+                              text_color: ${c_text_2}
+                              long_mode: WRAP
+                              width: 260
+                              align: TOP_LEFT
+                              x: 176
+                              y: 98
+                          # Version + update status (core/settings.yaml: update_notice)
+                          - label:
+                              id: lbl_project_status
+                              text: "Version ${panel_version}"
+                              text_font: font_caption
+                              long_mode: WRAP
+                              width: 260
+                              align: TOP_LEFT
+                              x: 176
+                              y: 138
+
               # ── PIN keypad (Settings lock; core/settings.yaml) ──────
               - obj:
                   id: pin_panel
@@ -2006,3 +2142,39 @@ lvgl:
                 y: 40
           on_click:
             - script.execute: msg_hide
+
+      # ── Cleaning mode cover (core/settings.yaml: cleaning_mode) ────────────
+      # Full screen and clickable, so it swallows every touch while shown.
+      - obj:
+          id: clean_overlay
+          width: 100%
+          height: 100%
+          align: TOP_LEFT
+          styles: container
+          scrollable: false
+          scrollbar_mode: "off"
+          hidden: true
+          widgets:
+            - label:
+                text: "\U000F0AE0" # mdi-spray-bottle
+                text_font: icons_xl
+                text_color: ${c_text_2}
+                align: CENTER
+                y: -110
+            - label:
+                text: "Cleaning mode"
+                text_font: font_title
+                align: CENTER
+                y: -56
+            - label:
+                id: lbl_clean_count
+                text: "30"
+                text_font: font_temp_xl
+                align: CENTER
+                y: 20
+            - label:
+                text: "Touch is off — wipe away. It turns back on by itself."
+                text_font: font_caption
+                text_color: ${c_text_2}
+                align: CENTER
+                y: 92

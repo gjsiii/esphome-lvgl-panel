@@ -559,6 +559,26 @@ script:
           for (size_t k = 0; k < 4; k++)
             lv_obj_set_style_bg_opa(d[k], k < id(pin_entry).size() ? LV_OPA_COVER : LV_OPA_TRANSP, LV_PART_MAIN);
 
+  # Cleaning mode: a full-screen cover on the top layer swallows every touch
+  # for 30 s (with a countdown) so the screen can be wiped.
+  - id: cleaning_mode
+    mode: restart
+    then:
+      - lambda: |-
+          lv_obj_add_flag(id(settings_panel), LV_OBJ_FLAG_HIDDEN);
+          lv_obj_clear_flag(id(clean_overlay), LV_OBJ_FLAG_HIDDEN);
+          lv_obj_move_foreground(id(clean_overlay));
+      - repeat:
+          count: 30
+          then:
+            - lambda: |-
+                char buf[24];
+                snprintf(buf, sizeof(buf), "%d", 30 - (int) iteration);
+                lv_label_set_text(id(lbl_clean_count), buf);
+                lv_disp_trig_activity(NULL);   // stay awake while cleaning
+            - delay: 1s
+      - lvgl.widget.hide: clean_overlay
+
   # Close any open sheet (Settings, Weather, ...): every child of ui_root
   # after the status bar and the tab view.
   - id: close_sheets
@@ -636,3 +656,12 @@ interval:
   - interval: 30s
     then:
       - script.execute: night_check
+
+button:
+  # Start cleaning mode from Home Assistant (also on the panel: Settings header)
+  - platform: template
+    id: btn_cleaning_mode
+    name: Cleaning Mode
+    icon: mdi:spray-bottle
+    on_press:
+      - script.execute: cleaning_mode

@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.3.0 — 2026-10-12
+
+- Settings → About this project: QR code, repository name and link
+  (github.com/gjsiii/esphome-lvgl-panel) and the panel version.
+- Cleaning mode: the spray-bottle button in the Settings header (or the
+  "Cleaning Mode" button in HA) turns touch off for 30 seconds with a
+  countdown, so the screen can be wiped.
+- Light color sheet: hold a light's name for brightness, warmth (color
+  temperature) and color (hue, saturation, a white swatch and seven color
+  swatches). Only the sections the light supports are shown; lights that only
+  dim ignore the hold. Tapping the name still toggles.
+- Shades, blinds and curtains (`items/cover.yaml`): a position slider in the
+  lights list; tap the name to open/close, or stop while moving. New
+  `lights_title` substitution to rename the LIGHTS heading.
+- Snow report (`features/snow_report.yaml`): a snowflake status chip with the
+  last 24 hours of new snow, and a winter-themed sheet with new snow (24 h /
+  48 h / 72 h / 7 days), base and summit depth, season total, lifts and runs
+  open and opening day.
+- Update notice: with `ha/panel_updates.yaml` in HA (reads the newest version
+  tag from GitHub), Settings shows an "Update available" card and About shows
+  whether the panel is up to date.
+- Docs: mixed Hue + Lutron rooms now use an HA scene plus the Hue scene on one
+  chip (comma-separated `entity`) instead of a script, with a recipe for
+  "follow" automations; smart bulbs should stay powered and use their own group.
+
 ## v0.2.0 — 2026-10-08
 
 - Documentation: `docs/` guides (getting started, using the panel, display

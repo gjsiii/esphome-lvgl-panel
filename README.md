@@ -17,8 +17,8 @@ each panel keeps its own rooms, lights, speakers and TV.
 
 ## What it does
 
-- **Lights** — scene buttons and big iOS-style sliders for lights and fans. Tap a
-  name to toggle, drag to dim.
+- **Lights** — scene buttons and big iOS-style sliders for lights, fans and
+  shades. Tap a name to toggle, drag to dim, hold for warmth and color.
 - **TV** — an Apple TV remote (d-pad, home, back, play/pause, skip, volume),
   app buttons, and the artwork of whatever is playing.
 - **Music** — Now Playing for a Music Assistant or Sonos speaker: artwork,
@@ -29,6 +29,8 @@ each panel keeps its own rooms, lights, speakers and TV.
   icons (garage open, packages waiting, …) and the HA connection.
 - **Weather** — current conditions, the next 15 hours and 5 days.
 - **Climate** — a thermostat dial with Off / Heat / Cool / Auto.
+- **Snow report** — new snow in the status bar and a winter-themed ski report
+  (depths, season total, lifts and runs open).
 - **Camera pop-ups** — the gate opens or the doorbell rings, and the camera
   appears.
 - **Messages** — Home Assistant automations can put a banner on any panel
@@ -36,7 +38,8 @@ each panel keeps its own rooms, lights, speakers and TV.
 - **Screen care** — dims, sleeps or shows a night clock; night mode; nightly
   anti-burn.
 - **Settings on the panel and in Home Assistant** — brightness, slider color,
-  screen timing, night mode, 24-hour clock, PIN lock, and an About page.
+  screen timing, night mode, 24-hour clock, PIN lock, cleaning mode, an About
+  page with a QR code, and a notice when an update is out.
 - **TV and Music tabs open themselves** when something starts playing.
 
 Every feature is optional and every list (scenes, lights, apps, speakers,
@@ -70,7 +73,8 @@ integration. Music features work best with
    into your Home Assistant's `/config/esphome/` and fill in the lines marked ◀.
 2. Add the secrets it names to `/config/esphome/secrets.yaml`.
 3. Copy [`ha/panel_weather.yaml`](ha/panel_weather.yaml) and
-   [`ha/panel_messages.yaml`](ha/panel_messages.yaml) into HA's `/config/packages/`
+   [`ha/panel_messages.yaml`](ha/panel_messages.yaml) (and optionally
+   [`ha/panel_updates.yaml`](ha/panel_updates.yaml)) into HA's `/config/packages/`
    and restart Home Assistant.
 4. Install over USB from the ESPHome dashboard (first time only), adopt the
    device in HA, and turn on **"Allow the device to perform Home Assistant

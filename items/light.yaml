@@ -4,6 +4,8 @@
 #   light_1: !include { file: panel/items/light.yaml, vars: { slot: 1, name: "Chandelier", entity: light.family_room_chandelier } }
 #
 # Tap the name to toggle the light; drag anywhere else to set brightness.
+# Hold the name to open the color sheet (core/light_sheet.yaml) for lights
+# with color temperature or color; lights that only dim ignore the hold.
 # The slider is built on a hidden holding page and moved into `lights_list`
 # at boot. HA is updated once, when the finger lifts.
 
@@ -32,6 +34,26 @@ sensor:
                 text: !lambda 'return std::to_string((int) lroundf(x * 100.0f / 255.0f)) + "%";'
             - lambda: "id(slider_ha_update) = false;"
             - script.execute: update_slider_labels
+            - script.execute: light_sheet_sync_${slot}
+  # For the color sheet
+  - platform: homeassistant
+    id: light_kelvin_${slot}
+    entity_id: ${entity}
+    attribute: color_temp_kelvin
+    on_value:
+      - script.execute: light_sheet_sync_${slot}
+
+text_sensor:
+  - platform: homeassistant
+    id: light_modes_${slot}
+    entity_id: ${entity}
+    attribute: supported_color_modes
+  - platform: homeassistant
+    id: light_hs_${slot}
+    entity_id: ${entity}
+    attribute: hs_color
+    on_value:
+      - script.execute: light_sheet_sync_${slot}
 
 binary_sensor:
   - platform: homeassistant
@@ -51,6 +73,30 @@ binary_sensor:
                 text: "0%"
             - lambda: "id(slider_ha_update) = false;"
             - script.execute: update_slider_labels
+      - script.execute: light_sheet_sync_${slot}
+
+script:
+  # Fill the color sheet with this light's values
+  - id: light_sheet_load_${slot}
+    then:
+      - script.execute:
+          id: light_sheet_fill
+          name: "${name}"
+          is_on: !lambda "return id(light_state_${slot}).state;"
+          bri: !lambda "return (int) lv_slider_get_value(id(light_slider_${slot}));"
+          modes: !lambda "return id(light_modes_${slot}).state;"
+          kelvin: !lambda "return id(light_kelvin_${slot}).state;"
+          hs: !lambda "return id(light_hs_${slot}).state;"
+  # HA changed this light: refresh the sheet if it's open for it
+  - id: light_sheet_sync_${slot}
+    mode: restart
+    then:
+      - if:
+          condition:
+            lambda: "return id(light_sheet_slot) == ${slot} && !lv_obj_has_flag(id(ls_panel), LV_OBJ_FLAG_HIDDEN);"
+          then:
+            - delay: 100ms
+            - script.execute: light_sheet_load_${slot}
 
 lvgl:
   pages:
@@ -99,7 +145,8 @@ lvgl:
                   text_color: ${c_text_2}
                   align: RIGHT_MID
                   x: -18
-              # Tap the name to toggle the light on/off (drag elsewhere to dim).
+              # Tap the name to toggle the light on/off (drag elsewhere to dim);
+              # hold it for the color sheet.
               # Last child, so it sits on top of the slider's left end.
               - button:
                   id: light_toggle_${slot}
@@ -112,8 +159,21 @@ lvgl:
                   pressed:
                     bg_color: ${c_text}
                     bg_opa: 15%
-                  on_click:
+                  on_short_click:
                     - homeassistant.action:
                         action: light.toggle
                         data:
                           entity_id: ${entity}
+                  on_long_press:
+                    - if:
+                        condition:
+                          lambda: |-
+                            const std::string &m = id(light_modes_${slot}).state;
+                            return m.find("color_temp") != std::string::npos || m.find("hs") != std::string::npos ||
+                                   m.find("xy") != std::string::npos || m.find("rgb") != std::string::npos;
+                        then:
+                          - lambda: |-
+                              id(light_sheet_entity) = "${entity}";
+                              id(light_sheet_slot) = ${slot};
+                          - script.execute: light_sheet_load_${slot}
+                          - script.execute: light_sheet_show
