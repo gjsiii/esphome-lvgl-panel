@@ -277,16 +277,16 @@ lvgl:
                   text: "Weather"
                   text_font: font_title
                   align: TOP_LEFT
-                  x: 20
-                  y: 22
+                  x: ${20*px}
+                  y: ${22*px}
               - button:
                   align: TOP_RIGHT
-                  x: -10
-                  y: 12
-                  width: 90
-                  height: 44
+                  x: -${10*px}
+                  y: ${12*px}
+                  width: ${90*px}
+                  height: ${44*px}
                   bg_opa: TRANSP
-                  radius: 22
+                  radius: ${22*px}
                   pad_all: 0
                   pressed:
                     bg_color: ${c_surface}
@@ -306,31 +306,31 @@ lvgl:
                   text: "\U000F0595"
                   text_font: icons_wx_xl
                   align: TOP_LEFT
-                  x: 24
-                  y: 64
+                  x: ${24*px}
+                  y: ${64*px}
               - label:
                   id: lbl_wx_now_temp
                   text: "--°"
                   text_font: font_temp_xl
                   align: TOP_LEFT
-                  x: 108
-                  y: 58
+                  x: ${108*px}
+                  y: ${58*px}
               - label:
                   id: lbl_wx_now_cond
                   text: "—"
                   text_font: font_title
                   long_mode: DOT
-                  width: 210
+                  width: ${210*px}
                   align: TOP_LEFT
-                  x: 252
-                  y: 76
+                  x: ${252*px}
+                  y: ${76*px}
               - label:
                   id: lbl_wx_hilo
                   text: ""
                   text_color: ${c_text_2}
                   align: TOP_LEFT
-                  x: 252
-                  y: 106
+                  x: ${252*px}
+                  y: ${106*px}
 
               # ── Details: humidity · wind · UV ─────────────────────
               - label:
@@ -339,16 +339,16 @@ lvgl:
                   text_font: font_caption
                   text_color: ${c_text_2}
                   text_align: CENTER
-                  width: 440
+                  width: ${440*px}
                   align: TOP_MID
-                  y: 160
+                  y: ${160*px}
 
               # ── Next 15 hours (now + every 3 h) ───────────────────
               - obj:
                   align: TOP_MID
-                  y: 184
-                  width: 448
-                  height: 92
+                  y: ${184*px}
+                  width: ${448*px}
+                  height: ${92*px}
                   styles: card
                   clickable: false
                   scrollable: false
@@ -360,169 +360,169 @@ lvgl:
                         text_font: font_caption
                         text_color: ${c_text_2}
                         text_align: CENTER
-                        width: 74
+                        width: ${74*px}
                         align: TOP_LEFT
-                        x: 2
-                        y: 8
+                        x: ${2*px}
+                        y: ${8*px}
                     - label:
                         id: wx_h0_icon
                         text: ""
                         text_font: icons_md
                         text_align: CENTER
-                        width: 74
+                        width: ${74*px}
                         align: TOP_LEFT
-                        x: 2
-                        y: 28
+                        x: ${2*px}
+                        y: ${28*px}
                     - label:
                         id: wx_h0_temp
                         text: "--"
                         text_align: CENTER
-                        width: 74
+                        width: ${74*px}
                         align: TOP_LEFT
-                        x: 2
-                        y: 62
+                        x: ${2*px}
+                        y: ${62*px}
                     - label:
                         id: wx_h1_time
                         text: "--"
                         text_font: font_caption
                         text_color: ${c_text_2}
                         text_align: CENTER
-                        width: 74
+                        width: ${74*px}
                         align: TOP_LEFT
-                        x: 76
-                        y: 8
+                        x: ${76*px}
+                        y: ${8*px}
                     - label:
                         id: wx_h1_icon
                         text: ""
                         text_font: icons_md
                         text_align: CENTER
-                        width: 74
+                        width: ${74*px}
                         align: TOP_LEFT
-                        x: 76
-                        y: 28
+                        x: ${76*px}
+                        y: ${28*px}
                     - label:
                         id: wx_h1_temp
                         text: "--"
                         text_align: CENTER
-                        width: 74
+                        width: ${74*px}
                         align: TOP_LEFT
-                        x: 76
-                        y: 62
+                        x: ${76*px}
+                        y: ${62*px}
                     - label:
                         id: wx_h2_time
                         text: "--"
                         text_font: font_caption
                         text_color: ${c_text_2}
                         text_align: CENTER
-                        width: 74
+                        width: ${74*px}
                         align: TOP_LEFT
-                        x: 150
-                        y: 8
+                        x: ${150*px}
+                        y: ${8*px}
                     - label:
                         id: wx_h2_icon
                         text: ""
                         text_font: icons_md
                         text_align: CENTER
-                        width: 74
+                        width: ${74*px}
                         align: TOP_LEFT
-                        x: 150
-                        y: 28
+                        x: ${150*px}
+                        y: ${28*px}
                     - label:
                         id: wx_h2_temp
                         text: "--"
                         text_align: CENTER
-                        width: 74
+                        width: ${74*px}
                         align: TOP_LEFT
-                        x: 150
-                        y: 62
+                        x: ${150*px}
+                        y: ${62*px}
                     - label:
                         id: wx_h3_time
                         text: "--"
                         text_font: font_caption
                         text_color: ${c_text_2}
                         text_align: CENTER
-                        width: 74
+                        width: ${74*px}
                         align: TOP_LEFT
-                        x: 224
-                        y: 8
+                        x: ${224*px}
+                        y: ${8*px}
                     - label:
                         id: wx_h3_icon
                         text: ""
                         text_font: icons_md
                         text_align: CENTER
-                        width: 74
+                        width: ${74*px}
                         align: TOP_LEFT
-                        x: 224
-                        y: 28
+                        x: ${224*px}
+                        y: ${28*px}
                     - label:
                         id: wx_h3_temp
                         text: "--"
                         text_align: CENTER
-                        width: 74
+                        width: ${74*px}
                         align: TOP_LEFT
-                        x: 224
-                        y: 62
+                        x: ${224*px}
+                        y: ${62*px}
                     - label:
                         id: wx_h4_time
                         text: "--"
                         text_font: font_caption
                         text_color: ${c_text_2}
                         text_align: CENTER
-                        width: 74
+                        width: ${74*px}
                         align: TOP_LEFT
-                        x: 298
-                        y: 8
+                        x: ${298*px}
+                        y: ${8*px}
                     - label:
                         id: wx_h4_icon
                         text: ""
                         text_font: icons_md
                         text_align: CENTER
-                        width: 74
+                        width: ${74*px}
                         align: TOP_LEFT
-                        x: 298
-                        y: 28
+                        x: ${298*px}
+                        y: ${28*px}
                     - label:
                         id: wx_h4_temp
                         text: "--"
                         text_align: CENTER
-                        width: 74
+                        width: ${74*px}
                         align: TOP_LEFT
-                        x: 298
-                        y: 62
+                        x: ${298*px}
+                        y: ${62*px}
                     - label:
                         id: wx_h5_time
                         text: "--"
                         text_font: font_caption
                         text_color: ${c_text_2}
                         text_align: CENTER
-                        width: 74
+                        width: ${74*px}
                         align: TOP_LEFT
-                        x: 372
-                        y: 8
+                        x: ${372*px}
+                        y: ${8*px}
                     - label:
                         id: wx_h5_icon
                         text: ""
                         text_font: icons_md
                         text_align: CENTER
-                        width: 74
+                        width: ${74*px}
                         align: TOP_LEFT
-                        x: 372
-                        y: 28
+                        x: ${372*px}
+                        y: ${28*px}
                     - label:
                         id: wx_h5_temp
                         text: "--"
                         text_align: CENTER
-                        width: 74
+                        width: ${74*px}
                         align: TOP_LEFT
-                        x: 372
-                        y: 62
+                        x: ${372*px}
+                        y: ${62*px}
 
               # ── Next 5 days ───────────────────────────────────────
               - obj:
                   align: TOP_MID
-                  y: 286
-                  width: 448
-                  height: 166
+                  y: ${286*px}
+                  width: ${448*px}
+                  height: ${166*px}
                   styles: card
                   clickable: false
                   scrollable: false
@@ -531,198 +531,198 @@ lvgl:
                     - label:
                         id: wx_d0_day
                         text: "--"
-                        width: 80
+                        width: ${80*px}
                         align: TOP_LEFT
-                        x: 16
-                        y: 10
+                        x: ${16*px}
+                        y: ${10*px}
                     - label:
                         id: wx_d0_icon
                         text: ""
                         text_font: icons_md
                         align: TOP_LEFT
-                        x: 104
-                        y: 5
+                        x: ${104*px}
+                        y: ${5*px//1}
                     - label:
                         id: wx_d0_rain
                         text: ""
                         text_font: font_caption
                         text_color: ${c_text_2}
                         align: TOP_LEFT
-                        x: 146
-                        y: 13
+                        x: ${146*px}
+                        y: ${13*px//1}
                     - label:
                         id: wx_d0_lo
                         text: ""
                         text_color: ${c_text_2}
                         text_align: RIGHT
-                        width: 56
+                        width: ${56*px}
                         align: TOP_RIGHT
-                        x: -84
-                        y: 10
+                        x: -${84*px}
+                        y: ${10*px}
                     - label:
                         id: wx_d0_hi
                         text: ""
                         text_align: RIGHT
-                        width: 56
+                        width: ${56*px}
                         align: TOP_RIGHT
-                        x: -16
-                        y: 10
+                        x: -${16*px}
+                        y: ${10*px}
                     - label:
                         id: wx_d1_day
                         text: "--"
-                        width: 80
+                        width: ${80*px}
                         align: TOP_LEFT
-                        x: 16
-                        y: 42
+                        x: ${16*px}
+                        y: ${42*px}
                     - label:
                         id: wx_d1_icon
                         text: ""
                         text_font: icons_md
                         align: TOP_LEFT
-                        x: 104
-                        y: 37
+                        x: ${104*px}
+                        y: ${37*px//1}
                     - label:
                         id: wx_d1_rain
                         text: ""
                         text_font: font_caption
                         text_color: ${c_text_2}
                         align: TOP_LEFT
-                        x: 146
-                        y: 45
+                        x: ${146*px}
+                        y: ${45*px//1}
                     - label:
                         id: wx_d1_lo
                         text: ""
                         text_color: ${c_text_2}
                         text_align: RIGHT
-                        width: 56
+                        width: ${56*px}
                         align: TOP_RIGHT
-                        x: -84
-                        y: 42
+                        x: -${84*px}
+                        y: ${42*px}
                     - label:
                         id: wx_d1_hi
                         text: ""
                         text_align: RIGHT
-                        width: 56
+                        width: ${56*px}
                         align: TOP_RIGHT
-                        x: -16
-                        y: 42
+                        x: -${16*px}
+                        y: ${42*px}
                     - label:
                         id: wx_d2_day
                         text: "--"
-                        width: 80
+                        width: ${80*px}
                         align: TOP_LEFT
-                        x: 16
-                        y: 74
+                        x: ${16*px}
+                        y: ${74*px}
                     - label:
                         id: wx_d2_icon
                         text: ""
                         text_font: icons_md
                         align: TOP_LEFT
-                        x: 104
-                        y: 69
+                        x: ${104*px}
+                        y: ${69*px//1}
                     - label:
                         id: wx_d2_rain
                         text: ""
                         text_font: font_caption
                         text_color: ${c_text_2}
                         align: TOP_LEFT
-                        x: 146
-                        y: 77
+                        x: ${146*px}
+                        y: ${77*px//1}
                     - label:
                         id: wx_d2_lo
                         text: ""
                         text_color: ${c_text_2}
                         text_align: RIGHT
-                        width: 56
+                        width: ${56*px}
                         align: TOP_RIGHT
-                        x: -84
-                        y: 74
+                        x: -${84*px}
+                        y: ${74*px}
                     - label:
                         id: wx_d2_hi
                         text: ""
                         text_align: RIGHT
-                        width: 56
+                        width: ${56*px}
                         align: TOP_RIGHT
-                        x: -16
-                        y: 74
+                        x: -${16*px}
+                        y: ${74*px}
                     - label:
                         id: wx_d3_day
                         text: "--"
-                        width: 80
+                        width: ${80*px}
                         align: TOP_LEFT
-                        x: 16
-                        y: 106
+                        x: ${16*px}
+                        y: ${106*px}
                     - label:
                         id: wx_d3_icon
                         text: ""
                         text_font: icons_md
                         align: TOP_LEFT
-                        x: 104
-                        y: 101
+                        x: ${104*px}
+                        y: ${101*px//1}
                     - label:
                         id: wx_d3_rain
                         text: ""
                         text_font: font_caption
                         text_color: ${c_text_2}
                         align: TOP_LEFT
-                        x: 146
-                        y: 109
+                        x: ${146*px}
+                        y: ${109*px//1}
                     - label:
                         id: wx_d3_lo
                         text: ""
                         text_color: ${c_text_2}
                         text_align: RIGHT
-                        width: 56
+                        width: ${56*px}
                         align: TOP_RIGHT
-                        x: -84
-                        y: 106
+                        x: -${84*px}
+                        y: ${106*px}
                     - label:
                         id: wx_d3_hi
                         text: ""
                         text_align: RIGHT
-                        width: 56
+                        width: ${56*px}
                         align: TOP_RIGHT
-                        x: -16
-                        y: 106
+                        x: -${16*px}
+                        y: ${106*px}
                     - label:
                         id: wx_d4_day
                         text: "--"
-                        width: 80
+                        width: ${80*px}
                         align: TOP_LEFT
-                        x: 16
-                        y: 138
+                        x: ${16*px}
+                        y: ${138*px}
                     - label:
                         id: wx_d4_icon
                         text: ""
                         text_font: icons_md
                         align: TOP_LEFT
-                        x: 104
-                        y: 133
+                        x: ${104*px}
+                        y: ${133*px//1}
                     - label:
                         id: wx_d4_rain
                         text: ""
                         text_font: font_caption
                         text_color: ${c_text_2}
                         align: TOP_LEFT
-                        x: 146
-                        y: 141
+                        x: ${146*px}
+                        y: ${141*px//1}
                     - label:
                         id: wx_d4_lo
                         text: ""
                         text_color: ${c_text_2}
                         text_align: RIGHT
-                        width: 56
+                        width: ${56*px}
                         align: TOP_RIGHT
-                        x: -84
-                        y: 138
+                        x: -${84*px}
+                        y: ${138*px}
                     - label:
                         id: wx_d4_hi
                         text: ""
                         text_align: RIGHT
-                        width: 56
+                        width: ${56*px}
                         align: TOP_RIGHT
-                        x: -16
-                        y: 138
+                        x: -${16*px}
+                        y: ${138*px}
 
               # ── Last forecast update ──────────────────────────────
               - label:
@@ -731,4 +731,4 @@ lvgl:
                   text_font: font_caption
                   text_color: ${c_text_2}
                   align: TOP_MID
-                  y: 458
+                  y: ${458*px}

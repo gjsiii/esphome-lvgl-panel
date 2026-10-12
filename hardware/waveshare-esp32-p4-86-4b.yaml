@@ -1,0 +1,251 @@
+# Hardware package: Waveshare ESP32-P4-WIFI6-Touch-LCD-4B
+# (4" 720x720 MIPI-DSI, GT911 touch, 86-box wall mount, built-in speaker and mics)
+# https://www.waveshare.com/wiki/ESP32-P4-WIFI6-Touch-LCD-4B
+#
+#   ESP32-P4 (32 MB PSRAM, 32 MB flash) + ESP32-C6 Wi-Fi 6 radio over SDIO
+#   ES8311 DAC + 2 W speaker (amp on GPIO53), ES7210 ADC + two microphones
+#
+# Provides: my_display, my_touchscreen, display_backlight, and the audio parts
+# features/voice_assistant.yaml needs: panel_microphone, panel_media_player
+# ("Panel Speaker" in HA, for voice replies and TTS announcements),
+# audio_amplifier, media_mixing_input.
+#
+# The first install must be over USB; OTA works afterward (the screen goes
+# dark during OTA to avoid flicker).
+#
+# Board settings a display file can override in its substitutions:
+#
+#   p4_engineering_sample: true     Early boards have pre-rev3 "engineering
+#                                   sample" chips: the boot log shows
+#                                   "esp32p4-eco2" or a chip revision below
+#                                   v3.0. Builds for the wrong revision crash
+#                                   at boot.
+#   p4_cpu_frequency: 360MHz        Engineering samples max out at 360MHz;
+#                                   400MHz is still experimental in ESPHome.
+#   p4_psram_speed: 200MHz          Use 100MHz if the screen shows a
+#                                   flickering band at one edge.
+#   dsi_pclk: 30MHz                 Display pixel clock (default 38MHz is
+#                                   60 Hz). Lower = fewer band/underrun
+#                                   problems; 30MHz is about 48 Hz.
+#   lvgl_rotation: "0"              0, 90, 180 or 270, to match how the panel
+#                                   is mounted.
+
+substitutions:
+  # Shared-file settings (see hardware/guition-4848s040.yaml)
+  px: 1.5                  # 720 / 480
+  lvgl_buffer_size: 100%   # full-screen buffer: required for clean MIPI-DSI updates
+
+  # Board settings
+  p4_engineering_sample: false   # unquoted: true / false
+  p4_cpu_frequency: 360MHz
+  p4_psram_speed: 200MHz
+  dsi_pclk: 30MHz
+  lvgl_rotation: "0"
+
+esp32:
+  variant: esp32p4
+  engineering_sample: ${p4_engineering_sample}
+  flash_size: 32MB
+  cpu_frequency: ${p4_cpu_frequency}
+  framework:
+    type: esp-idf
+    advanced:
+      enable_idf_experimental_features: true
+      # execute_from_psram: true would reduce OTA flicker, but has stopped
+      # some units from booting.
+    # Not used here: CONFIG_SPIRAM_FETCH_INSTRUCTIONS / CONFIG_SPIRAM_RODATA
+    # (from Waveshare's firmware) run code from PSRAM, which competes with the
+    # display's frame-buffer reads and caused a flickering band.
+
+psram:
+  speed: ${p4_psram_speed}
+
+# The board's USB-C port is a CH343 USB-serial chip wired to UART0, so send
+# the log (and crash reports) there; the P4's own USB isn't on the connector.
+logger:
+  hardware_uart: UART0
+
+# MIPI-DSI PHY power
+esp_ldo:
+  - channel: 3
+    voltage: 2.5V
+
+# ESP32-C6 radio co-processor (SDIO)
+esp32_hosted:
+  variant: ESP32C6
+  active_high: true
+  reset_pin: GPIO54
+  cmd_pin: GPIO19
+  clk_pin: GPIO18
+  d0_pin: GPIO14
+  d1_pin: GPIO15
+  d2_pin: GPIO16
+  d3_pin: GPIO17
+  # Put the Wi-Fi link's transport buffers in PSRAM. Without this they take
+  # internal RAM at startup and, with the full panel UI, the chip runs out
+  # before the system finishes starting ("vApplicationGetTimerTaskMemory"
+  # assert, then a reboot loop).
+  use_psram: true
+
+# ── Backlight, touch, display ────────────────────────────────────────────────
+
+output:
+  - platform: ledc
+    id: backlight_output
+    pin: GPIO26
+    frequency: 100Hz
+    inverted: true
+    min_power: 0.05   # lowest level that stays visible
+    max_power: 0.8    # limit heat (per Waveshare community configs)
+
+light:
+  - platform: monochromatic
+    name: Backlight
+    id: display_backlight
+    # A config entity, so Assist doesn't count it as one of the room's
+    # lights ("turn off the kitchen lights" would blank the screen)
+    entity_category: config
+    output: backlight_output
+    restore_mode: ALWAYS_ON
+    default_transition_length: 1s
+
+i2c:
+  - id: i2c_bus_a
+    sda: GPIO7
+    scl: GPIO8
+    frequency: 400kHz
+
+touchscreen:
+  - platform: gt911
+    id: my_touchscreen
+    display: my_display
+    i2c_id: i2c_bus_a
+
+display:
+  - platform: mipi_dsi
+    id: my_display
+    model: WAVESHARE-P4-86-PANEL
+    # Hardware reset of the panel controller; without it the panel can start
+    # in a corrupted state (flickering bands).
+    reset_pin:
+      number: 27
+      inverted: false
+    pclk_frequency: ${dsi_pclk}
+
+lvgl:
+  rotation: ${lvgl_rotation}
+  byte_order: little_endian
+
+# ── Audio: ES8311 DAC -> speaker, ES7210 ADC -> microphones ─────────────────
+
+i2s_audio:
+  - id: i2s_audio_bus
+    i2s_mclk_pin: GPIO13
+    i2s_lrclk_pin: GPIO10
+    i2s_bclk_pin: GPIO12
+
+audio_dac:
+  - platform: es8311
+    id: es8311_dac
+    i2c_id: i2c_bus_a
+    address: 0x18
+
+audio_adc:
+  - platform: es7210
+    id: es7210_adc
+    i2c_id: i2c_bus_a
+    address: 0x40
+
+microphone:
+  - platform: i2s_audio
+    id: panel_microphone
+    i2s_audio_id: i2s_audio_bus
+    i2s_din_pin: GPIO11
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    adc_type: external
+
+speaker:
+  - platform: i2s_audio
+    id: panel_speaker
+    i2s_audio_id: i2s_audio_bus
+    i2s_dout_pin: GPIO9
+    audio_dac: es8311_dac
+    dac_type: external
+    channel: mono
+    buffer_duration: 100ms
+    bits_per_sample: 16bit
+    sample_rate: 48000
+
+  - platform: mixer
+    id: mixing_speaker
+    output_speaker: panel_speaker
+    source_speakers:
+      - id: announcement_mixing_input
+        timeout: never
+      - id: media_mixing_input
+        timeout: never
+
+  - platform: resampler
+    id: announcement_resampling_speaker
+    output_speaker: announcement_mixing_input
+    sample_rate: 48000
+    bits_per_sample: 16
+
+  - platform: resampler
+    id: media_resampling_speaker
+    output_speaker: media_mixing_input
+    sample_rate: 48000
+    bits_per_sample: 16
+
+switch:
+  # Speaker amplifier: on only while something plays
+  - platform: gpio
+    pin: GPIO53
+    name: "Audio Amplifier"
+    id: audio_amplifier
+    restore_mode: ALWAYS_OFF
+    internal: true
+
+# The panel's own speaker. features/voice_assistant.yaml adds its actions to
+# these triggers (ESPHome appends them after the ones here).
+media_player:
+  - platform: speaker
+    name: "Panel Speaker"
+    id: panel_media_player
+    volume_min: 0.4
+    volume_max: 0.85
+    volume_increment: 0.05
+    announcement_pipeline:
+      speaker: announcement_resampling_speaker
+      format: FLAC
+      sample_rate: 48000
+      num_channels: 1
+    media_pipeline:
+      speaker: media_resampling_speaker
+      format: FLAC
+      sample_rate: 48000
+      num_channels: 1
+    on_announcement:
+      # Lower any music under the announcement
+      - mixer_speaker.apply_ducking:
+          id: media_mixing_input
+          decibel_reduction: 20
+          duration: 0.0s
+      - switch.turn_on: audio_amplifier
+    on_state:
+      - if:
+          condition:
+            not:
+              media_player.is_announcing:
+          then:
+            - mixer_speaker.apply_ducking:
+                id: media_mixing_input
+                decibel_reduction: 0
+                duration: 1.0s
+    on_play:
+      - switch.turn_on: audio_amplifier
+      - delay: 100ms
+    on_idle:
+      - delay: 100ms
+      - switch.turn_off: audio_amplifier

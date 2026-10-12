@@ -44,8 +44,28 @@ packages:                      # 3. the shared files it's built from
 
 | File | Purpose |
 |---|---|
-| `hardware/guition-4848s040.yaml` | Display, touch, backlight, relays, 16 MB flash, PSRAM. |
+| One hardware file (below) | The board: display, touch, backlight, flash, PSRAM. |
 | `core/core.yaml` | Everything shared: theme, status bar, Lights tab, settings, screen care, messages, About. |
+
+### Hardware
+
+| File | Board |
+|---|---|
+| `hardware/guition-4848s040.yaml` | Guition ESP32-S3-4848S040: 4″ 480×480, relays, 16 MB flash. |
+| `hardware/waveshare-esp32-p4-86-4b.yaml` | Waveshare ESP32-P4-WIFI6-Touch-LCD-4B: 4″ 720×720, Wi-Fi 6, speaker and microphones (for [voice](features.md#voice)), 32 MB flash. |
+
+The screens are designed once and scaled to each board, so a 720×720 panel
+looks the same as a 480×480 one, only sharper.
+
+**Waveshare P4 settings** (substitutions, defaults shown):
+
+| Name | Default | Meaning |
+|---|---|---|
+| `p4_engineering_sample` | `false` | `true` (no quotes) for early boards with a pre-production chip: the boot log shows `esp32p4-eco2` or a chip revision below v3.0. A build for the wrong chip revision won't boot. |
+| `p4_cpu_frequency` | `360MHz` | `400MHz` works on production chips but is still experimental in ESPHome. |
+| `p4_psram_speed` | `200MHz` | Try `100MHz` if a flickering band appears at one edge of the screen. |
+| `dsi_pclk` | `30MHz` | Display pixel clock (about 48 frames per second). Lower it (e.g. `28MHz`) if a faint band remains. |
+| `lvgl_rotation` | `"0"` | `"0"`, `"90"`, `"180"` or `"270"`, to match how the panel is mounted. |
 
 ## Substitutions
 
@@ -91,6 +111,7 @@ orders the tab bar. Leave a tab out and it simply isn't there.
 | `tabs/tv_appletv.yaml` | `tab_position`, `tv_remote`, `tv_player`, `tv_volume_player`, `tv_mute_player` | Apple TV remote. `tv_volume_player` and `tv_mute_player` can be the Apple TV itself, a soundbar or the TV. |
 | `tabs/music.yaml` | `tab_position`, `music_player` | Now Playing for one speaker (a Music Assistant player works best). |
 | `tabs/favorites.yaml` | `tab_position` | Grid for `items/favorite.yaml`. |
+| `tabs/timer.yaml` | `tab_position`, optional `preset_1` … `preset_6` (minutes; default 1, 3, 5, 10, 15, 30) | Preset, custom and voice timers. Needs `features/voice_assistant.yaml`. See [Timer tab](features.md#timer-tab). |
 
 ## Items
 
@@ -121,6 +142,7 @@ Each feature is included at most once, except camera pop-ups and status chips.
 | `features/snow_report.yaml` | `title`, `chip_slot`, `chip_show`, `new_24h_entity`, `new_48h_entity`, `new_72h_entity`, `new_7d_entity`, `base_entity`, `summit_entity`, `season_entity`, `lifts_entity`, `runs_entity`, `opening_entity` | Snowflake chip (24 h new snow) and the ski report sheet. See [Snow report](features.md#snow-report). |
 | `features/camera_popup.yaml` | `popup_id`, `title`, `trigger_entity`, `camera_entity` | One per trigger. |
 | `features/presence_wake.yaml` | `presence_entity` | Wake on presence. |
+| `features/voice_assistant.yaml` | — | Wake word and Home Assistant Assist, with a mic button in the status bar. Needs a board with a speaker and microphones (Waveshare P4). See [Voice](features.md#voice). |
 
 ## Values and quoting
 

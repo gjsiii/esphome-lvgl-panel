@@ -127,7 +127,7 @@ script:
             else snprintf(b, sizeof(b), "%d of %d", (int) open, (int) total);
             lv_label_set_text(lbl, b);
             float pct = (isnan(open) || isnan(total) || total <= 0) ? 0 : std::min(1.0f, open / total);
-            lv_obj_set_width(fill, (int32_t) lroundf(pct * 404));
+            lv_obj_set_width(fill, (int32_t) lroundf(pct * ${(404*px)|int}));
           };
           open_row(id(snow_lifts).state, id(snow_lifts_total).state, id(lbl_snow_lifts), id(snow_lifts_fill));
           open_row(id(snow_runs).state, id(snow_runs_total).state, id(lbl_snow_runs), id(snow_runs_fill));
@@ -162,7 +162,7 @@ lvgl:
         - obj:
             id: chip_snow
             width: SIZE_CONTENT
-            height: 30
+            height: ${30*px}
             styles: transparent
             scrollable: false
             hidden: true
@@ -172,7 +172,7 @@ lvgl:
               flex_align_main: START
               flex_align_cross: CENTER
               flex_align_track: CENTER
-              pad_column: 3
+              pad_column: ${3*px//1}
             widgets:
               - label:
                   text: "\U000F0717" # mdi-snowflake
@@ -210,38 +210,38 @@ lvgl:
                   text_color: 0xFFFFFF
                   text_opa: 7%
                   align: TOP_RIGHT
-                  x: -112
-                  y: -8
+                  x: -${112*px}
+                  y: -${8*px}
               - label:
                   text: "\U000F0717"
                   text_font: icons_wx_xl
                   text_color: 0xFFFFFF
                   text_opa: 5%
                   align: BOTTOM_LEFT
-                  x: -18
-                  y: 22
+                  x: -${18*px}
+                  y: ${22*px}
 
               - label:
                   text: "\U000F0717" # mdi-snowflake
                   text_font: icons_md
                   text_color: 0x9FD3FF
                   align: TOP_LEFT
-                  x: 18
-                  y: 18
+                  x: ${18*px}
+                  y: ${18*px}
               - label:
                   text: "${title}"
                   text_font: font_title
                   align: TOP_LEFT
-                  x: 54
-                  y: 22
+                  x: ${54*px}
+                  y: ${22*px}
               - button:
                   align: TOP_RIGHT
-                  x: -10
-                  y: 12
-                  width: 90
-                  height: 44
+                  x: -${10*px}
+                  y: ${12*px}
+                  width: ${90*px}
+                  height: ${44*px}
                   bg_opa: TRANSP
-                  radius: 22
+                  radius: ${22*px}
                   pad_all: 0
                   pressed:
                     bg_color: 0xFFFFFF
@@ -258,14 +258,14 @@ lvgl:
               # ── New snow: 24 h big, then 48 h / 72 h / 7 days ───────────
               - obj:
                   align: TOP_MID
-                  y: 68
-                  width: 440
-                  height: 136
+                  y: ${68*px}
+                  width: ${440*px}
+                  height: ${136*px}
                   bg_color: 0x10274A
                   bg_opa: 85%
                   border_color: 0x2E5487
                   border_width: 1
-                  radius: 18
+                  radius: ${18*px}
                   pad_all: 0
                   clickable: false
                   scrollable: false
@@ -277,21 +277,21 @@ lvgl:
                         text_color: 0x9FD3FF
                         text_letter_space: 1
                         align: TOP_LEFT
-                        x: 18
-                        y: 16
+                        x: ${18*px}
+                        y: ${16*px}
                     - label:
                         id: lbl_snow_24h
                         text: "-"
                         text_font: font_temp_xl
                         align: TOP_LEFT
-                        x: 14
-                        y: 38
+                        x: ${14*px}
+                        y: ${38*px}
                     - obj:
                         align: TOP_LEFT
-                        x: 250
-                        y: 18
+                        x: ${250*px}
+                        y: ${18*px}
                         width: 1
-                        height: 100
+                        height: ${100*px}
                         bg_color: 0x2E5487
                         bg_opa: COVER
                         border_width: 0
@@ -302,54 +302,54 @@ lvgl:
                         text: "48 hours"
                         text_color: 0x9FB6D6
                         align: TOP_LEFT
-                        x: 268
-                        y: 22
+                        x: ${268*px}
+                        y: ${22*px}
                     - label:
                         id: lbl_snow_48h
                         text: "-"
                         text_font: font_title
                         align: TOP_RIGHT
-                        x: -18
-                        y: 20
+                        x: -${18*px}
+                        y: ${20*px}
                     - label:
                         text: "72 hours"
                         text_color: 0x9FB6D6
                         align: TOP_LEFT
-                        x: 268
-                        y: 58
+                        x: ${268*px}
+                        y: ${58*px}
                     - label:
                         id: lbl_snow_72h
                         text: "-"
                         text_font: font_title
                         align: TOP_RIGHT
-                        x: -18
-                        y: 56
+                        x: -${18*px}
+                        y: ${56*px}
                     - label:
                         text: "7 days"
                         text_color: 0x9FB6D6
                         align: TOP_LEFT
-                        x: 268
-                        y: 94
+                        x: ${268*px}
+                        y: ${94*px}
                     - label:
                         id: lbl_snow_7d
                         text: "-"
                         text_font: font_title
                         align: TOP_RIGHT
-                        x: -18
-                        y: 92
+                        x: -${18*px}
+                        y: ${92*px}
 
               # ── Depths and season total ─────────────────────────────────
               - obj:
                   align: TOP_LEFT
-                  x: 20
-                  y: 216
-                  width: 140
-                  height: 92
+                  x: ${20*px}
+                  y: ${216*px}
+                  width: ${140*px}
+                  height: ${92*px}
                   bg_color: 0x10274A
                   bg_opa: 85%
                   border_color: 0x2E5487
                   border_width: 1
-                  radius: 16
+                  radius: ${16*px}
                   pad_all: 0
                   clickable: false
                   scrollable: false
@@ -360,26 +360,26 @@ lvgl:
                         text_color: 0x9FD3FF
                         text_letter_space: 1
                         align: TOP_LEFT
-                        x: 14
-                        y: 14
+                        x: ${14*px}
+                        y: ${14*px}
                     - label:
                         id: lbl_snow_base
                         text: "-"
                         text_font: font_title
                         align: TOP_LEFT
-                        x: 14
-                        y: 48
+                        x: ${14*px}
+                        y: ${48*px}
               - obj:
                   align: TOP_LEFT
-                  x: 170
-                  y: 216
-                  width: 140
-                  height: 92
+                  x: ${170*px}
+                  y: ${216*px}
+                  width: ${140*px}
+                  height: ${92*px}
                   bg_color: 0x10274A
                   bg_opa: 85%
                   border_color: 0x2E5487
                   border_width: 1
-                  radius: 16
+                  radius: ${16*px}
                   pad_all: 0
                   clickable: false
                   scrollable: false
@@ -390,26 +390,26 @@ lvgl:
                         text_color: 0x9FD3FF
                         text_letter_space: 1
                         align: TOP_LEFT
-                        x: 14
-                        y: 14
+                        x: ${14*px}
+                        y: ${14*px}
                     - label:
                         id: lbl_snow_summit
                         text: "-"
                         text_font: font_title
                         align: TOP_LEFT
-                        x: 14
-                        y: 48
+                        x: ${14*px}
+                        y: ${48*px}
               - obj:
                   align: TOP_LEFT
-                  x: 320
-                  y: 216
-                  width: 140
-                  height: 92
+                  x: ${320*px}
+                  y: ${216*px}
+                  width: ${140*px}
+                  height: ${92*px}
                   bg_color: 0x10274A
                   bg_opa: 85%
                   border_color: 0x2E5487
                   border_width: 1
-                  radius: 16
+                  radius: ${16*px}
                   pad_all: 0
                   clickable: false
                   scrollable: false
@@ -420,28 +420,28 @@ lvgl:
                         text_color: 0x9FD3FF
                         text_letter_space: 1
                         align: TOP_LEFT
-                        x: 14
-                        y: 14
+                        x: ${14*px}
+                        y: ${14*px}
                     - label:
                         id: lbl_snow_season
                         text: "-"
                         text_font: font_title
                         align: TOP_LEFT
-                        x: 14
-                        y: 48
+                        x: ${14*px}
+                        y: ${48*px}
 
               # ── Lifts and runs open (plain objects, not LVGL bars, so the
               #    Settings slider color doesn't repaint them) ──────────────
               - obj:
                   align: TOP_MID
-                  y: 320
-                  width: 440
-                  height: 104
+                  y: ${320*px}
+                  width: ${440*px}
+                  height: ${104*px}
                   bg_color: 0x10274A
                   bg_opa: 85%
                   border_color: 0x2E5487
                   border_width: 1
-                  radius: 16
+                  radius: ${16*px}
                   pad_all: 0
                   clickable: false
                   scrollable: false
@@ -450,25 +450,25 @@ lvgl:
                     - label:
                         text: "Lifts open"
                         align: TOP_LEFT
-                        x: 18
-                        y: 14
+                        x: ${18*px}
+                        y: ${14*px}
                     - label:
                         id: lbl_snow_lifts
                         text: "-"
                         text_color: 0x9FB6D6
                         align: TOP_RIGHT
-                        x: -18
-                        y: 14
+                        x: -${18*px}
+                        y: ${14*px}
                     - obj:
                         align: TOP_LEFT
-                        x: 18
-                        y: 40
-                        width: 404
-                        height: 6
+                        x: ${18*px}
+                        y: ${40*px}
+                        width: ${404*px}
+                        height: ${6*px}
                         bg_color: 0x0A1830
                         bg_opa: COVER
                         border_width: 0
-                        radius: 3
+                        radius: ${3*px//1}
                         pad_all: 0
                         clickable: false
                         scrollable: false
@@ -477,35 +477,35 @@ lvgl:
                               id: snow_lifts_fill
                               align: LEFT_MID
                               width: 0
-                              height: 6
+                              height: ${6*px}
                               bg_color: 0x9FD3FF
                               bg_opa: COVER
                               border_width: 0
-                              radius: 3
+                              radius: ${3*px//1}
                               pad_all: 0
                               clickable: false
                     - label:
                         text: "Runs open"
                         align: TOP_LEFT
-                        x: 18
-                        y: 58
+                        x: ${18*px}
+                        y: ${58*px}
                     - label:
                         id: lbl_snow_runs
                         text: "-"
                         text_color: 0x9FB6D6
                         align: TOP_RIGHT
-                        x: -18
-                        y: 58
+                        x: -${18*px}
+                        y: ${58*px}
                     - obj:
                         align: TOP_LEFT
-                        x: 18
-                        y: 84
-                        width: 404
-                        height: 6
+                        x: ${18*px}
+                        y: ${84*px}
+                        width: ${404*px}
+                        height: ${6*px}
                         bg_color: 0x0A1830
                         bg_opa: COVER
                         border_width: 0
-                        radius: 3
+                        radius: ${3*px//1}
                         pad_all: 0
                         clickable: false
                         scrollable: false
@@ -514,11 +514,11 @@ lvgl:
                               id: snow_runs_fill
                               align: LEFT_MID
                               width: 0
-                              height: 6
+                              height: ${6*px}
                               bg_color: 0x9FD3FF
                               bg_opa: COVER
                               border_width: 0
-                              radius: 3
+                              radius: ${3*px//1}
                               pad_all: 0
                               clickable: false
 
@@ -529,4 +529,4 @@ lvgl:
                   text_color: 0x9FD3FF
                   text_letter_space: 1
                   align: TOP_MID
-                  y: 440
+                  y: ${440*px}

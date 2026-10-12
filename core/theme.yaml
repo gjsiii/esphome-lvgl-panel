@@ -21,46 +21,46 @@ font:
   # ── Text (Inter: closest open font to SF Pro / Roboto) ─────────────────────
   - file: "gfonts://Inter@500"
     id: font_caption
-    size: 13
+    size: ${13*px//1}
     bpp: 4
     glyphsets: [GF_Latin_Core]
 
   - file: "gfonts://Inter@500"
     id: font_body
-    size: 16
+    size: ${16*px}
     bpp: 4
     glyphsets: [GF_Latin_Core]
 
   - file: "gfonts://Inter@600"
     id: font_title
-    size: 20
+    size: ${20*px}
     bpp: 4
     glyphsets: [GF_Latin_Core]
 
   - file: "gfonts://Inter@600"
     id: font_time
-    size: 22
+    size: ${22*px}
     bpp: 4
     glyphs: "0123456789:-apm"
 
   # Night clock: very large, thin digits
   - file: "gfonts://Inter@200"
     id: font_clock_xl
-    size: 120
+    size: ${120*px}
     bpp: 4
     glyphs: "0123456789:"
 
   # Weather sheet: big current temperature; snow report: big inches
   - file: "gfonts://Inter@300"
     id: font_temp_xl
-    size: 72
+    size: ${72*px}
     bpp: 4
     glyphs: "0123456789-°.\""
 
   # ── Icons (Material Design Icons) ──────────────────────────────────────────
   - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
     id: icons_sm
-    size: 22
+    size: ${22*px}
     bpp: 4
     glyphs: [
         "\U000F0493", # mdi-cog
@@ -88,7 +88,7 @@ font:
 
   - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
     id: icons_md
-    size: 28
+    size: ${28*px}
     bpp: 4
     glyphs: [
         "\U000F02DC", # mdi-home
@@ -137,7 +137,7 @@ font:
   # Weather sheet: big current condition icon
   - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
     id: icons_wx_xl
-    size: 72
+    size: ${72*px}
     bpp: 4
     glyphs: [
         "\U000F0717", # mdi-snowflake (snow report decoration)
@@ -148,7 +148,7 @@ font:
 
   - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
     id: icons_xl
-    size: 40
+    size: ${40*px}
     bpp: 4
     glyphs: [
         "\U000F0143", # mdi-chevron-up
@@ -174,7 +174,7 @@ lvgl:
       border_width: 0
       shadow_width: 0
       outline_width: 0
-      radius: 14
+      radius: ${14*px}
       text_color: ${c_text}
       pressed:
         bg_color: ${c_surface_2}
@@ -183,12 +183,12 @@ lvgl:
       bg_opa: COVER
       border_width: 0
       outline_width: 0
-      radius: 16
+      radius: ${16*px}
       pad_all: 0
       indicator:
         bg_color: ${c_accent}
         bg_opa: COVER
-        radius: 16
+        radius: ${16*px}
       knob:
         bg_opa: TRANSP
         border_width: 0
@@ -199,12 +199,12 @@ lvgl:
       bg_color: ${c_separator}
       bg_opa: COVER
       border_width: 0
-      radius: 2
+      radius: ${2*px}
       pad_all: 0
       indicator:
         bg_color: ${c_accent}
         bg_opa: COVER
-        radius: 2
+        radius: ${2*px}
     switch:
       bg_color: ${c_separator}
       bg_opa: COVER
@@ -246,7 +246,7 @@ lvgl:
       text_letter_space: 1
     # Pill-shaped button
     - id: chip
-      radius: 24
+      radius: ${24*px}
       pad_all: 0
     # Fully round button
     - id: round_btn
@@ -262,7 +262,7 @@ lvgl:
       bg_color: ${c_surface}
       bg_opa: COVER
       border_width: 0
-      radius: 12
+      radius: ${12*px}
       pad_all: 0
       clip_corner: true
     # Grouped card (settings)
@@ -270,5 +270,5 @@ lvgl:
       bg_color: ${c_surface}
       bg_opa: COVER
       border_width: 0
-      radius: 14
+      radius: ${14*px}
       pad_all: 0

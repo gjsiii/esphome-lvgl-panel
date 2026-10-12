@@ -49,7 +49,25 @@ On the panel's device page:
 |---|---|
 | Backlight | The panel's backlight as a light. |
 | IP Address, Wi-Fi Signal, Uptime, Reset Reason | Diagnostics. *Reset Reason* tells you why the panel last restarted (power loss, brown-out, crash). |
-| Relay 1–3 | The board's three relays (if wired). |
+| Relay 1–3 | The board's three relays (Guition board, if wired). |
+
+## Voice
+
+Panels with [`features/voice_assistant.yaml`](../features/voice_assistant.yaml)
+also add:
+
+| Entity | Type | |
+|---|---|---|
+| Assist satellite | assist_satellite | The panel as a voice satellite: target it for announcements (`assist_satellite.announce`) or to start a conversation (`assist_satellite.start_conversation`). |
+| Assistant, Finished Speaking Detection | select | Which Assist pipeline the panel uses, and how quickly it decides you've stopped talking. |
+| Wake Word | select | Okay Nabu or Hey Jarvis. |
+| Mute Wake Word | switch | Same as the mic icon on the panel. |
+| Panel Speaker | media_player | The panel's built-in speaker: replies, announcements and anything you play to it. |
+
+Set up Assist under **Settings → Voice assistants** (speech-to-text,
+text-to-speech, conversation agent) before the first try. The "Allow the
+device to perform Home Assistant actions" option above is needed for voice
+too.
 
 ## Messages
 

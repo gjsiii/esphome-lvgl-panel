@@ -30,7 +30,7 @@ image:
     file: ${icon}
     type: RGB565
     transparency: alpha_channel
-    resize: 24x24
+    resize: "${(24*px)|int}x${(24*px)|int}"
 
 lvgl:
   pages:
@@ -39,8 +39,8 @@ lvgl:
       widgets:
         - button:
             id: tv_app_${slot}
-            width: 46
-            height: 46
+            width: ${46*px}
+            height: ${46*px}
             styles: round_btn
             widgets:
               - image:

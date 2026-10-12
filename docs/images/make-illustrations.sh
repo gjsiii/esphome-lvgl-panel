@@ -136,3 +136,12 @@ ACT=0; { head; status "8:42pm" "" "#8E8E93"
 { head; hdr "Marine Forecast"
  echo '<rect x="20" y="70" width="440" height="46" rx="12" fill="#3A1513" stroke="#FF453A"/><text x="34" y="99" fill="#FF6961" font-size="16">Small Craft Advisory in effect</text>'
  y=146; for p in "Tonight|West winds 10 to 20 kt. Mostly clear.|Waves 1 to 3 ft." "Thursday|Northwest winds 10 to 15 kt. Mostly sunny.|Waves 1 to 3 ft." "Thursday Night|West winds around 10 kt becoming south|around 5 kt. Partly cloudy. Waves 1 to 2 ft."; do IFS='|' read a b c <<< "$p"; echo "<text x=\"20\" y=\"$y\" fill=\"#FFF\" font-size=\"20\" font-weight=\"600\">$a</text><text x=\"20\" y=\"$((y+26))\" fill=\"#8E8E93\" font-size=\"16\">$b</text><text x=\"20\" y=\"$((y+48))\" fill=\"#8E8E93\" font-size=\"16\">$c</text>"; y=$((y+96)); done; foot; } > $O/marine.svg
+
+# ── Voice ───────────────────────────────────────────────────────────────────
+{ head
+ echo '<circle cx="240" cy="120" r="62" fill="none" stroke="#1C1C1E" stroke-width="4"/><path d="M240 58a62 62 0 0 1 59.5 44.6" fill="none" stroke="#F2F2F7" stroke-width="4" stroke-linecap="round"/>'
+ echo '<g transform="translate(240 120)" fill="#FFF"><rect x="-9" y="-24" width="18" height="30" rx="9"/><path d="M-17 -2a17 17 0 0 0 34 0" fill="none" stroke="#FFF" stroke-width="3.5" stroke-linecap="round"/><rect x="-1.75" y="15" width="3.5" height="10"/></g>'
+ echo '<text x="240" y="226" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">Replying</text>'
+ echo '<text x="240" y="262" fill="#8E8E93" font-size="16" text-anchor="middle">Turn off the kitchen lights</text>'
+ echo '<text x="240" y="318" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">Turned off the lights</text>'
+ chip 160 408 160 Dismiss; foot; } > $O/voice.svg

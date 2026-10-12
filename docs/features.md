@@ -11,12 +11,14 @@ local `!include` form and every option.
 - [TV tab](#tv-tab)
 - [Music tab and Play on](#music-tab-and-play-on)
 - [Favorites tab](#favorites-tab)
+- [Timer tab](#timer-tab)
 - [Weather](#weather)
 - [Climate](#climate)
 - [Status icons (chips)](#status-icons-chips)
 - [Marine forecast](#marine-forecast)
 - [Snow report](#snow-report)
 - [Camera pop-ups](#camera-pop-ups)
+- [Voice](#voice)
 - [Messages from Home Assistant](#messages-from-home-assistant)
 - [Settings](#settings)
 - [Screen dimming, sleep and the night clock](#screen-dimming-sleep-and-the-night-clock)
@@ -32,7 +34,8 @@ local `!include` form and every option.
 
 Left to right: **outside weather** (tap for the forecast), **indoor
 temperature** (tap for the thermostat), the **time**, **status icons**, the
-**connection icon** and the **gear** (Settings).
+**microphone** (panels with [voice](#voice)), the **connection icon** and the
+**gear** (Settings).
 
 - The connection icon is grey while Home Assistant is connected and turns
   **red (Wi-Fi off)** when HA isn't. Buttons don't work while it's red.
@@ -204,6 +207,28 @@ accepts — Spotify URLs, Music Assistant URIs (`apple_music--xxxx://playlist/�
 radio station URIs, etc. A quick way to find one: play the item in Music
 Assistant and copy its URI from the item's details.
 
+## Timer tab
+
+On a panel with voice (the Waveshare P4), a Timer tab with preset buttons
+(1, 3, 5, 10, 15 and 30 minutes) and **Custom…** (hours / minutes / seconds
+wheels, then Start).
+
+```yaml
+- path: tabs/timer.yaml
+  vars: { tab_position: 2 }   # optional: preset_1 … preset_6, in minutes
+```
+
+- Up to three timers run at once. Each row shows the time left and a
+  progress line, with **+1m** and **✕** (cancel).
+- Timers set by voice ("Okay Nabu, set a pasta timer for 10 minutes") show
+  in the same list. Cancel those by voice ("cancel the pasta timer").
+- When a timer ends, the panel wakes, opens the tab, shows **Time's up** and
+  chimes on its speaker until you tap **Stop** (or for 5 minutes).
+- While a timer runs, a timer icon in the status bar shows the time left;
+  tap it to open the tab.
+
+Needs `features/voice_assistant.yaml`.
+
 ## Weather
 
 ![Weather sheet](images/weather.svg)
@@ -345,6 +370,38 @@ proxy (so `ha_url` must be right); a camera's low-resolution "fluent" or
 substream entity loads fastest. Each refresh briefly pauses touch while the
 image downloads, which is why the default is every 5 seconds
 (`camera_refresh_seconds`).
+
+## Voice
+
+![Voice](images/voice.svg)
+
+On a panel with a speaker and microphones (the Waveshare P4), say **"Okay
+Nabu"** and ask Home Assistant anything Assist understands: "turn off the
+kitchen lights", "what's the weather tomorrow?", "set a timer for 10
+minutes". The panel wakes, shows **Listening… → Thinking… → Replying** with
+what it heard and the answer, and speaks the reply. Tap anywhere (or
+**Dismiss**) to cancel.
+
+```yaml
+- features/voice_assistant.yaml
+```
+
+- **Microphone icon** in the status bar: tap it to stop listening for the
+  wake word (it turns into a red crossed-out mic), tap again to resume. It's
+  also the *Mute Wake Word* switch in HA.
+- **Wake word:** "Okay Nabu" is on; "Hey Jarvis" can be turned on instead, on
+  the panel's device page in HA. The Assist pipeline (language, speech
+  engines, which conversation agent) is chosen there too.
+- **Speaker:** replies and HA announcements play on the panel's own speaker
+  (the *Panel Speaker* media player in HA; its volume is the reply volume).
+- **Timers** set by voice show and ring on the [Timer tab](#timer-tab), if
+  the panel has one.
+- The panel can't listen and play at the same time: while the panel's own
+  speaker plays music, the wake word pauses. Speakers elsewhere in the room
+  (a Sonos playing on the Music tab) don't affect it.
+
+Set up Assist in Home Assistant first (Settings → Voice assistants). See
+[Home Assistant side](home-assistant.md#voice) for the entities.
 
 ## Messages from Home Assistant
 

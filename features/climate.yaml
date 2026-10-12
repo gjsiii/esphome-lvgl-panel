@@ -205,16 +205,16 @@ lvgl:
                   text: "${climate_name}"
                   text_font: font_title
                   align: TOP_LEFT
-                  x: 20
-                  y: 22
+                  x: ${20*px}
+                  y: ${22*px}
               - button:
                   align: TOP_RIGHT
-                  x: -10
-                  y: 12
-                  width: 90
-                  height: 44
+                  x: -${10*px}
+                  y: ${12*px}
+                  width: ${90*px}
+                  height: ${44*px}
                   bg_opa: TRANSP
-                  radius: 22
+                  radius: ${22*px}
                   pad_all: 0
                   pressed:
                     bg_color: ${c_surface}
@@ -232,26 +232,26 @@ lvgl:
               - arc:
                   id: clim_arc
                   align: TOP_MID
-                  y: 66
-                  width: 250
-                  height: 250
+                  y: ${66*px}
+                  width: ${250*px}
+                  height: ${250*px}
                   min_value: ${climate_min}
                   max_value: ${climate_max}
                   value: 70
                   start_angle: 135
                   end_angle: 45
                   adjustable: true
-                  arc_width: 18
+                  arc_width: ${18*px}
                   arc_color: ${c_surface}
                   arc_rounded: true
                   indicator:
-                    arc_width: 18
+                    arc_width: ${18*px}
                     arc_color: ${c_accent}
                     arc_rounded: true
                   knob:
                     bg_color: 0xFFFFFF
                     bg_opa: COVER
-                    pad_all: 4
+                    pad_all: ${4*px}
                   on_value:
                     - lambda: |-
                         id(clim_target) = x;
@@ -266,14 +266,14 @@ lvgl:
                   text: "--°"
                   text_font: font_temp_xl
                   align: TOP_MID
-                  y: 140
+                  y: ${140*px}
               - label:
                   id: lbl_clim_off
                   text: "Off"
                   text_font: font_title
                   text_color: ${c_text_2}
                   align: TOP_MID
-                  y: 170
+                  y: ${170*px}
                   hidden: true
               - label:
                   id: lbl_clim_now
@@ -281,15 +281,15 @@ lvgl:
                   text_font: font_caption
                   text_color: ${c_text_2}
                   align: TOP_MID
-                  y: 232
+                  y: ${232*px}
               # − / + either side of the dial
               - button:
                   id: clim_minus
                   align: TOP_MID
-                  x: -176
-                  y: 260
-                  width: 56
-                  height: 56
+                  x: -${176*px}
+                  y: ${260*px}
+                  width: ${56*px}
+                  height: ${56*px}
                   styles: round_btn
                   widgets:
                     - label:
@@ -302,10 +302,10 @@ lvgl:
               - button:
                   id: clim_plus
                   align: TOP_MID
-                  x: 176
-                  y: 260
-                  width: 56
-                  height: 56
+                  x: ${176*px}
+                  y: ${260*px}
+                  width: ${56*px}
+                  height: ${56*px}
                   styles: round_btn
                   widgets:
                     - label:
@@ -320,9 +320,9 @@ lvgl:
               - obj:
                   id: clim_range
                   align: TOP_MID
-                  y: 92
-                  width: 448
-                  height: 128
+                  y: ${92*px}
+                  width: ${448*px}
+                  height: ${128*px}
                   styles: card
                   clickable: false
                   scrollable: false
@@ -332,21 +332,21 @@ lvgl:
                         text: "Heat to"
                         text_color: 0xFF9F0A
                         align: TOP_LEFT
-                        x: 18
-                        y: 26
+                        x: ${18*px}
+                        y: ${26*px}
                     - label:
                         id: lbl_clim_low
                         text: "--°"
                         text_font: font_title
                         align: TOP_LEFT
-                        x: 140
-                        y: 23
+                        x: ${140*px}
+                        y: ${23*px//1}
                     - button:
                         align: TOP_RIGHT
-                        x: -84
-                        y: 14
-                        width: 52
-                        height: 44
+                        x: -${84*px}
+                        y: ${14*px}
+                        width: ${52*px}
+                        height: ${44*px}
                         styles: round_btn
                         bg_color: ${c_surface_2}
                         widgets:
@@ -359,10 +359,10 @@ lvgl:
                           - script.execute: clim_changed
                     - button:
                         align: TOP_RIGHT
-                        x: -16
-                        y: 14
-                        width: 52
-                        height: 44
+                        x: -${16*px}
+                        y: ${14*px}
+                        width: ${52*px}
+                        height: ${44*px}
                         styles: round_btn
                         bg_color: ${c_surface_2}
                         widgets:
@@ -377,21 +377,21 @@ lvgl:
                         text: "Cool to"
                         text_color: 0x0A84FF
                         align: TOP_LEFT
-                        x: 18
-                        y: 84
+                        x: ${18*px}
+                        y: ${84*px}
                     - label:
                         id: lbl_clim_high
                         text: "--°"
                         text_font: font_title
                         align: TOP_LEFT
-                        x: 140
-                        y: 81
+                        x: ${140*px}
+                        y: ${81*px//1}
                     - button:
                         align: TOP_RIGHT
-                        x: -84
-                        y: 72
-                        width: 52
-                        height: 44
+                        x: -${84*px}
+                        y: ${72*px}
+                        width: ${52*px}
+                        height: ${44*px}
                         styles: round_btn
                         bg_color: ${c_surface_2}
                         widgets:
@@ -404,10 +404,10 @@ lvgl:
                           - script.execute: clim_changed
                     - button:
                         align: TOP_RIGHT
-                        x: -16
-                        y: 72
-                        width: 52
-                        height: 44
+                        x: -${16*px}
+                        y: ${72*px}
+                        width: ${52*px}
+                        height: ${44*px}
                         styles: round_btn
                         bg_color: ${c_surface_2}
                         widgets:
@@ -422,10 +422,10 @@ lvgl:
               # ── Mode: Off | Heat | Cool | Auto ────────────────────
               - obj:
                   align: TOP_MID
-                  y: 392
-                  width: 448
-                  height: 50
-                  radius: 12
+                  y: ${392*px}
+                  width: ${448*px}
+                  height: ${50*px}
+                  radius: ${12*px}
                   bg_color: ${c_surface}
                   bg_opa: COVER
                   border_width: 0
@@ -437,10 +437,10 @@ lvgl:
                     - button:
                         id: clim_seg_0
                         align: LEFT_MID
-                        x: 4
-                        width: 110
-                        height: 42
-                        radius: 9
+                        x: ${4*px}
+                        width: ${110*px}
+                        height: ${42*px}
+                        radius: ${9*px//1}
                         pad_all: 0
                         bg_opa: TRANSP
                         checked:
@@ -457,10 +457,10 @@ lvgl:
                     - button:
                         id: clim_seg_1
                         align: LEFT_MID
-                        x: 114
-                        width: 110
-                        height: 42
-                        radius: 9
+                        x: ${114*px}
+                        width: ${110*px}
+                        height: ${42*px}
+                        radius: ${9*px//1}
                         pad_all: 0
                         bg_opa: TRANSP
                         checked:
@@ -477,10 +477,10 @@ lvgl:
                     - button:
                         id: clim_seg_2
                         align: LEFT_MID
-                        x: 224
-                        width: 110
-                        height: 42
-                        radius: 9
+                        x: ${224*px}
+                        width: ${110*px}
+                        height: ${42*px}
+                        radius: ${9*px//1}
                         pad_all: 0
                         bg_opa: TRANSP
                         checked:
@@ -497,10 +497,10 @@ lvgl:
                     - button:
                         id: clim_seg_3
                         align: LEFT_MID
-                        x: 334
-                        width: 110
-                        height: 42
-                        radius: 9
+                        x: ${334*px}
+                        width: ${110*px}
+                        height: ${42*px}
+                        radius: ${9*px//1}
                         pad_all: 0
                         bg_opa: TRANSP
                         checked:

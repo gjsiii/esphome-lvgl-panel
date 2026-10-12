@@ -40,7 +40,7 @@ esphome:
             // App buttons (items/tv_app.yaml): one column, 10px apart
             lv_obj_set_flex_flow(id(tv_apps), LV_FLEX_FLOW_COLUMN);
             lv_obj_set_flex_align(id(tv_apps), LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
-            lv_obj_set_style_pad_row(id(tv_apps), 10, 0);
+            lv_obj_set_style_pad_row(id(tv_apps), ${(10*px)|int}, 0);
 
 script:
   # Debounced Apple TV artwork fetch (downloads briefly block the UI)
@@ -153,7 +153,7 @@ image:
     url: "https://www.home-assistant.io/images/favicon-192x192.png"
     format: JPEG
     type: RGB565
-    resize: [104, 104]
+    resize: "${(104*px)|int}x${(104*px)|int}"
     on_download_finished:
       - lambda: "id(img_busy) = false;"
       - lvgl.image.update:
@@ -183,8 +183,8 @@ lvgl:
                   align: TOP_LEFT
                   x: 0
                   y: 0
-                  width: 128
-                  height: 180
+                  width: ${128*px}
+                  height: ${180*px}
                   styles: transparent
                   clickable: false
                   scrollable: false
@@ -193,10 +193,10 @@ lvgl:
                   widgets:
                     - obj:
                         align: TOP_LEFT
-                        x: 12
-                        y: 12
-                        width: 104
-                        height: 104
+                        x: ${12*px}
+                        y: ${12*px}
+                        width: ${104*px}
+                        height: ${104*px}
                         styles: art_frame
                         clickable: false
                         scrollable: false
@@ -211,32 +211,32 @@ lvgl:
                         text_font: font_caption
                         text_color: ${c_text}
                         long_mode: DOT
-                        width: 108
+                        width: ${108*px}
                         align: TOP_LEFT
-                        x: 12
-                        y: 124
+                        x: ${12*px}
+                        y: ${124*px}
                     - label:
                         id: lbl_tv_app
                         text: ""
                         text_font: font_caption
                         text_color: ${c_text_2}
                         long_mode: DOT
-                        width: 108
+                        width: ${108*px}
                         align: TOP_LEFT
-                        x: 12
-                        y: 142
+                        x: ${12*px}
+                        y: ${142*px}
 
               # ── D-pad ─────────────────────────────────
               - obj:
                   id: tv_dpad
                   align: TOP_MID
-                  y: 8
-                  width: 220
-                  height: 220
+                  y: ${8*px}
+                  width: ${220*px}
+                  height: ${220*px}
                   bg_color: ${c_surface}
                   bg_opa: COVER
                   border_width: 0
-                  radius: 110
+                  radius: ${110*px}
                   pad_all: 0
                   clickable: false
                   scrollable: false
@@ -246,9 +246,9 @@ lvgl:
                     - button:
                         id: tv_btn_up
                         align: TOP_MID
-                        y: 4
-                        width: 76
-                        height: 64
+                        y: ${4*px}
+                        width: ${76*px}
+                        height: ${64*px}
                         styles: icon_btn
                         widgets:
                           - label:
@@ -269,9 +269,9 @@ lvgl:
                     - button:
                         id: tv_btn_down
                         align: BOTTOM_MID
-                        y: -4
-                        width: 76
-                        height: 64
+                        y: -${4*px}
+                        width: ${76*px}
+                        height: ${64*px}
                         styles: icon_btn
                         widgets:
                           - label:
@@ -292,9 +292,9 @@ lvgl:
                     - button:
                         id: tv_btn_left
                         align: LEFT_MID
-                        x: 4
-                        width: 64
-                        height: 76
+                        x: ${4*px}
+                        width: ${64*px}
+                        height: ${76*px}
                         styles: icon_btn
                         widgets:
                           - label:
@@ -315,9 +315,9 @@ lvgl:
                     - button:
                         id: tv_btn_right
                         align: RIGHT_MID
-                        x: -4
-                        width: 64
-                        height: 76
+                        x: -${4*px}
+                        width: ${64*px}
+                        height: ${76*px}
                         styles: icon_btn
                         widgets:
                           - label:
@@ -338,8 +338,8 @@ lvgl:
                     - button:
                         id: tv_btn_select
                         align: CENTER
-                        width: 84
-                        height: 84
+                        width: ${84*px}
+                        height: ${84*px}
                         styles: round_btn
                         bg_color: ${c_surface_2}
                         pressed:
@@ -359,10 +359,10 @@ lvgl:
               - button:
                   id: tv_btn_power
                   align: TOP_MID
-                  x: -114
-                  y: 244
-                  width: 60
-                  height: 60
+                  x: -${114*px}
+                  y: ${244*px}
+                  width: ${60*px}
+                  height: ${60*px}
                   styles: round_btn
                   widgets:
                     - label:
@@ -395,10 +395,10 @@ lvgl:
               - button:
                   id: tv_btn_back
                   align: TOP_MID
-                  x: -38
-                  y: 244
-                  width: 60
-                  height: 60
+                  x: -${38*px}
+                  y: ${244*px}
+                  width: ${60*px}
+                  height: ${60*px}
                   styles: round_btn
                   widgets:
                     - label:
@@ -419,10 +419,10 @@ lvgl:
               - button:
                   id: tv_btn_home
                   align: TOP_MID
-                  x: 38
-                  y: 244
-                  width: 60
-                  height: 60
+                  x: ${38*px}
+                  y: ${244*px}
+                  width: ${60*px}
+                  height: ${60*px}
                   styles: round_btn
                   widgets:
                     - label:
@@ -443,10 +443,10 @@ lvgl:
               - button:
                   id: tv_btn_playpause
                   align: TOP_MID
-                  x: 114
-                  y: 244
-                  width: 60
-                  height: 60
+                  x: ${114*px}
+                  y: ${244*px}
+                  width: ${60*px}
+                  height: ${60*px}
                   styles: round_btn
                   widgets:
                     - label:
@@ -462,13 +462,13 @@ lvgl:
               # ── Volume pill: − | Mute | + ─────────────
               - obj:
                   align: TOP_MID
-                  y: 320
-                  width: 240
-                  height: 56
+                  y: ${320*px}
+                  width: ${240*px}
+                  height: ${56*px}
                   bg_color: ${c_surface}
                   bg_opa: COVER
                   border_width: 0
-                  radius: 28
+                  radius: ${28*px}
                   pad_all: 0
                   clickable: false
                   scrollable: false
@@ -477,8 +477,8 @@ lvgl:
                     - button:
                         id: tv_btn_vol_down
                         align: LEFT_MID
-                        width: 80
-                        height: 56
+                        width: ${80*px}
+                        height: ${56*px}
                         styles: icon_btn
                         widgets:
                           - label:
@@ -493,8 +493,8 @@ lvgl:
                     - button:
                         id: tv_btn_mute
                         align: CENTER
-                        width: 80
-                        height: 56
+                        width: ${80*px}
+                        height: ${56*px}
                         styles: icon_btn
                         widgets:
                           - label:
@@ -510,8 +510,8 @@ lvgl:
                     - button:
                         id: tv_btn_vol_up
                         align: RIGHT_MID
-                        width: 80
-                        height: 56
+                        width: ${80*px}
+                        height: ${56*px}
                         styles: icon_btn
                         widgets:
                           - label:
@@ -529,10 +529,10 @@ lvgl:
               - button:
                   id: tv_btn_skip_back
                   align: TOP_MID
-                  x: -164
-                  y: 320
-                  width: 56
-                  height: 56
+                  x: -${164*px}
+                  y: ${320*px}
+                  width: ${56*px}
+                  height: ${56*px}
                   styles: round_btn
                   widgets:
                     - label:
@@ -549,10 +549,10 @@ lvgl:
               - button:
                   id: tv_btn_skip_fwd
                   align: TOP_MID
-                  x: 164
-                  y: 320
-                  width: 56
-                  height: 56
+                  x: ${164*px}
+                  y: ${320*px}
+                  width: ${56*px}
+                  height: ${56*px}
                   styles: round_btn
                   widgets:
                     - label:
@@ -571,9 +571,9 @@ lvgl:
               - obj:
                   id: tv_apps
                   align: TOP_RIGHT
-                  x: -42
-                  y: 11
-                  width: 46
-                  height: 214
+                  x: -${42*px}
+                  y: ${11*px//1}
+                  width: ${46*px}
+                  height: ${214*px}
                   styles: transparent
                   scrollbar_mode: "off"

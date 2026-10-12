@@ -8,7 +8,7 @@ substitutions:
   idle_dim_brightness: "0.30"  # dim level (never brighter than the user's setting)
 
   # Version of these shared files (shown in Settings → About)
-  panel_version: "0.3.0"
+  panel_version: "0.4.0-dev"
   project_name: "esphome-lvgl-panel"
   project_url: "https://github.com/gjsiii/esphome-lvgl-panel"
 
@@ -39,36 +39,36 @@ esphome:
             // Scene chips: wrap into rows (chip widths are set at -300)
             lv_obj_set_flex_flow(id(scene_chips), LV_FLEX_FLOW_ROW_WRAP);
             lv_obj_set_flex_align(id(scene_chips), LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START);
-            lv_obj_set_style_pad_row(id(scene_chips), 10, 0);
-            lv_obj_set_style_pad_column(id(scene_chips), 10, 0);
+            lv_obj_set_style_pad_row(id(scene_chips), ${(10*px)|int}, 0);
+            lv_obj_set_style_pad_column(id(scene_chips), ${(10*px)|int}, 0);
             // Light sliders: one column
             lv_obj_set_flex_flow(id(lights_list), LV_FLEX_FLOW_COLUMN);
             lv_obj_set_flex_align(id(lights_list), LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START);
-            lv_obj_set_style_pad_row(id(lights_list), 10, 0);
+            lv_obj_set_style_pad_row(id(lights_list), ${(10*px)|int}, 0);
             // Status chips: a right-aligned row in the status bar
             lv_obj_set_flex_flow(id(status_chips), LV_FLEX_FLOW_ROW);
             lv_obj_set_flex_align(id(status_chips), LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-            lv_obj_set_style_pad_column(id(status_chips), 12, 0);
+            lv_obj_set_style_pad_column(id(status_chips), ${(12*px)|int}, 0);
     # Runs after every tab/item package has added itself (priorities -101..-299)
     - priority: -300
       then:
         # No scene packages: hide the SCENES section and give the sliders
         # the whole tab (about 5 fit without scrolling)
-        # Scene chip widths: 3 per row fill the 440px row; a last row of 2
+        # Scene chip widths: 3 per row fill the 440 px (480-design) row; a last row of 2
         # (or 1) splits the row between them, e.g. 140/140/140 + 215/215.
         - lambda: |-
             uint32_t n = lv_obj_get_child_cnt(id(scene_chips));
             for (uint32_t i = 0; i < n; i++) {
               uint32_t in_row = std::min<uint32_t>(3, n - (i / 3) * 3);
-              lv_obj_set_width(lv_obj_get_child(id(scene_chips), i), (440 - (in_row - 1) * 10) / in_row);
+              lv_obj_set_width(lv_obj_get_child(id(scene_chips), i), (${(440*px)|int} - (in_row - 1) * ${(10*px)|int}) / in_row);
             }
         - lambda: |-
             if (lv_obj_get_child_cnt(id(scene_chips)) == 0) {
               lv_obj_add_flag(id(lbl_scenes_header), LV_OBJ_FLAG_HIDDEN);
               lv_obj_add_flag(id(scene_chips), LV_OBJ_FLAG_HIDDEN);
-              lv_obj_set_y(id(lbl_lights_header), 12);
-              lv_obj_set_y(id(lights_list), 34);
-              lv_obj_set_height(id(lights_list), 352);
+              lv_obj_set_y(id(lbl_lights_header), ${(12*px)|int});
+              lv_obj_set_y(id(lights_list), ${(34*px)|int});
+              lv_obj_set_height(id(lights_list), ${(352*px)|int});
             }
         # Tab bar: tabs added by packages at boot get LVGL's default (blue)
         # look, since the YAML tab_style only reaches tabs defined in YAML.
@@ -82,7 +82,7 @@ esphome:
             for (uint32_t i = 0; i < n; i++) {
               lv_obj_t *btn = lv_obj_get_child(bar, i);
               lv_obj_set_style_bg_opa(btn, LV_OPA_TRANSP, LV_STATE_DEFAULT);
-              lv_obj_set_style_radius(btn, 12, LV_STATE_DEFAULT);
+              lv_obj_set_style_radius(btn, ${(12*px)|int}, LV_STATE_DEFAULT);
               lv_obj_set_style_border_width(btn, 0, LV_STATE_DEFAULT);
               lv_obj_set_style_outline_width(btn, 0, LV_STATE_DEFAULT);
               lv_obj_set_style_shadow_width(btn, 0, LV_STATE_DEFAULT);
@@ -280,11 +280,14 @@ switch:
 
 touchscreen:
   - id: !extend my_touchscreen
-    # Dimmed: brighten immediately; the touch still works normally.
+    # Dimmed, or the backlight was turned off from HA while awake: brighten
+    # immediately; the touch still works normally.
     on_touch:
       - if:
           condition:
-            lambda: "return id(screen_state) == 1;"
+            lambda: |-
+              return id(screen_state) == 1 ||
+                     (id(screen_state) == 0 && !id(display_backlight).remote_values.is_on());
           then:
             - script.execute:
                 id: screen_wake

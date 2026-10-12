@@ -43,13 +43,13 @@ script:
                 // Show/hide the card, moving everything below it to match
                 static bool shown = false;
                 if (newer != shown) {
-                  const int32_t shift = 86;   // card height + gap
+                  const int32_t shift = ${(86*px)|int};   // card height + gap
                   uint32_t n = lv_obj_get_child_cnt(id(settings_panel));
                   for (uint32_t k = 0; k < n; k++) {
                     lv_obj_t *c = lv_obj_get_child(id(settings_panel), k);
                     if (c == id(update_card)) continue;
                     int32_t y = lv_obj_get_style_y(c, LV_PART_MAIN);
-                    if (y >= 80) lv_obj_set_y(c, y + (newer ? shift : -shift));
+                    if (y >= ${(80*px)|int}) lv_obj_set_y(c, y + (newer ? shift : -shift));
                   }
                   if (newer) lv_obj_clear_flag(id(update_card), LV_OBJ_FLAG_HIDDEN);
                   else lv_obj_add_flag(id(update_card), LV_OBJ_FLAG_HIDDEN);

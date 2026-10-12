@@ -168,17 +168,17 @@ lvgl:
                   text: ""
                   text_font: font_title
                   long_mode: DOT
-                  width: 260
+                  width: ${260*px}
                   align: TOP_LEFT
-                  x: 20
-                  y: 22
+                  x: ${20*px}
+                  y: ${22*px}
               # Power (yellow while on)
               - button:
                   align: TOP_RIGHT
-                  x: -104
-                  y: 12
-                  width: 44
-                  height: 44
+                  x: -${104*px}
+                  y: ${12*px}
+                  width: ${44*px}
+                  height: ${44*px}
                   styles: icon_btn
                   pressed:
                     bg_color: ${c_surface}
@@ -197,12 +197,12 @@ lvgl:
                           entity_id: !lambda "return id(light_sheet_entity);"
               - button:
                   align: TOP_RIGHT
-                  x: -10
-                  y: 12
-                  width: 90
-                  height: 44
+                  x: -${10*px}
+                  y: ${12*px}
+                  width: ${90*px}
+                  height: ${44*px}
                   bg_opa: TRANSP
-                  radius: 22
+                  radius: ${22*px}
                   pad_all: 0
                   pressed:
                     bg_color: ${c_surface}
@@ -220,13 +220,13 @@ lvgl:
               - obj:
                   id: ls_body
                   align: TOP_MID
-                  y: 64
+                  y: ${64*px}
                   width: 100%
-                  height: 416
+                  height: ${416*px}
                   styles: transparent
-                  pad_left: 20
-                  pad_right: 20
-                  pad_bottom: 16
+                  pad_left: ${20*px}
+                  pad_right: ${20*px}
+                  pad_bottom: ${16*px}
                   scrollbar_mode: "off"
                   layout:
                     type: FLEX
@@ -234,12 +234,12 @@ lvgl:
                     flex_align_main: START
                     flex_align_cross: CENTER
                     flex_align_track: START
-                    pad_row: 14
+                    pad_row: ${14*px}
                   widgets:
                     # ── Brightness ─────────────────────────────────
                     - obj:
-                        width: 440
-                        height: 82
+                        width: ${440*px}
+                        height: ${82*px}
                         styles: transparent
                         scrollable: false
                         widgets:
@@ -247,20 +247,20 @@ lvgl:
                               text: "BRIGHTNESS"
                               styles: section_header
                               align: TOP_LEFT
-                              x: 4
+                              x: ${4*px}
                           - label:
                               id: lbl_ls_bri
                               text: "Off"
                               text_font: font_caption
                               text_color: ${c_text_2}
                               align: TOP_RIGHT
-                              x: -4
+                              x: -${4*px}
                           - slider:
                               id: ls_bri
                               align: TOP_LEFT
-                              y: 24
-                              width: 440
-                              height: 56
+                              y: ${24*px}
+                              width: ${440*px}
+                              height: ${56*px}
                               min_value: 0
                               max_value: 255
                               value: 0
@@ -287,8 +287,8 @@ lvgl:
                     # ── Warmth (color temperature) ─────────────────
                     - obj:
                         id: ls_sec_ct
-                        width: 440
-                        height: 74
+                        width: ${440*px}
+                        height: ${74*px}
                         styles: transparent
                         scrollable: false
                         widgets:
@@ -296,26 +296,26 @@ lvgl:
                               text: "WARMTH"
                               styles: section_header
                               align: TOP_LEFT
-                              x: 4
+                              x: ${4*px}
                           - label:
                               id: lbl_ls_kelvin
                               text: ""
                               text_font: font_caption
                               text_color: ${c_text_2}
                               align: TOP_RIGHT
-                              x: -4
+                              x: -${4*px}
                           # Inset so the round knob isn't clipped at the ends
                           - slider:
                               id: ls_ct
                               align: TOP_LEFT
-                              x: 22
-                              y: 28
-                              width: 396
-                              height: 40
+                              x: ${22*px}
+                              y: ${28*px}
+                              width: ${396*px}
+                              height: ${40*px}
                               min_value: 2000
                               max_value: 6500
                               value: 2700
-                              radius: 20
+                              radius: ${20*px}
                               bg_color: 0xFF9A3C
                               bg_grad_color: 0xD6E6FF
                               bg_grad_dir: HOR
@@ -328,8 +328,8 @@ lvgl:
                                 border_color: 0x000000
                                 border_width: 1
                                 border_opa: 40%
-                                radius: 20
-                                pad_all: 2
+                                radius: ${20*px}
+                                pad_all: ${2*px}
                               on_value:
                                 - lvgl.label.update:
                                     id: lbl_ls_kelvin
@@ -344,8 +344,8 @@ lvgl:
                     # ── Color: hue, saturation, swatches ───────────
                     - obj:
                         id: ls_sec_color
-                        width: 440
-                        height: 190
+                        width: ${440*px}
+                        height: ${190*px}
                         styles: transparent
                         scrollable: false
                         widgets:
@@ -353,15 +353,15 @@ lvgl:
                               text: "COLOR"
                               styles: section_header
                               align: TOP_LEFT
-                              x: 4
+                              x: ${4*px}
                           # Rainbow track (LVGL gradients have 2 stops, so 6 pieces)
                           - obj:
                               align: TOP_LEFT
-                              x: 22
-                              y: 28
-                              width: 396
-                              height: 40
-                              radius: 20
+                              x: ${22*px}
+                              y: ${28*px}
+                              width: ${396*px}
+                              height: ${40*px}
+                              radius: ${20*px}
                               clip_corner: true
                               bg_opa: TRANSP
                               border_width: 0
@@ -370,23 +370,23 @@ lvgl:
                               scrollable: false
                               scrollbar_mode: "off"
                               widgets:
-                                - obj: { align: LEFT_MID, x: 0, width: 66, height: 40, radius: 0, border_width: 0, pad_all: 0, bg_color: 0xFF0000, bg_grad_color: 0xFFFF00, bg_grad_dir: HOR, bg_opa: COVER, clickable: false, scrollable: false }
-                                - obj: { align: LEFT_MID, x: 66, width: 66, height: 40, radius: 0, border_width: 0, pad_all: 0, bg_color: 0xFFFF00, bg_grad_color: 0x00FF00, bg_grad_dir: HOR, bg_opa: COVER, clickable: false, scrollable: false }
-                                - obj: { align: LEFT_MID, x: 132, width: 66, height: 40, radius: 0, border_width: 0, pad_all: 0, bg_color: 0x00FF00, bg_grad_color: 0x00FFFF, bg_grad_dir: HOR, bg_opa: COVER, clickable: false, scrollable: false }
-                                - obj: { align: LEFT_MID, x: 198, width: 66, height: 40, radius: 0, border_width: 0, pad_all: 0, bg_color: 0x00FFFF, bg_grad_color: 0x0000FF, bg_grad_dir: HOR, bg_opa: COVER, clickable: false, scrollable: false }
-                                - obj: { align: LEFT_MID, x: 264, width: 66, height: 40, radius: 0, border_width: 0, pad_all: 0, bg_color: 0x0000FF, bg_grad_color: 0xFF00FF, bg_grad_dir: HOR, bg_opa: COVER, clickable: false, scrollable: false }
-                                - obj: { align: LEFT_MID, x: 330, width: 66, height: 40, radius: 0, border_width: 0, pad_all: 0, bg_color: 0xFF00FF, bg_grad_color: 0xFF0000, bg_grad_dir: HOR, bg_opa: COVER, clickable: false, scrollable: false }
+                                - obj: { align: LEFT_MID, x: 0, width: "${66*px}", height: "${40*px}", radius: 0, border_width: 0, pad_all: 0, bg_color: 0xFF0000, bg_grad_color: 0xFFFF00, bg_grad_dir: HOR, bg_opa: COVER, clickable: false, scrollable: false }
+                                - obj: { align: LEFT_MID, x: "${66*px}", width: "${66*px}", height: "${40*px}", radius: 0, border_width: 0, pad_all: 0, bg_color: 0xFFFF00, bg_grad_color: 0x00FF00, bg_grad_dir: HOR, bg_opa: COVER, clickable: false, scrollable: false }
+                                - obj: { align: LEFT_MID, x: "${132*px}", width: "${66*px}", height: "${40*px}", radius: 0, border_width: 0, pad_all: 0, bg_color: 0x00FF00, bg_grad_color: 0x00FFFF, bg_grad_dir: HOR, bg_opa: COVER, clickable: false, scrollable: false }
+                                - obj: { align: LEFT_MID, x: "${198*px}", width: "${66*px}", height: "${40*px}", radius: 0, border_width: 0, pad_all: 0, bg_color: 0x00FFFF, bg_grad_color: 0x0000FF, bg_grad_dir: HOR, bg_opa: COVER, clickable: false, scrollable: false }
+                                - obj: { align: LEFT_MID, x: "${264*px}", width: "${66*px}", height: "${40*px}", radius: 0, border_width: 0, pad_all: 0, bg_color: 0x0000FF, bg_grad_color: 0xFF00FF, bg_grad_dir: HOR, bg_opa: COVER, clickable: false, scrollable: false }
+                                - obj: { align: LEFT_MID, x: "${330*px}", width: "${66*px}", height: "${40*px}", radius: 0, border_width: 0, pad_all: 0, bg_color: 0xFF00FF, bg_grad_color: 0xFF0000, bg_grad_dir: HOR, bg_opa: COVER, clickable: false, scrollable: false }
                           - slider:
                               id: ls_hue
                               align: TOP_LEFT
-                              x: 22
-                              y: 28
-                              width: 396
-                              height: 40
+                              x: ${22*px}
+                              y: ${28*px}
+                              width: ${396*px}
+                              height: ${40*px}
                               min_value: 0
                               max_value: 359
                               value: 0
-                              radius: 20
+                              radius: ${20*px}
                               bg_opa: TRANSP
                               indicator:
                                 bg_opa: TRANSP
@@ -396,8 +396,8 @@ lvgl:
                                 border_color: 0x000000
                                 border_width: 1
                                 border_opa: 40%
-                                radius: 20
-                                pad_all: 2
+                                radius: ${20*px}
+                                pad_all: ${2*px}
                               on_value:
                                 - script.execute: light_sheet_tracks
                               on_release:
@@ -409,14 +409,14 @@ lvgl:
                           - slider:
                               id: ls_sat
                               align: TOP_LEFT
-                              x: 22
-                              y: 80
-                              width: 396
-                              height: 40
+                              x: ${22*px}
+                              y: ${80*px}
+                              width: ${396*px}
+                              height: ${40*px}
                               min_value: 0
                               max_value: 100
                               value: 100
-                              radius: 20
+                              radius: ${20*px}
                               bg_color: 0xFFFFFF
                               bg_grad_color: 0xFF0000
                               bg_grad_dir: HOR
@@ -429,8 +429,8 @@ lvgl:
                                 border_color: 0x000000
                                 border_width: 1
                                 border_opa: 40%
-                                radius: 20
-                                pad_all: 2
+                                radius: ${20*px}
+                                pad_all: ${2*px}
                               on_release:
                                 - script.execute:
                                     id: light_sheet_send_hs
@@ -439,9 +439,9 @@ lvgl:
                           # Quick swatches: white, then colors
                           - obj:
                               align: TOP_LEFT
-                              y: 136
-                              width: 440
-                              height: 50
+                              y: ${136*px}
+                              width: ${440*px}
+                              height: ${50*px}
                               styles: transparent
                               scrollable: false
                               layout:
@@ -452,59 +452,59 @@ lvgl:
                                 flex_align_track: CENTER
                               widgets:
                                 - button:
-                                    width: 48
-                                    height: 48
+                                    width: ${48*px}
+                                    height: ${48*px}
                                     styles: round_btn
                                     bg_color: 0xF5F1E8
-                                    pressed: { border_color: 0x8E8E93, border_width: 3 }
+                                    pressed: { border_color: 0x8E8E93, border_width: "${3*px//1}" }
                                     on_click:
                                       - script.execute: light_sheet_white
                                 - button:
-                                    width: 48
-                                    height: 48
+                                    width: ${48*px}
+                                    height: ${48*px}
                                     styles: round_btn
                                     bg_color: 0xFF453A
-                                    pressed: { border_color: 0xFFFFFF, border_width: 3 }
+                                    pressed: { border_color: 0xFFFFFF, border_width: "${3*px//1}" }
                                     on_click: { script.execute: { id: light_sheet_swatch, hue: 0, sat: 100 } }
                                 - button:
-                                    width: 48
-                                    height: 48
+                                    width: ${48*px}
+                                    height: ${48*px}
                                     styles: round_btn
                                     bg_color: 0xFF9F0A
-                                    pressed: { border_color: 0xFFFFFF, border_width: 3 }
+                                    pressed: { border_color: 0xFFFFFF, border_width: "${3*px//1}" }
                                     on_click: { script.execute: { id: light_sheet_swatch, hue: 30, sat: 100 } }
                                 - button:
-                                    width: 48
-                                    height: 48
+                                    width: ${48*px}
+                                    height: ${48*px}
                                     styles: round_btn
                                     bg_color: 0xFFD60A
-                                    pressed: { border_color: 0xFFFFFF, border_width: 3 }
+                                    pressed: { border_color: 0xFFFFFF, border_width: "${3*px//1}" }
                                     on_click: { script.execute: { id: light_sheet_swatch, hue: 50, sat: 100 } }
                                 - button:
-                                    width: 48
-                                    height: 48
+                                    width: ${48*px}
+                                    height: ${48*px}
                                     styles: round_btn
                                     bg_color: 0x30D158
-                                    pressed: { border_color: 0xFFFFFF, border_width: 3 }
+                                    pressed: { border_color: 0xFFFFFF, border_width: "${3*px//1}" }
                                     on_click: { script.execute: { id: light_sheet_swatch, hue: 120, sat: 100 } }
                                 - button:
-                                    width: 48
-                                    height: 48
+                                    width: ${48*px}
+                                    height: ${48*px}
                                     styles: round_btn
                                     bg_color: 0x0A84FF
-                                    pressed: { border_color: 0xFFFFFF, border_width: 3 }
+                                    pressed: { border_color: 0xFFFFFF, border_width: "${3*px//1}" }
                                     on_click: { script.execute: { id: light_sheet_swatch, hue: 220, sat: 100 } }
                                 - button:
-                                    width: 48
-                                    height: 48
+                                    width: ${48*px}
+                                    height: ${48*px}
                                     styles: round_btn
                                     bg_color: 0xBF5AF2
-                                    pressed: { border_color: 0xFFFFFF, border_width: 3 }
+                                    pressed: { border_color: 0xFFFFFF, border_width: "${3*px//1}" }
                                     on_click: { script.execute: { id: light_sheet_swatch, hue: 280, sat: 90 } }
                                 - button:
-                                    width: 48
-                                    height: 48
+                                    width: ${48*px}
+                                    height: ${48*px}
                                     styles: round_btn
                                     bg_color: 0xFF7EB6
-                                    pressed: { border_color: 0xFFFFFF, border_width: 3 }
+                                    pressed: { border_color: 0xFFFFFF, border_width: "${3*px//1}" }
                                     on_click: { script.execute: { id: light_sheet_swatch, hue: 330, sat: 55 } }

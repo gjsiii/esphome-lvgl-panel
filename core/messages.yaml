@@ -60,7 +60,7 @@ script:
           lv_label_set_text(id(lbl_msg_title), title.c_str());
           lv_label_set_text(id(lbl_msg_text), message.c_str());
           // No message text: center the title vertically
-          lv_obj_set_y(id(lbl_msg_title), message.empty() ? 27 : 12);
+          lv_obj_set_y(id(lbl_msg_title), message.empty() ? ${(27*px)|int} : ${(12*px)|int});
           lv_obj_clear_flag(id(msg_banner), LV_OBJ_FLAG_HIDDEN);
       # Wake the screen: to the Settings brightness if "Messages Wake at Full
       # Brightness" is on (also from dimmed or the night clock); otherwise a

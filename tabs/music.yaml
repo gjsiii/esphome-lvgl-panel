@@ -38,7 +38,7 @@ esphome:
             lv_obj_set_parent(id(music_playon_panel), id(ui_root));
             lv_obj_set_flex_flow(id(speaker_list), LV_FLEX_FLOW_COLUMN);
             lv_obj_set_flex_align(id(speaker_list), LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START);
-            lv_obj_set_style_pad_row(id(speaker_list), 10, 0);
+            lv_obj_set_style_pad_row(id(speaker_list), ${(10*px)|int}, 0);
     # No speaker items: no "Play on" button
     - priority: -305
       then:
@@ -217,7 +217,7 @@ image:
     url: "https://www.home-assistant.io/images/favicon-192x192.png"
     format: JPEG
     type: RGB565
-    resize: [180, 180]
+    resize: "${(180*px)|int}x${(180*px)|int}"
     on_download_finished:
       - lambda: "id(img_busy) = false;"
       - logger.log: "Album art downloaded, updating LVGL widget"
@@ -245,10 +245,10 @@ lvgl:
               - button:
                   id: music_btn_playon
                   align: TOP_RIGHT
-                  x: -10
-                  y: 8
-                  width: 52
-                  height: 48
+                  x: -${10*px}
+                  y: ${8*px}
+                  width: ${52*px}
+                  height: ${48*px}
                   styles: icon_btn
                   widgets:
                     - label:
@@ -265,11 +265,11 @@ lvgl:
               # ── Album Art (rounded) ───────────────────
               - obj:
                   align: TOP_MID
-                  y: 6
-                  width: 180
-                  height: 180
+                  y: ${6*px}
+                  width: ${180*px}
+                  height: ${180*px}
                   styles: art_frame
-                  radius: 14
+                  radius: ${14*px}
                   clickable: false
                   scrollable: false
                   scrollbar_mode: "off"
@@ -287,9 +287,9 @@ lvgl:
                   text_font: font_title
                   text_align: CENTER
                   long_mode: DOT
-                  width: 420
+                  width: ${420*px}
                   align: TOP_MID
-                  y: 196
+                  y: ${196*px}
 
               # ── Artist Name ───────────────────────────
               - label:
@@ -299,17 +299,17 @@ lvgl:
                   text_font: font_body
                   text_align: CENTER
                   long_mode: DOT
-                  width: 420
+                  width: ${420*px}
                   align: TOP_MID
-                  y: 222
+                  y: ${222*px}
 
               # ── Progress Bar + times ──────────────────
               - bar:
                   id: bar_track_progress
                   align: TOP_MID
-                  y: 250
-                  width: 400
-                  height: 4
+                  y: ${250*px}
+                  width: ${400*px}
+                  height: ${4*px}
                   min_value: 0
                   max_value: 100
                   value: 0
@@ -320,8 +320,8 @@ lvgl:
                   text_color: ${c_text_2}
                   text_font: font_caption
                   align: TOP_LEFT
-                  x: 40
-                  y: 260
+                  x: ${40*px}
+                  y: ${260*px}
 
               - label:
                   id: lbl_time_total
@@ -329,17 +329,17 @@ lvgl:
                   text_color: ${c_text_2}
                   text_font: font_caption
                   align: TOP_RIGHT
-                  x: -40
-                  y: 260
+                  x: -${40*px}
+                  y: ${260*px}
 
               # ── Transport: Prev | Play/Pause | Next ───
               - button:
                   id: music_btn_prev
                   align: TOP_MID
-                  x: -112
-                  y: 284
-                  width: 64
-                  height: 56
+                  x: -${112*px}
+                  y: ${284*px}
+                  width: ${64*px}
+                  height: ${56*px}
                   styles: icon_btn
                   widgets:
                     - label:
@@ -355,9 +355,9 @@ lvgl:
               - button:
                   id: music_btn_playpause
                   align: TOP_MID
-                  y: 280
-                  width: 64
-                  height: 64
+                  y: ${280*px}
+                  width: ${64*px}
+                  height: ${64*px}
                   styles: round_btn
                   bg_color: ${c_accent}
                   pressed:
@@ -378,10 +378,10 @@ lvgl:
               - button:
                   id: music_btn_next
                   align: TOP_MID
-                  x: 112
-                  y: 284
-                  width: 64
-                  height: 56
+                  x: ${112*px}
+                  y: ${284*px}
+                  width: ${64*px}
+                  height: ${56*px}
                   styles: icon_btn
                   widgets:
                     - label:
@@ -399,10 +399,10 @@ lvgl:
               - button:
                   id: music_btn_shuffle
                   align: TOP_MID
-                  x: -194
-                  y: 288
-                  width: 48
-                  height: 48
+                  x: -${194*px}
+                  y: ${288*px}
+                  width: ${48*px}
+                  height: ${48*px}
                   styles: icon_btn
                   widgets:
                     - label:
@@ -421,10 +421,10 @@ lvgl:
               - button:
                   id: music_btn_mute
                   align: TOP_LEFT
-                  x: 14
-                  y: 350
-                  width: 44
-                  height: 38
+                  x: ${14*px}
+                  y: ${350*px}
+                  width: ${44*px}
+                  height: ${38*px}
                   styles: icon_btn
                   widgets:
                     - label:
@@ -443,10 +443,10 @@ lvgl:
               - slider:
                   id: music_volume
                   align: TOP_LEFT
-                  x: 66
-                  y: 355
-                  width: 400
-                  height: 28
+                  x: ${66*px}
+                  y: ${355*px//1}
+                  width: ${400*px}
+                  height: ${28*px}
                   min_value: 0
                   max_value: 100
                   value: 0
@@ -460,10 +460,10 @@ lvgl:
               - button:
                   id: music_btn_repeat
                   align: TOP_MID
-                  x: 194
-                  y: 288
-                  width: 48
-                  height: 48
+                  x: ${194*px}
+                  y: ${288*px}
+                  width: ${48*px}
+                  height: ${48*px}
                   styles: icon_btn
                   widgets:
                     - label:
@@ -502,16 +502,16 @@ lvgl:
                   text: "Play on"
                   text_font: font_title
                   align: TOP_LEFT
-                  x: 20
-                  y: 22
+                  x: ${20*px}
+                  y: ${22*px}
               - button:
                   align: TOP_RIGHT
-                  x: -10
-                  y: 12
-                  width: 90
-                  height: 44
+                  x: -${10*px}
+                  y: ${12*px}
+                  width: ${90*px}
+                  height: ${44*px}
                   bg_opa: TRANSP
-                  radius: 22
+                  radius: ${22*px}
                   pad_all: 0
                   pressed:
                     bg_color: ${c_surface}
@@ -529,16 +529,16 @@ lvgl:
                   text_font: font_caption
                   text_color: ${c_text_2}
                   long_mode: WRAP
-                  width: 440
+                  width: ${440*px}
                   align: TOP_LEFT
-                  x: 20
-                  y: 66
+                  x: ${20*px}
+                  y: ${66*px}
               # Speaker rows (items/speaker.yaml)
               - obj:
                   id: speaker_list
                   align: TOP_MID
-                  y: 100
-                  width: 448
-                  height: 370
+                  y: ${100*px}
+                  width: ${448*px}
+                  height: ${370*px}
                   styles: transparent
                   scrollbar_mode: "off"

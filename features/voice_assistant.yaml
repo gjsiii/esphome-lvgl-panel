@@ -1,0 +1,336 @@
+# Feature: Home Assistant voice (Assist). Say the wake word and the panel
+# wakes, listens, shows what it heard and the answer, and speaks the reply.
+#
+#   voice: !include panel/features/voice_assistant.yaml
+#
+# Needs a hardware package with panel_microphone, panel_speaker and
+# panel_media_player (currently hardware/waveshare-esp32-p4-86-4b.yaml), and
+# in Home Assistant the panel's "Allow the device to perform Home Assistant
+# actions" option.
+#
+# - Wake words "Okay Nabu" (on) and "Hey Jarvis" (off); choose in HA on the
+#   device page (Wake word select). The Assist pipeline is chosen there too.
+# - Mic icon in the status bar: tap to mute/unmute the wake word (also the
+#   "Mute Wake Word" switch in HA). Red mic-off while muted.
+# - The mic and the panel's own speaker can't run at the same time, so the
+#   wake word pauses while the panel speaker plays media (not announcements
+#   or replies). Speakers elsewhere in the room don't affect it.
+
+micro_wake_word:
+  id: mww
+  models:
+    - model: okay_nabu
+    - model: hey_jarvis   # off by default; turn on in HA
+  on_wake_word_detected:
+    - script.execute: voice_overlay_listening
+    - voice_assistant.start:
+        wake_word: !lambda return wake_word;
+
+voice_assistant:
+  id: va
+  microphone: panel_microphone
+  media_player: panel_media_player
+  micro_wake_word: mww
+  noise_suppression_level: 2
+  auto_gain: 31dBFS
+  volume_multiplier: 2.0
+  on_listening:
+    - script.execute: voice_overlay_listening
+  on_stt_end:
+    - lvgl.label.update:
+        id: lbl_va_request
+        text: !lambda "return x.c_str();"
+    - lvgl.label.update:
+        id: lbl_va_state
+        text: "Thinking…"
+    - lvgl.label.update:
+        id: lbl_va_badge
+        text_color: ${c_text_2}
+    - lambda: "lv_disp_trig_activity(NULL);"
+  on_tts_start:
+    - lvgl.label.update:
+        id: lbl_va_state
+        text: "Replying"
+    - lvgl.label.update:
+        id: lbl_va_response
+        text: !lambda "return x.c_str();"
+    - lambda: "lv_disp_trig_activity(NULL);"
+  on_end:
+    # Wait for the spoken reply to start, then to finish (frees the I2S bus)
+    - wait_until:
+        condition:
+          media_player.is_announcing:
+        timeout: 0.5s
+    - wait_until:
+        condition:
+          and:
+            - not:
+                media_player.is_announcing:
+            - not:
+                media_player.is_playing:
+    # ...and for the speaker to release the shared I2S bus, or the mic fails
+    # to start ("Driver failed to start; retrying in 1 second")
+    - wait_until:
+        condition:
+          speaker.is_stopped: panel_speaker
+        timeout: 2s
+    - if:
+        condition:
+          switch.is_off: mute_wake_word
+        then:
+          - micro_wake_word.start:
+    - delay: 3s
+    - script.execute: voice_overlay_hide
+  on_error:
+    - lvgl.label.update:
+        id: lbl_va_state
+        text: "Error"
+        text_color: 0xFF453A
+    - lvgl.label.update:
+        id: lbl_va_badge
+        text_color: 0xFF453A
+    - lvgl.label.update:
+        id: lbl_va_response
+        text: !lambda "return message.c_str();"
+    - delay: 4s
+    - script.execute: voice_overlay_hide
+  on_client_connected:
+    - if:
+        condition:
+          switch.is_off: mute_wake_word
+        then:
+          - micro_wake_word.start:
+  on_client_disconnected:
+    - voice_assistant.stop:
+    - micro_wake_word.stop:
+
+# Half-duplex: added after the hardware package's own actions (amp, ducking)
+media_player:
+  - id: !extend panel_media_player
+    on_announcement:
+      - if:
+          condition:
+            microphone.is_capturing:
+          then:
+            - micro_wake_word.stop:
+            - voice_assistant.stop:
+    on_play:
+      - micro_wake_word.stop:
+      - voice_assistant.stop:
+    on_idle:
+      - wait_until:
+          condition:
+            speaker.is_stopped: panel_speaker
+          timeout: 2s
+      - if:
+          condition:
+            and:
+              - not:
+                  voice_assistant.is_running:
+              - switch.is_off: mute_wake_word
+          then:
+            - micro_wake_word.start:
+
+switch:
+  - platform: template
+    name: "Mute Wake Word"
+    id: mute_wake_word
+    icon: mdi:microphone-off
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    entity_category: config
+    turn_on_action:
+      - voice_assistant.stop:
+      - micro_wake_word.stop:
+      - script.execute: voice_mic_icon
+    turn_off_action:
+      - if:
+          condition:
+            and:
+              - not:
+                  voice_assistant.is_running:
+              - not:
+                  media_player.is_playing:
+          then:
+            - micro_wake_word.start:
+      - script.execute: voice_mic_icon
+
+api:
+  on_client_connected:
+    - script.execute: voice_mic_icon   # match the icon to the restored mute state
+
+script:
+  - id: voice_overlay_listening
+    mode: restart
+    then:
+      - lvgl.label.update:
+          id: lbl_va_state
+          text: "Listening…"
+          text_color: ${c_text}
+      - lvgl.label.update:
+          id: lbl_va_request
+          text: ""
+      - lvgl.label.update:
+          id: lbl_va_response
+          text: ""
+      - lvgl.label.update:
+          id: lbl_va_badge
+          text_color: ${c_text}
+      # Unhide and bring in front of the other top-layer screens (as
+      # cleaning mode does)
+      - lambda: |-
+          lv_obj_clear_flag(id(voice_overlay), LV_OBJ_FLAG_HIDDEN);
+          lv_obj_move_foreground(id(voice_overlay));
+      # Wake the screen (from dim, off or the night clock) at full brightness
+      - script.execute:
+          id: screen_wake
+          full: true
+
+  - id: voice_overlay_hide
+    mode: restart
+    then:
+      - lvgl.widget.hide: voice_overlay
+
+  - id: voice_mic_icon
+    mode: restart
+    then:
+      - if:
+          condition:
+            switch.is_on: mute_wake_word
+          then:
+            - lvgl.label.update:
+                id: lbl_voice_mic
+                text: "\U000F036D" # mdi-microphone-off
+                text_color: 0xFF453A
+          else:
+            - lvgl.label.update:
+                id: lbl_voice_mic
+                text: "\U000F036C" # mdi-microphone
+                text_color: ${c_text_2}
+
+font:
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
+    id: voice_icons_sm
+    size: ${22*px}
+    bpp: 4
+    glyphs: ["\U000F036C", "\U000F036D"] # mdi-microphone, mdi-microphone-off
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
+    id: voice_icons_xl
+    size: ${56*px}
+    bpp: 4
+    glyphs: ["\U000F036C"] # mdi-microphone
+
+esphome:
+  on_boot:
+    # Mic button: the rightmost status chip (status chips insert to its left)
+    - priority: -200
+      then:
+        - lambda: "lv_obj_set_parent(id(btn_voice_mic), id(status_chips));"
+        - script.execute: voice_mic_icon
+
+lvgl:
+  pages:
+    - id: holding_voice
+      skip: true
+      widgets:
+        - button:
+            id: btn_voice_mic
+            width: ${30*px}
+            height: ${30*px}
+            styles: icon_btn
+            widgets:
+              - label:
+                  id: lbl_voice_mic
+                  text: "\U000F036C" # mdi-microphone
+                  text_font: voice_icons_sm
+                  text_color: ${c_text_2}
+                  align: CENTER
+            on_click:
+              - switch.toggle: mute_wake_word
+
+  # Above every page and sheet, and not closed when the screen dims
+  top_layer:
+    widgets:
+      - obj:
+          id: voice_overlay
+          width: 100%
+          height: 100%
+          styles: container
+          scrollbar_mode: "off"
+          hidden: true
+          # Tap anywhere to cancel
+          on_click:
+            - voice_assistant.stop:
+            - script.execute: voice_overlay_hide
+          widgets:
+            # Spinning ring around the mic while the overlay is up; the mic
+            # colour shows the state (white: listening, grey: thinking or
+            # replying, red: error)
+            - spinner:
+                align: TOP_MID
+                y: ${56*px}
+                width: ${128*px}
+                height: ${128*px}
+                spin_time: 1.5s
+                arc_length: 80deg
+                arc_width: ${4*px}
+                arc_color: ${c_surface}
+                indicator:
+                  arc_color: ${c_accent}
+                  arc_width: ${4*px}
+                clickable: false
+                widgets:
+                  - label:
+                      id: lbl_va_badge
+                      text: "\U000F036C" # mdi-microphone
+                      text_font: voice_icons_xl
+                      text_color: ${c_text}
+                      align: CENTER
+            - label:
+                id: lbl_va_state
+                text: "Listening…"
+                text_font: font_title
+                text_color: ${c_text}
+                align: TOP_MID
+                y: ${204*px}
+            - label:
+                id: lbl_va_request
+                text: ""
+                text_color: ${c_text_2}
+                text_align: CENTER
+                long_mode: WRAP
+                width: ${420*px}
+                align: TOP_MID
+                y: ${244*px}
+            # Long answers scroll inside this box (above the Dismiss button)
+            - obj:
+                align: TOP_MID
+                y: ${296*px}
+                width: ${420*px}
+                height: ${100*px}
+                styles: transparent
+                scrollbar_mode: "off"
+                widgets:
+                  - label:
+                      id: lbl_va_response
+                      text: ""
+                      text_font: font_title
+                      text_color: ${c_text}
+                      text_align: CENTER
+                      long_mode: WRAP
+                      width: 100%
+                      align: TOP_MID
+            - button:
+                align: BOTTOM_MID
+                y: -${24*px}
+                width: ${160*px}
+                height: ${48*px}
+                styles: chip
+                widgets:
+                  - label:
+                      text: "Dismiss"
+                      text_color: ${c_text}
+                      align: CENTER
+                on_click:
+                  - voice_assistant.stop:
+                  - script.execute: voice_overlay_hide

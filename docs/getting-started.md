@@ -1,12 +1,15 @@
 # Getting started
 
-This guide takes a new Guition ESP32-S3-4848S040 panel to a working display
-in Home Assistant. Plan on about 30 minutes for the first one; later panels
+This guide takes a new panel to a working display in Home Assistant. Plan on about 30 minutes for the first one; later panels
 take a few minutes each.
 
 ## What you need
 
-- A **Guition ESP32-S3-4848S040** (4″ 480×480 touch panel).
+- A supported panel:
+  - **Guition ESP32-S3-4848S040**: 4″ 480×480, inexpensive, no audio.
+  - **Waveshare ESP32-P4-WIFI6-Touch-LCD-4B**: 4″ 720×720, sharper and
+    faster, with a speaker and microphones for [voice](features.md#voice).
+    It fits a standard 86 mm wall box.
 - A **5 V USB power supply of at least 2 A** and a short, good-quality USB-C
   data cable. Thin or long cables cause brown-outs and random restarts.
 - **Home Assistant** with the **ESPHome Device Builder** add-on (or ESPHome
@@ -74,8 +77,16 @@ when you create a new device and copy it over.
 
 ## 3. First install (USB)
 
-The first install must be over USB because it sets up the panel's 16 MB flash
+The first install must be over USB because it sets up the panel's flash
 layout. After that, every update is over Wi-Fi.
+
+**Waveshare P4:** in the display file, use
+`hardware/waveshare-esp32-p4-86-4b.yaml` instead of the Guition file. Early
+boards have a pre-production chip and need `p4_engineering_sample: true`
+(see [Display file reference](display-file.md#hardware)). If you're not sure,
+install once and read the boot log: `esp32p4-eco2` or a chip revision below
+v3.0 means an engineering sample. A build for the wrong revision stops right
+after the bootloader.
 
 1. Plug the panel into your computer.
 2. In the ESPHome dashboard: your panel → **⋮ → Install → Plug into this

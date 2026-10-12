@@ -51,7 +51,7 @@ image:
     url: "https://www.home-assistant.io/images/favicon-192x192.png"
     format: JPEG
     type: RGB565
-    resize: [448, 252]
+    resize: "${(448*px)|int}x${(252*px)|int}"
     on_download_finished:
       - lambda: "id(img_busy) = false;"
       - lvgl.image.update:
@@ -115,7 +115,7 @@ script:
                         // camera image takes seconds to download and decode, enough
                         // to exhaust memory or trip the watchdog); the time stamp
                         // makes every refresh fetch a new frame.
-                        return p + "&width=448&height=252&t=" + std::to_string(millis());
+                        return p + "&width=${(448*px)|int}&height=${(252*px)|int}&t=" + std::to_string(millis());
             - delay: ${camera_refresh_seconds}s
       - lvgl.widget.hide: popup_${popup_id}
 
@@ -144,23 +144,23 @@ lvgl:
                   text: "${title}"
                   text_font: font_title
                   align: TOP_LEFT
-                  x: 20
-                  y: 22
+                  x: ${20*px}
+                  y: ${22*px}
               - label:
                   id: lbl_popup_time_${popup_id}
                   text: ""
                   text_color: ${c_text_2}
                   align: TOP_RIGHT
-                  x: -20
-                  y: 25
+                  x: -${20*px}
+                  y: ${25*px//1}
               # Snapshot (tap to dismiss)
               - button:
                   align: TOP_MID
-                  y: 66
-                  width: 448
-                  height: 252
+                  y: ${66*px}
+                  width: ${448*px}
+                  height: ${252*px}
                   styles: art_frame
-                  radius: 14
+                  radius: ${14*px}
                   pressed:
                     bg_color: ${c_surface}
                   widgets:
@@ -182,13 +182,13 @@ lvgl:
                   text_font: font_caption
                   text_color: ${c_text_2}
                   align: TOP_MID
-                  y: 328
+                  y: ${328*px}
               - button:
                   align: TOP_MID
-                  y: 368
-                  width: 220
-                  height: 56
-                  radius: 28
+                  y: ${368*px}
+                  width: ${220*px}
+                  height: ${56*px}
+                  radius: ${28*px}
                   bg_color: ${c_surface_2}
                   pad_all: 0
                   widgets:

@@ -23,8 +23,8 @@ lvgl:
       widgets:
         - button:
             id: scene_chip_${slot}
-            width: 140
-            height: 48
+            width: ${140*px}
+            height: ${48*px}
             styles: chip
             widgets:
               - label:

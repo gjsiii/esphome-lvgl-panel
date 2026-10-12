@@ -22,7 +22,7 @@
 font:
   - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
     id: chip_font_${chip_id}
-    size: 22
+    size: ${22*px}
     bpp: 4
     glyphs: ["${icon}"]
 
@@ -61,7 +61,7 @@ lvgl:
         - obj:
             id: chip_${chip_id}
             width: SIZE_CONTENT
-            height: 30
+            height: ${30*px}
             styles: transparent
             clickable: false
             scrollable: false
@@ -72,7 +72,7 @@ lvgl:
               flex_align_main: START
               flex_align_cross: CENTER
               flex_align_track: CENTER
-              pad_column: 3
+              pad_column: ${3*px//1}
             widgets:
               - label:
                   text: "${icon}"

@@ -44,9 +44,9 @@ lvgl:
       widgets:
         - button:
             id: spk_row_${slot}
-            width: 440
-            height: 56
-            radius: 14
+            width: ${440*px}
+            height: ${56*px}
+            radius: ${14*px}
             pad_all: 0
             widgets:
               - label:
@@ -54,18 +54,18 @@ lvgl:
                   text_font: icons_md
                   text_color: ${c_text_2}
                   align: LEFT_MID
-                  x: 14
+                  x: ${14*px}
               - label:
                   text: "${name}"
                   align: LEFT_MID
-                  x: 54
+                  x: ${54*px}
               - label:
                   id: spk_check_${slot}
                   text: "\U000F012C" # mdi-check
                   text_font: icons_md
                   text_color: ${c_accent}
                   align: RIGHT_MID
-                  x: -14
+                  x: -${14*px}
                   hidden: true
             on_click:
               - if:

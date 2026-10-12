@@ -25,6 +25,10 @@ substitutions:
   # default_off_after: "5 min"     # 1 min, 5 min, 10 min, 30 min, Never
   # default_sleep_screen: "Blank"  # Blank, Clock, Red clock
 
+  # Waveshare P4 board only (see docs/display-file.md#hardware):
+  # p4_engineering_sample: true    # early boards with a pre-production chip
+  # lvgl_rotation: "0"             # 0, 90, 180, 270
+
 esphome:
   name: esp-living-room-panel                         # ◀ lowercase, digits, hyphens
   friendly_name: Living Room Panel                    # ◀
@@ -36,8 +40,12 @@ packages:
     refresh: 1d
     files:
       # ── Board + core (always) ──────────────────────────────────────────
-      - hardware/guition-4848s040.yaml
+      - hardware/guition-4848s040.yaml                # ◀ or, for the 720x720 board with voice:
+      # - hardware/waveshare-esp32-p4-86-4b.yaml
       - core/core.yaml
+
+      # ── Voice (Waveshare P4 only): "Okay Nabu", Assist, mic icon ───────
+      # - features/voice_assistant.yaml
 
       # ── Status bar ─────────────────────────────────────────────────────
       - path: features/weather.yaml                   # needs ha/panel_weather.yaml in HA
@@ -103,6 +111,10 @@ packages:
           music_player: media_player.living_room_speaker      # ◀ Music Assistant player works best
       - path: items/speaker.yaml
         vars: { slot: 1, name: "Kitchen", entity: media_player.kitchen_speaker, leader: media_player.living_room_speaker }   # ◀
+
+      # ── Timer tab (needs the voice feature) ────────────────────────────
+      # - path: tabs/timer.yaml
+      #   vars: { tab_position: 5 }
 
       # ── Favorites tab ──────────────────────────────────────────────────
       - path: tabs/favorites.yaml

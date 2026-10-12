@@ -70,8 +70,8 @@ lvgl:
       widgets:
         - obj:
             id: light_row_${slot}
-            width: 440
-            height: 56
+            width: ${440*px}
+            height: ${56*px}
             styles: transparent
             scrollbar_mode: "off"
             widgets:
@@ -119,21 +119,21 @@ lvgl:
                   text: "${name}"
                   text_color: ${c_text_2}
                   align: LEFT_MID
-                  x: 18
+                  x: ${18*px}
               - label:
                   id: light_pct_${slot}
                   text: "Closed"
                   text_color: ${c_text_2}
                   align: RIGHT_MID
-                  x: -18
+                  x: -${18*px}
               # Tap the name to open/close, or stop while moving.
               # Last child, so it sits on top of the slider's left end.
               - button:
                   id: light_toggle_${slot}
                   align: LEFT_MID
-                  width: 180
+                  width: ${180*px}
                   height: 100%
-                  radius: 16
+                  radius: ${16*px}
                   bg_opa: TRANSP
                   pad_all: 0
                   pressed:

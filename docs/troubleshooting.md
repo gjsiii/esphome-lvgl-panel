@@ -77,8 +77,47 @@ On the panel's device page in HA, turn off **Settings PIN Lock** or clear
 - Or download the factory image (Install → Manual download → Factory format)
   and flash it at [web.esphome.io](https://web.esphome.io).
 
+## Waveshare P4 panel
+
+- **Stops right after the bootloader, or restarts in a loop:** the chip
+  revision setting is wrong. Early boards need
+  `p4_engineering_sample: true`; production boards (chip revision v3.0 or
+  later in the boot log) need it `false`. Install over USB to recover.
+- **A flickering or noisy band at one edge of the screen:** the display is
+  running short of memory bandwidth. Lower `p4_psram_speed` to `100MHz`, then
+  `dsi_pclk` to `28MHz`.
+- **The picture is sideways or upside down:** set `lvgl_rotation` to `"90"`,
+  `"180"` or `"270"` to match the mounting. Touch follows automatically.
+- **The screen goes dark during an update:** on purpose; it avoids flicker
+  while the new firmware is written.
+- **Restarts in a loop with "vApplicationGetTimerTaskMemory" in the USB
+  log:** the chip ran out of internal memory while starting. The hardware
+  package keeps the Wi-Fi link's buffers in PSRAM (`esp32_hosted:
+  use_psram: true`) for this; keep that if you copy the board settings.
+
+## The screen goes black after "turn off the … lights"
+
+Assist counted the panel's own **Backlight** as one of the room's lights.
+Since v0.4.0 the Backlight is a configuration entity, which Assist leaves out,
+but Home Assistant keeps panels added earlier exposed: turn it off under
+Settings → Voice assistants → **Expose** (search "Backlight"). A tap brings
+the screen back.
+
+## Voice doesn't respond
+
+- The mic icon in the status bar is red: the wake word is muted. Tap it.
+- The panel's own speaker is playing music: the wake word pauses until it
+  stops (the panel can't listen and play at once).
+- Nothing happens after "Okay Nabu": check that Assist works in Home
+  Assistant (Settings → Voice assistants → ⋮ → Debug), that the panel's
+  *Assistant* select names that pipeline, and that "Allow the device to
+  perform Home Assistant actions" is on.
+- It hears you but replies "Error": the pipeline's speech-to-text or
+  text-to-speech isn't reachable. HA's voice debug view shows which step
+  failed.
+
 ## Compile warnings you can ignore
 
 - `GPIO19/GPIO20 is used by the USB-Serial-JTAG interface` — those pins drive
-  the display and touch on this board.
+  the display and touch on the Guition board.
 - `Font Inter … is missing 1 glyph` — a rare accent mark.

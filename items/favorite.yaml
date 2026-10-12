@@ -25,7 +25,7 @@ image:
     id: fav_art_${slot}
     file: ${image}
     type: RGB565
-    resize: 140x140
+    resize: "${(140*px)|int}x${(140*px)|int}"
 
 lvgl:
   pages:
@@ -34,8 +34,8 @@ lvgl:
       widgets:
         - button:
             id: fav_tile_${slot}
-            width: 140
-            height: 172
+            width: ${140*px}
+            height: ${172*px}
             bg_opa: TRANSP
             pad_all: 0
             pressed:
@@ -44,8 +44,8 @@ lvgl:
             widgets:
               - obj:
                   align: TOP_MID
-                  width: 140
-                  height: 140
+                  width: ${140*px}
+                  height: ${140*px}
                   styles: art_frame
                   clickable: false
                   scrollable: false
@@ -58,9 +58,9 @@ lvgl:
                   text_font: font_caption
                   text_align: CENTER
                   long_mode: DOT
-                  width: 136
+                  width: ${136*px}
                   align: TOP_MID
-                  y: 148
+                  y: ${148*px}
             on_click:
               - homeassistant.action:
                   action: media_player.play_media

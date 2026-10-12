@@ -1,5 +1,36 @@
 # Changelog
 
+## v0.4.0 — unreleased
+
+- **Waveshare ESP32-P4-WIFI6-Touch-LCD-4B** (4″ 720×720) support:
+  `hardware/waveshare-esp32-p4-86-4b.yaml`, with the board's speaker and
+  microphones. Settings for early "engineering sample" chips, CPU and PSRAM
+  speed, display pixel clock and screen rotation (`p4_*`, `dsi_pclk`,
+  `lvgl_rotation`).
+- **Voice** (`features/voice_assistant.yaml`): "Okay Nabu" wake word (or
+  "Hey Jarvis") and Home Assistant Assist. The panel wakes, shows Listening /
+  Thinking / Replying with what it heard and the answer, and speaks the
+  reply. A mic icon in the status bar mutes the wake word ("Mute Wake Word"
+  in HA). Replies and HA announcements play on the "Panel Speaker" media
+  player.
+- **Timer tab** (`tabs/timer.yaml`, needs the voice feature): preset buttons
+  (`preset_1` … `preset_6`, minutes), a custom timer, and up to three
+  countdowns with +1 min and cancel. Timers set by voice ("Okay Nabu, set a
+  pasta timer for 10 minutes") show in the same list. When one ends the panel
+  wakes, shows "Time's up" and chimes until Stop; a status-bar chip shows the
+  time left.
+- **Backlight is now a configuration entity**, so Assist no longer counts it
+  as one of the room's lights ("turn off the kitchen lights" used to blank the
+  screen). A tap now relights a backlight turned off from Home Assistant.
+  **Upgrading:** Home Assistant keeps existing panels' Backlight exposed to
+  Assist; turn it off under Settings → Voice assistants → Expose.
+- Every size in the shared files now scales with the board (`px`, set by the
+  hardware package). Nothing changes on 480×480 panels. Contributors: write
+  sizes as `${N*px}`; see docs/customizing.md#sizes-and-scaling.
+- Hardware packages now set the LVGL draw buffer (`lvgl_buffer_size`).
+  **Breaking** only for a custom hardware package: it must set `px` and
+  `lvgl_buffer_size` in its `substitutions:`.
+
 ## v0.3.0 — 2026-10-12
 
 - Settings → About this project: QR code, repository name and link

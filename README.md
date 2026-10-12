@@ -25,6 +25,8 @@ each panel keeps its own rooms, lights, speakers and TV.
   progress, play/pause, volume, shuffle, repeat, and **Play on** to group other
   speakers.
 - **Favorites** — a grid of playlists and stations, one tap to play.
+- **Timer** — on the Waveshare P4 panel: preset and custom timers, and timers
+  set by voice, with a chime when time's up.
 - **Status bar** — time, outside weather, indoor temperature, small status
   icons (garage open, packages waiting, …) and the HA connection.
 - **Weather** — current conditions, the next 15 hours and 5 days.
@@ -33,6 +35,9 @@ each panel keeps its own rooms, lights, speakers and TV.
   (depths, season total, lifts and runs open).
 - **Camera pop-ups** — the gate opens or the doorbell rings, and the camera
   appears.
+- **Voice** — on the Waveshare P4 panel, say "Okay Nabu" and ask Home
+  Assistant's Assist; the panel shows what it heard and speaks the answer.
+  A mic icon in the status bar mutes it.
 - **Messages** — Home Assistant automations can put a banner on any panel
   ("Washer done", "Mail arrived").
 - **Screen care** — dims, sleeps or shows a night clock; night mode; nightly
@@ -50,6 +55,10 @@ favorites, status icons) has as many entries as a room needs.
 | Board | File |
 |---|---|
 | Guition ESP32-S3-4848S040 (4″, 480×480, ST7701S display, GT911 touch, 16 MB flash, 8 MB PSRAM) | `hardware/guition-4848s040.yaml` |
+| Waveshare ESP32-P4-WIFI6-Touch-LCD-4B (4″, 720×720 MIPI-DSI, GT911 touch, Wi-Fi 6, speaker + 2 mics, 32 MB flash, 32 MB PSRAM, 86 mm wall box) | `hardware/waveshare-esp32-p4-86-4b.yaml` |
+
+The design is drawn once and scaled to each board: the 720×720 panel looks
+the same as the 480×480 one, only sharper.
 
 Requires ESPHome **2026.9.0** or newer and Home Assistant with the ESPHome
 integration. Music features work best with

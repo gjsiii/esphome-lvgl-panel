@@ -16,8 +16,8 @@ esphome:
             // layout on a container defined without widgets)
             lv_obj_set_flex_flow(id(content_favorites), LV_FLEX_FLOW_ROW_WRAP);
             lv_obj_set_flex_align(id(content_favorites), LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
-            lv_obj_set_style_pad_row(id(content_favorites), 12, 0);
-            lv_obj_set_style_pad_column(id(content_favorites), 18, 0);
+            lv_obj_set_style_pad_row(id(content_favorites), ${(12*px)|int}, 0);
+            lv_obj_set_style_pad_column(id(content_favorites), ${(18*px)|int}, 0);
 
 lvgl:
   pages:
@@ -31,6 +31,6 @@ lvgl:
             width: 100%
             height: 100%
             styles: container
-            pad_top: 12
-            pad_left: 12
+            pad_top: ${12*px}
+            pad_left: ${12*px}
             scrollbar_mode: "off"

@@ -3,6 +3,15 @@
 #
 # Provides: my_display, my_touchscreen, display_backlight, relays.
 # Other packages may add triggers to my_touchscreen (merged by id).
+#
+# Every hardware package sets these for the shared files:
+#   px                 UI scale: sizes in the shared files are written for a
+#                      480x480 screen and multiplied by px (480 -> 1, 720 -> 1.5)
+#   lvgl_buffer_size   LVGL draw buffer (share of the screen)
+
+substitutions:
+  px: 1
+  lvgl_buffer_size: 25%
 
 esp32:
   variant: esp32s3
@@ -36,6 +45,9 @@ light:
   - platform: monochromatic
     name: Backlight
     id: display_backlight
+    # A config entity, so Assist doesn't count it as one of the room's
+    # lights ("turn off the kitchen lights" would blank the screen)
+    entity_category: config
     output: backlight_output
     restore_mode: ALWAYS_ON
     default_transition_length: 1s
