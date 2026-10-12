@@ -71,7 +71,8 @@ living_room_panel_api_key: "…"        # 32 random bytes, base64
 living_room_panel_ap_password: "…"    # fallback hotspot, 8+ characters
 ```
 
-Make an API key on any Linux/macOS terminal with
+The API key also protects over-the-air updates: only someone with the key
+can install new firmware. Make one on any Linux/macOS terminal with
 `head -c 32 /dev/urandom | base64`, or let the ESPHome dashboard generate one
 when you create a new device and copy it over.
 

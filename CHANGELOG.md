@@ -8,13 +8,29 @@
   chips, Shuffle and refresh. Change favorites in Music Assistant; no
   reinstall. Up to 36; for the Waveshare P4 (artwork is kept in PSRAM). The
   hand-picked `tabs/favorites.yaml` is unchanged.
+- **Powder day** (snow report): after at least `powder_inches` (default 3)
+  of new snow in 24 hours, the sleeping panel shows the clock with the total
+  under the date ("14″ new snow · Breckenridge"), even when Sleep screen is
+  Blank. A panel already asleep switches over when the report updates.
+- **Settings → Voice** (panels with voice): choose the wake word (Okay Nabu
+  or Hey Jarvis), mute it, and set the reply volume on the panel itself.
+- **Over-the-air updates now use the API key** (encrypted and authenticated)
+  instead of a separate OTA password. This saves about 3.5 KB of flash and
+  some RAM, and removes ESPHome's "'ota' password wastes significant flash"
+  warning. **Upgrading:** the `ota_password` substitution is no longer used;
+  delete it from your display file (leaving it does no harm). Updating from
+  a panel built with ESPHome 2026.9 or later installs normally over Wi-Fi.
+  For a panel last built with an older ESPHome, first install v0.4.0 with a
+  current ESPHome (or update over USB).
 - Music tab: Music Assistant album art now shows. Its image server sends PNG
   by default; the panel now asks it for a 256 px JPEG.
 - Fixed on 720×720: the lower part of Settings (Restart, About this project)
   sat too high and overlapped the rows above.
+- Fixed a compiler format warning in Settings → About (uptime).
 - Docs: new illustrations of the snow report, Timer tab (with Custom… and
   Time's up), Music Assistant favorites, light color sheet and About; the
-  Lights tab now shows a shade slider; README gallery has a third row.
+  Lights tab now shows a shade slider; README gallery has a third row. Also
+  the powder-day sleep screen and Settings → Voice.
 
 ## v0.4.0 — 2026-10-12
 

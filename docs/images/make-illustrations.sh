@@ -217,6 +217,20 @@ ACT=3; { head; status "5:48pm" "" "#8E8E93"
  for i in 0 1 2 3 4 5; do x=$((12 + (i%3)*158)); y=$((96 + (i/3)*184)); echo "<rect x=\"$x\" y=\"$y\" width=\"140\" height=\"140\" rx=\"12\" fill=\"${cols[$i]}\"/><text x=\"$((x+70))\" y=\"$((y+162))\" fill=\"#FFF\" font-size=\"13\" font-weight=\"500\" text-anchor=\"middle\">${names[$i]}</text>"; done
  echo '</g>'; tabs Lights Timer Music Favorites; foot; } > $O/ma-favorites.svg
 
+# ── Powder day on the sleep screen (Sleep screen = Blank, 14" overnight) ───
+{ head; echo '<text x="240" y="230" fill="#FFF" font-size="120" font-weight="200" text-anchor="middle">6:48</text><text x="240" y="280" fill="#FFF" fill-opacity=".7" font-size="20" font-weight="600" text-anchor="middle">Thursday, January 15</text>'
+ flake 104 323 22 "#FFF"; echo '<text x="123" y="330" fill="#FFF" font-size="20" font-weight="600">14″ new snow · Breckenridge</text>'; foot; } > $O/powder-day.svg
+
+# ── Settings → Voice (panels with voice) ────────────────────────────────────
+{ head; hdr Settings
+ sec 32 92 VOICE; echo '<rect x="16" y="102" width="448" height="216" rx="14" fill="#1C1C1E"/>'
+ echo '<text x="32" y="135" fill="#FFF" font-size="16">Wake word</text><rect x="220" y="111" width="232" height="36" rx="10" fill="#2C2C2E"/><rect x="222" y="113" width="113" height="32" rx="8" fill="#636366"/><text x="278" y="135" fill="#FFF" font-size="16" text-anchor="middle">Okay Nabu</text><text x="393" y="135" fill="#FFF" font-size="16" text-anchor="middle">Hey Jarvis</text>'
+ echo '<rect x="32" y="156" width="432" height="1" fill="#38383A"/><text x="32" y="189" fill="#FFF" font-size="16">Mute wake word</text><rect x="396" y="168" width="52" height="30" rx="15" fill="#39393D"/><circle cx="411" cy="183" r="12" fill="#FFF"/>'
+ echo '<rect x="32" y="210" width="432" height="1" fill="#38383A"/><text x="32" y="243" fill="#FFF" font-size="16">Reply volume</text><text x="448" y="243" fill="#8E8E93" font-size="16" text-anchor="end">60%</text>'
+ echo '<rect x="32" y="260" width="416" height="44" rx="14" fill="#2C2C2E"/><rect x="32" y="260" width="250" height="44" rx="14" fill="#F2F2F7"/>'
+ sec 32 356 "ABOUT THIS PROJECT"; echo '<rect x="16" y="366" width="448" height="114" fill="#1C1C1E"/><rect x="16" y="366" width="448" height="30" rx="14" fill="#1C1C1E"/><text x="32" y="406" fill="#FFF" font-size="20" font-weight="600">esphome-lvgl-panel</text><text x="32" y="430" fill="#8E8E93" font-size="13">https://github.com/gjsiii/esphome-lvgl-panel</text>'
+ foot; } > $O/voice-settings.svg
+
 # ── About (bottom of Settings) ──────────────────────────────────────────────
 { head; hdr Settings
  echo '<rect x="16" y="70" width="448" height="96" rx="14" fill="#1C1C1E"/><text x="32" y="102" fill="#FFF" font-size="16">Uptime</text><text x="448" y="102" fill="#8E8E93" font-size="16" text-anchor="end">3d 4h 12m</text><rect x="32" y="118" width="416" height="1" fill="#38383A"/><text x="32" y="146" fill="#FFF" font-size="16">Last restart</text><text x="448" y="146" fill="#8E8E93" font-size="16" text-anchor="end">Software</text>'

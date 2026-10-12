@@ -75,7 +75,7 @@ Set in the display file's `substitutions:`.
 
 | Name | Example | Meaning |
 |---|---|---|
-| `api_key` | `!secret …_api_key` | Home Assistant API encryption key (32 random bytes, base64). |
+| `api_key` | `!secret …_api_key` | Home Assistant API encryption key (32 random bytes, base64). It also encrypts and authenticates over-the-air updates. |
 | `wifi_ssid`, `wifi_password` | `!secret wifi_ssid` | Wi-Fi. |
 | `ap_password` | `!secret …_ap_password` | Password of the fallback hotspot the panel opens if Wi-Fi fails (8+ characters). |
 | `ha_url` | `"http://192.168.1.10:8123"` | Home Assistant address, used to load album art, TV art and camera snapshots. |
@@ -84,7 +84,6 @@ Set in the display file's `substitutions:`.
 
 | Name | Default | Meaning |
 |---|---|---|
-| `ota_password` | `""` | Password for over-the-air updates. |
 | `default_dim_after` | `"30 s"` | First-boot value of *Dim after* (15 s, 30 s, 1 min, 2 min, Never). |
 | `default_off_after` | `"5 min"` | First-boot value of *Turn off after* (1 min, 5 min, 10 min, 30 min, Never). |
 | `default_sleep_screen` | `"Blank"` | First-boot value of *Sleep screen* (Blank, Clock, Red clock). |
@@ -140,7 +139,7 @@ Each feature is included at most once, except camera pop-ups and status chips.
 | `features/climate.yaml` | `climate_entity`, `climate_name` | Indoor temperature and the thermostat sheet. |
 | `features/status_chip.yaml` | `chip_id`, `slot`, `entity`, `icon`, `color`, `show_when`, `show_value` | One per status icon. See [Status icons](features.md#status-icons-chips). |
 | `features/marine.yaml` | `marine_entity`, `title`, `open_chip_1`, `open_chip_2` | Full-text forecast sheet opened from status chips. |
-| `features/snow_report.yaml` | `title`, `chip_slot`, `chip_show`, `new_24h_entity`, `new_48h_entity`, `new_72h_entity`, `new_7d_entity`, `base_entity`, `summit_entity`, `season_entity`, `lifts_entity`, `runs_entity`, `opening_entity` | Snowflake chip (24 h new snow) and the ski report sheet. See [Snow report](features.md#snow-report). |
+| `features/snow_report.yaml` | `title`, `chip_slot`, `chip_show`, `new_24h_entity`, `new_48h_entity`, `new_72h_entity`, `new_7d_entity`, `base_entity`, `summit_entity`, `season_entity`, `lifts_entity`, `runs_entity`, `opening_entity`; optional `powder_inches` (default `"3"`) | Snowflake chip (24 h new snow), the ski report sheet and the powder-day sleep note. See [Snow report](features.md#snow-report). |
 | `features/camera_popup.yaml` | `popup_id`, `title`, `trigger_entity`, `camera_entity` | One per trigger. |
 | `features/presence_wake.yaml` | `presence_entity` | Wake on presence. |
 | `features/voice_assistant.yaml` | — | Wake word and Home Assistant Assist, with a mic button in the status bar. Needs a board with a speaker and microphones (Waveshare P4). See [Voice](features.md#voice). |

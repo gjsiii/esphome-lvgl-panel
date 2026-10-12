@@ -77,8 +77,8 @@ sensor:
             uint32_t s = (uint32_t) x;
             uint32_t d = s / 86400, h = (s % 86400) / 3600, m = (s % 3600) / 60;
             char buf[32];
-            if (d > 0) snprintf(buf, sizeof(buf), "%ud %uh %um", d, h, m);
-            else snprintf(buf, sizeof(buf), "%uh %um", h, m);
+            if (d > 0) snprintf(buf, sizeof(buf), "%ud %uh %um", (unsigned) d, (unsigned) h, (unsigned) m);
+            else snprintf(buf, sizeof(buf), "%uh %um", (unsigned) h, (unsigned) m);
             return std::string(buf);
 
 button:

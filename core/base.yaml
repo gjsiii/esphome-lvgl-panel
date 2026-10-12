@@ -166,6 +166,12 @@ globals:
     type: int
     initial_value: "0"
 
+  # A feature has a note for the night clock (e.g. the snow report on a powder
+  # day): sleep shows the clock even when Sleep Screen is Blank
+  - id: night_note_on
+    type: bool
+    initial_value: "false"
+
 script:
   # Tab bar labels: selected tab in primary text, others in secondary text.
   # Runs when the tab changes (by touch or by a media tab auto-selecting).

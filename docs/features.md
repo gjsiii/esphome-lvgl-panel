@@ -387,10 +387,19 @@ total, lifts and runs open, and opening day (or "Open for the season").
     lifts_entity: sensor.resort_lifts_open      # attribute `total` = all lifts
     runs_entity: sensor.resort_runs_open        # attribute `total` = all runs
     opening_entity: sensor.resort_opening_date  # YYYY-MM-DD
+    powder_inches: "3"                 # optional: powder-day note ("0" = off)
 ```
 
 Values are inches. Any entity you don't have can name one that doesn't exist;
 it shows "-". `chip_show: "nonzero"` shows the chip only after new snow.
+
+![Powder day on the sleep screen](images/powder-day.svg)
+
+**Powder day:** after at least `powder_inches` of new snow in 24 hours, the
+sleeping panel shows the clock with the total under the date
+("14″ new snow · Breckenridge"), even when Sleep screen is Blank. A panel
+already asleep switches over when the report updates; it goes back to your
+Sleep screen setting once the 24-hour total drops below the threshold.
 
 ## Camera pop-ups
 
@@ -433,16 +442,21 @@ what it heard and the answer, and speaks the reply. Tap anywhere (or
 - **Microphone icon** in the status bar: tap it to stop listening for the
   wake word (it turns into a red crossed-out mic), tap again to resume. It's
   also the *Mute Wake Word* switch in HA.
-- **Wake word:** "Okay Nabu" is on; "Hey Jarvis" can be turned on instead, on
-  the panel's device page in HA. The Assist pipeline (language, speech
-  engines, which conversation agent) is chosen there too.
+- **Settings → Voice** (on the panel): the wake word (**Okay Nabu** or **Hey
+  Jarvis**), **Mute wake word**, and **Reply volume**.
+- **Wake word:** "Okay Nabu" is on by default. Choose it in Settings → Voice
+  or on the panel's device page in HA. The Assist pipeline (language, speech
+  engines, which conversation agent) is chosen on the device page.
 - **Speaker:** replies and HA announcements play on the panel's own speaker
-  (the *Panel Speaker* media player in HA; its volume is the reply volume).
+  (the *Panel Speaker* media player in HA; its volume is the reply volume,
+  also set in Settings → Voice).
 - **Timers** set by voice show and ring on the [Timer tab](#timer-tab), if
   the panel has one.
 - The panel can't listen and play at the same time: while the panel's own
   speaker plays music, the wake word pauses. Speakers elsewhere in the room
   (a Sonos playing on the Music tab) don't affect it.
+
+![Settings → Voice](images/voice-settings.svg)
 
 Set up Assist in Home Assistant first (Settings → Voice assistants). See
 [Home Assistant side](home-assistant.md#voice) for the entities.
@@ -492,6 +506,7 @@ Assistant (device page → Configuration), so you can change panels remotely.
 | | **Auto-open TV & Music** | Bring up the TV or Music tab when playback starts. |
 | | **Messages wake at full brightness** | Off: messages wake a sleeping panel dimly. On: to your brightness. |
 | | **Lock settings with PIN** | See [PIN lock](#pin-lock). |
+| Voice | **Wake word**, **Mute wake word**, **Reply volume** | Panels with [voice](#voice) only. |
 | About | | See [About and restart](#about-and-restart). |
 
 ## Screen dimming, sleep and the night clock
@@ -505,6 +520,8 @@ Assistant (device page → Configuration), so you can change panels remotely.
     presses whatever is underneath.
   - **Clock / Red clock** — a large, dim clock and date that shifts a few
     pixels every minute. A tap wakes the panel.
+  - On a [powder day](#snow-report) the clock is shown, with the new snow
+    under the date, even when Sleep screen is Blank.
 - Any open sheet (Settings, Weather, Climate…) closes when the screen dims, so
   the panel always wakes to its tabs.
 - **Presence wake** (optional) wakes a sleeping panel to the dim level when an

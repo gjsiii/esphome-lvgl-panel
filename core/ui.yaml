@@ -2077,7 +2077,7 @@ lvgl:
                         id: night_clock_box
                         align: CENTER
                         width: ${440*px}
-                        height: ${200*px}
+                        height: ${240*px}
                         styles: transparent
                         clickable: false
                         scrollable: false
@@ -2094,6 +2094,30 @@ lvgl:
                               text_font: font_title
                               align: TOP_MID
                               y: ${150*px}
+                          # Optional note under the date, set by a feature
+                          # (e.g. powder day, features/snow_report.yaml)
+                          - obj:
+                              id: night_note
+                              align: TOP_MID
+                              y: ${190*px}
+                              width: SIZE_CONTENT
+                              height: SIZE_CONTENT
+                              styles: transparent
+                              layout:
+                                type: FLEX
+                                flex_flow: ROW
+                                flex_align_cross: CENTER
+                                pad_column: ${8*px}
+                              hidden: true
+                              widgets:
+                                - label:
+                                    id: lbl_night_note_icon
+                                    text: ""
+                                    text_font: icons_sm
+                                - label:
+                                    id: lbl_night_note
+                                    text: ""
+                                    text_font: font_title
 
   # ── Message banner (core/messages.yaml) ──────────────────────────────────
   # On the top layer: above every page and sheet, and not closed on dim.

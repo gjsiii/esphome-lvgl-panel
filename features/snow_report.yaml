@@ -18,10 +18,18 @@
 #       lifts_entity: sensor.breckenridge_lifts_open    # state = open, attribute `total`
 #       runs_entity: sensor.breckenridge_runs_open      # state = open, attribute `total`
 #       opening_entity: sensor.breckenridge_opening_date  # YYYY-MM-DD
+#       powder_inches: "3"            # optional (default 3): powder-day note, "0" = off
+#
+# Powder day: with at least powder_inches of new snow in 24 hours, the sleep
+# screen shows the night clock with a note under the date ("14" new snow ·
+# Breckenridge"), even when Sleep Screen is Blank.
 #
 # Snow values are inches. Any entity that doesn't exist (or is unavailable)
 # shows "-". Any source works (e.g. template sensors from a resort report or
 # a ski-conditions integration) as long as the values are numbers in inches.
+
+defaults:
+  powder_inches: "3"
 
 esphome:
   on_boot:
@@ -113,6 +121,23 @@ script:
           lv_label_set_text(id(lbl_snow_base), inch(id(snow_base).state).c_str());
           lv_label_set_text(id(lbl_snow_summit), inch(id(snow_summit).state).c_str());
           lv_label_set_text(id(lbl_snow_season), inch(id(snow_season).state).c_str());
+
+          // Powder day: a note on the sleep screen (night clock even when Sleep
+          // Screen is Blank); switch a sleeping panel over right away
+          const float powder = ${powder_inches};
+          bool pd = powder > 0.0f && !isnan(n24) && n24 >= powder;
+          if (pd) {
+            std::string note = s24 + " new snow \u00B7 ${title}";
+            lv_label_set_text(id(lbl_night_note_icon), "\U000F0717");   // mdi-snowflake
+            lv_label_set_text(id(lbl_night_note), note.c_str());
+            lv_obj_clear_flag(id(night_note), LV_OBJ_FLAG_HIDDEN);
+          } else {
+            lv_obj_add_flag(id(night_note), LV_OBJ_FLAG_HIDDEN);
+          }
+          if (pd != id(night_note_on)) {
+            id(night_note_on) = pd;
+            if (id(screen_state) >= 2) id(sleep_screen).execute();
+          }
 
           // Chip: always, or only after new snow
           bool show = std::string("${chip_show}") == "always" || (!isnan(n24) && n24 > 0.0f);
