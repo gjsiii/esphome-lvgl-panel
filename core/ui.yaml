@@ -1428,11 +1428,11 @@ lvgl:
                         styles: section_header
                         align: TOP_LEFT
                         x: ${32*px}
-                        y: 1190
+                        y: ${1190*px}
 
                     - obj:
                         align: TOP_MID
-                        y: 1212
+                        y: ${1212*px}
                         width: ${448*px}
                         height: ${216*px}
                         styles: card
@@ -1547,11 +1547,11 @@ lvgl:
                         styles: section_header
                         align: TOP_LEFT
                         x: ${32*px}
-                        y: 1444
+                        y: ${1444*px}
 
                     - obj:
                         align: TOP_MID
-                        y: 1466
+                        y: ${1466*px}
                         width: ${448*px}
                         height: ${332*px}
                         styles: card
@@ -1683,7 +1683,7 @@ lvgl:
                     # Restart (hold, so a stray tap can't reboot the panel)
                     - button:
                         align: TOP_MID
-                        y: 1814
+                        y: ${1814*px}
                         width: ${448*px}
                         height: ${50*px}
                         styles: card
@@ -1703,10 +1703,10 @@ lvgl:
                         styles: section_header
                         align: TOP_LEFT
                         x: ${32*px}
-                        y: 1888
+                        y: ${1888*px}
                     - obj:
                         align: TOP_MID
-                        y: 1910
+                        y: ${1910*px}
                         width: ${448*px}
                         height: ${176*px}
                         styles: card

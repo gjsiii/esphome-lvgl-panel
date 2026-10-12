@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="480" viewBox="0 0 480 480" font-family="Inter, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+<rect width="480" height="480" rx="18" fill="#000"/>
+<g transform="translate(190 18)" fill="none" stroke="#FFF" stroke-width="2"><circle r="7"/><path d="M0 -4v4l3 2M-2 -10h4" stroke-linecap="round"/></g><text x="202" y="25" fill="#FFF" font-size="20" font-weight="600">4:12</text>
+<g transform="translate(24 18)" stroke="#FFF" stroke-width="2" stroke-linecap="round"><circle r="4.5" fill="none"/><path d="M0 -9v2.5M0 6.5V9M-9 0h2.5M6.5 0H9M-6.4 -6.4l1.8 1.8M4.6 4.6l1.8 1.8M-6.4 6.4l1.8-1.8M4.6 -4.6l1.8-1.8"/></g>
+<text x="38" y="25" fill="#FFF" font-size="20" font-weight="600">70°</text>
+<g transform="translate(106 18)" fill="none" stroke="#8E8E93" stroke-width="2" stroke-linejoin="round"><path d="M-8 0L0 -7L8 0V8H-8Z"/><path d="M0 1v4" stroke-linecap="round"/></g>
+<text x="124" y="25" fill="#FFF" font-size="20" font-weight="600">72°</text>
+<text x="300" y="26" fill="#FFF" font-size="22" font-weight="600" text-anchor="middle">5:48pm</text>
+<g transform="translate(412 19)" fill="none" stroke="#8E8E93" stroke-width="2.2" stroke-linecap="round"><path d="M-9 -3a13 13 0 0 1 18 0"/><path d="M-5.5 1a8 8 0 0 1 11 0"/><circle cx="0" cy="5" r="1.6" fill="#8E8E93" stroke="none"/></g>
+<g transform="translate(456 18)"><circle r="7.5" fill="none" stroke="#8E8E93" stroke-width="3.5" stroke-dasharray="3.4 2.5"/><circle r="4.2" fill="none" stroke="#8E8E93" stroke-width="2"/></g>
+<rect x="12" y="46" width="456" height="50" rx="14" fill="#1C1C1E"/><text x="28" y="75" fill="#8E8E93" font-size="16">Pasta</text><text x="358" y="77" fill="#FFF" font-size="20" font-weight="600" text-anchor="end">4:12</text>
+<rect x="28" y="89" width="424" height="3" rx="2" fill="#2C2C2E"/><rect x="28" y="89" width="178" height="3" rx="2" fill="#F2F2F7"/>
+<rect x="12" y="104" width="456" height="50" rx="14" fill="#1C1C1E"/><text x="28" y="133" fill="#8E8E93" font-size="16">10 min</text><text x="358" y="135" fill="#FFF" font-size="20" font-weight="600" text-anchor="end">7:48</text>
+<rect x="28" y="147" width="424" height="3" rx="2" fill="#2C2C2E"/><rect x="28" y="147" width="330" height="3" rx="2" fill="#F2F2F7"/>
+<rect x="364" y="110" width="52" height="34" rx="17" fill="#2C2C2E"/><text x="390" y="132" fill="#FFF" font-size="16" text-anchor="middle">+1m</text><circle cx="443" cy="127" r="17" fill="#2C2C2E"/><path d="M437 121l12 12M449 121l-12 12" stroke="#FFF" stroke-width="2.2" stroke-linecap="round"/>
+<rect x="12" y="162" width="456" height="50" rx="14" fill="#1C1C1E"/><text x="28" y="191" fill="#8E8E93" font-size="16">Custom 1:30:00</text><text x="358" y="193" fill="#FFF" font-size="20" font-weight="600" text-anchor="end">1:12:05</text>
+<rect x="28" y="205" width="424" height="3" rx="2" fill="#2C2C2E"/><rect x="28" y="205" width="339" height="3" rx="2" fill="#F2F2F7"/>
+<rect x="364" y="168" width="52" height="34" rx="17" fill="#2C2C2E"/><text x="390" y="190" fill="#FFF" font-size="16" text-anchor="middle">+1m</text><circle cx="443" cy="185" r="17" fill="#2C2C2E"/><path d="M437 179l12 12M449 179l-12 12" stroke="#FFF" stroke-width="2.2" stroke-linecap="round"/>
+<rect x="12" y="288" width="105" height="58" rx="24" fill="#1C1C1E"/><text x="64" y="323" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">1 min</text>
+<rect x="129" y="288" width="105" height="58" rx="24" fill="#1C1C1E"/><text x="181" y="323" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">3 min</text>
+<rect x="246" y="288" width="105" height="58" rx="24" fill="#1C1C1E"/><text x="298" y="323" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">5 min</text>
+<rect x="363" y="288" width="105" height="58" rx="24" fill="#1C1C1E"/><text x="415" y="323" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">10 min</text>
+<rect x="12" y="356" width="105" height="58" rx="24" fill="#1C1C1E"/><text x="64" y="391" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">15 min</text>
+<rect x="129" y="356" width="105" height="58" rx="24" fill="#1C1C1E"/><text x="181" y="391" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">30 min</text>
+<rect x="246" y="356" width="222" height="58" rx="24" fill="#1C1C1E"/><text x="357" y="391" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">Custom…</text>
+<rect x="0" y="424" width="480" height="56" fill="#000"/><rect x="0" y="424" width="480" height="1" fill="#38383A"/>
+<text x="67" y="458" fill="#8E8E93" font-size="16" font-weight="500" text-anchor="middle">Lights</text>
+<rect x="128" y="432" width="109" height="40" rx="12" fill="#2C2C2E"/>
+<text x="182" y="458" fill="#FFF" font-size="16" font-weight="500" text-anchor="middle">Timer</text>
+<text x="297" y="458" fill="#8E8E93" font-size="16" font-weight="500" text-anchor="middle">Music</text>
+<text x="412" y="458" fill="#8E8E93" font-size="16" font-weight="500" text-anchor="middle">Favorites</text>
+</svg>

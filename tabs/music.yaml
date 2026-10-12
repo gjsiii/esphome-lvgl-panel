@@ -208,8 +208,16 @@ text_sensor:
             - script.execute:
                 id: load_album_art
                 url: !lambda |-
-                  if (x.rfind("http", 0) == 0) return x;
-                  return std::string("${ha_url}") + x;
+                  std::string u = x.rfind("http", 0) == 0 ? x : std::string("${ha_url}") + x;
+                  // Music Assistant artwork comes as a 512 px PNG; ask its
+                  // image proxy for a 256 px JPEG, which the panel decodes
+                  if (u.find("/imageproxy") != std::string::npos) {
+                    size_t f = u.find("fmt=png");
+                    if (f != std::string::npos) u.replace(f, 7, "fmt=jpeg");
+                    f = u.find("size=512");
+                    if (f != std::string::npos) u.replace(f, 8, "size=256");
+                  }
+                  return u;
 
 image:
   - platform: online_image

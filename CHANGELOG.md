@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.5.0 — unreleased
+
+- **Favorites from Music Assistant** (`tabs/ma_favorites.yaml` with the new
+  `ha/panel_ma_favorites.yaml` package): your Music Assistant favorites
+  (playlists, radio, albums, artists) as a live artwork grid with category
+  chips, Shuffle and refresh. Change favorites in Music Assistant; no
+  reinstall. Up to 36; for the Waveshare P4 (artwork is kept in PSRAM). The
+  hand-picked `tabs/favorites.yaml` is unchanged.
+- Music tab: Music Assistant album art now shows. Its image server sends PNG
+  by default; the panel now asks it for a 256 px JPEG.
+- Fixed on 720×720: the lower part of Settings (Restart, About this project)
+  sat too high and overlapped the rows above.
+- Docs: new illustrations of the snow report, Timer tab (with Custom… and
+  Time's up), Music Assistant favorites, light color sheet and About; the
+  Lights tab now shows a shade slider; README gallery has a third row.
+
 ## v0.4.0 — 2026-10-12
 
 - **Waveshare ESP32-P4-WIFI6-Touch-LCD-4B** (4″ 720×720) support:

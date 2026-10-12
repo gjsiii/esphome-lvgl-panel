@@ -36,7 +36,7 @@ round() { echo "<circle cx=\"$1\" cy=\"$2\" r=\"$3\" fill=\"${5:-#1C1C1E}\"/><te
 # ── Lights ──────────────────────────────────────────────────────────────────
 ACT=0; { head; status "8:42pm" "$(boat 368 18 '#30D158')" "#8E8E93"
  sec 24 61 SCENES; chip 20 70 140 Daytime; chip 170 70 140 Bright; chip 320 70 140 Dim; chip 20 128 215 "Movie Lights"; chip 245 128 215 Off
- sec 24 191 LIGHTS; slider 212 "Recessed Lights" 0 "#F2F2F7" "#1C1C1E"; slider 278 "Chandelier" 75 "#F2F2F7" "#1C1C1E"; slider 344 "Table Lamp" 40 "#F2F2F7" "#1C1C1E"
+ sec 24 191 LIGHTS; slider 212 "Recessed Lights" 0 "#F2F2F7" "#1C1C1E"; slider 278 "Chandelier" 75 "#F2F2F7" "#1C1C1E"; slider 344 "Shades" 60 "#F2F2F7" "#1C1C1E"
  tabs Lights TV Music Favorites; foot; } > $O/lights.svg
 
 # ── TV ──────────────────────────────────────────────────────────────────────
@@ -145,3 +145,88 @@ ACT=0; { head; status "8:42pm" "" "#8E8E93"
  echo '<text x="240" y="262" fill="#8E8E93" font-size="16" text-anchor="middle">Turn off the kitchen lights</text>'
  echo '<text x="240" y="318" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">Turned off the lights</text>'
  chip 160 408 160 Dismiss; foot; } > $O/voice.svg
+
+# ── Snow report (mid-season, the morning after a storm) ─────────────────────
+flake() { # cx cy size color opacity — six arms with side barbs
+  local r=$(( $3 / 2 )); local b=$(( $3 / 6 )); local w=$(( $3 / 14 + 1 ))
+  echo "<g transform=\"translate($1 $2)\" stroke=\"${4:-#FFF}\" stroke-opacity=\"${5:-1}\" stroke-width=\"$w\" stroke-linecap=\"round\" fill=\"none\">"
+  for a in 0 60 120 180 240 300; do echo "<g transform=\"rotate($a)\"><path d=\"M0 0V-$r M0 -$(( r*55/100 ))l-$b -$b M0 -$(( r*55/100 ))l$b -$b\"/></g>"; done; echo "</g>"; }
+{ head
+ echo '<defs><linearGradient id="snowbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0A1830"/><stop offset="1" stop-color="#1E3F6E"/></linearGradient></defs><rect width="480" height="480" rx="18" fill="url(#snowbg)"/>'
+ flake 350 40 130 "#FFF" .07; flake 40 450 150 "#FFF" .07
+ flake 34 35 24 "#9FD3FF"; echo '<text x="54" y="42" fill="#FFF" font-size="20" font-weight="600">Breckenridge</text><text x="415" y="42" fill="#9FD3FF" font-size="20" font-weight="600" text-anchor="middle">Done</text>'
+ card() { echo "<rect x=\"$1\" y=\"$2\" width=\"$3\" height=\"$4\" rx=\"$5\" fill=\"#10274A\" stroke=\"#2E5487\"/>"; }
+ card 20 68 440 136 18
+ echo '<text x="38" y="96" fill="#9FD3FF" font-size="13" font-weight="500" letter-spacing="1">NEW SNOW  ·  24 HOURS</text><text x="34" y="182" fill="#FFF" font-size="72" font-weight="300">14"</text>'
+ echo '<rect x="270" y="86" width="1" height="100" fill="#2E5487"/>'
+ r=("48 hours|19\"" "72 hours|22\"" "7 days|31\""); for i in 0 1 2; do IFS='|' read a b <<< "${r[$i]}"; y=$((106 + i*36)); echo "<text x=\"288\" y=\"$y\" fill=\"#9FB6D6\" font-size=\"16\">$a</text><text x=\"442\" y=\"$y\" fill=\"#FFF\" font-size=\"20\" font-weight=\"600\" text-anchor=\"end\">$b</text>"; done
+ c=("BASE|58\"" "SUMMIT|72\"" "SEASON|187\""); for i in 0 1 2; do IFS='|' read a b <<< "${c[$i]}"; x=$((20 + i*150)); card $x 216 140 92 16; echo "<text x=\"$((x+14))\" y=\"$((216+28))\" fill=\"#9FD3FF\" font-size=\"13\" font-weight=\"500\" letter-spacing=\"1\">$a</text><text x=\"$((x+14))\" y=\"$((216+72))\" fill=\"#FFF\" font-size=\"20\" font-weight=\"600\">$b</text>"; done
+ card 20 320 440 104 16
+ bar() { echo "<text x=\"38\" y=\"$1\" fill=\"#FFF\" font-size=\"16\">$2</text><text x=\"442\" y=\"$1\" fill=\"#9FB6D6\" font-size=\"16\" text-anchor=\"end\">$3 of $4</text><rect x=\"38\" y=\"$(( $1 + 12 ))\" width=\"404\" height=\"6\" rx=\"3\" fill=\"#0A1830\"/><rect x=\"38\" y=\"$(( $1 + 12 ))\" width=\"$(( 404 * $3 / $4 ))\" height=\"6\" rx=\"3\" fill=\"#9FD3FF\"/>"; }
+ bar 348 "Lifts open" 33 35; bar 392 "Runs open" 168 187
+ echo '<text x="240" y="456" fill="#9FD3FF" font-size="13" font-weight="500" text-anchor="middle">Open for the season</text>'; foot; } > $O/snow.svg
+
+# ── Light color sheet ───────────────────────────────────────────────────────
+{ head; echo '<text x="20" y="42" fill="#FFF" font-size="20" font-weight="600">Chandelier</text>'
+ echo '<circle cx="354" cy="34" r="22" fill="#1C1C1E"/><g transform="translate(354 34)" fill="none" stroke="#FFD60A" stroke-width="2.6" stroke-linecap="round"><path d="M-6.5 -7.5a10 10 0 1 0 13 0"/><path d="M0 -11v9"/></g>'
+ echo '<rect x="380" y="12" width="90" height="44" rx="22" fill="#1C1C1E"/><text x="425" y="42" fill="#F2F2F7" font-size="20" font-weight="600" text-anchor="middle">Done</text>'
+ sec 24 80 BRIGHTNESS; echo '<text x="456" y="80" fill="#8E8E93" font-size="13" text-anchor="end">75%</text>'
+ echo '<rect x="20" y="88" width="440" height="56" rx="16" fill="#1C1C1E"/><rect x="20" y="88" width="330" height="56" rx="16" fill="#F2F2F7"/>'
+ sec 24 174 WARMTH; echo '<text x="456" y="174" fill="#8E8E93" font-size="13" text-anchor="end">2700K</text>'
+ echo '<defs><linearGradient id="ct"><stop offset="0" stop-color="#FF9A3C"/><stop offset="1" stop-color="#D6E6FF"/></linearGradient></defs><rect x="42" y="188" width="396" height="40" rx="20" fill="url(#ct)"/><circle cx="128" cy="208" r="18" fill="#FFF" stroke="#0006"/>'
+ sec 24 262 COLOR; echo '<rect x="42" y="276" width="396" height="40" rx="20" fill="url(#hue)"/><circle cx="96" cy="296" r="18" fill="#FFF" stroke="#0006"/>'
+ echo '<defs><linearGradient id="hue"><stop offset="0" stop-color="#F00"/><stop offset=".17" stop-color="#FF0"/><stop offset=".33" stop-color="#0F0"/><stop offset=".5" stop-color="#0FF"/><stop offset=".67" stop-color="#00F"/><stop offset=".83" stop-color="#F0F"/><stop offset="1" stop-color="#F00"/></linearGradient><linearGradient id="sat2"><stop offset="0" stop-color="#FFF"/><stop offset="1" stop-color="#FF9A00"/></linearGradient></defs>'
+ echo '<rect x="42" y="328" width="396" height="40" rx="20" fill="url(#sat2)"/><circle cx="300" cy="348" r="18" fill="#FFF" stroke="#0006"/>'
+ sw=("#F5F1E8" "#FF453A" "#FF9F0A" "#FFD60A" "#30D158" "#0A84FF" "#BF5AF2" "#FF375F"); for i in 0 1 2 3 4 5 6 7; do echo "<circle cx=\"$((44 + i*56))\" cy=\"409\" r=\"24\" fill=\"${sw[$i]}\"/>"; done
+ foot; } > $O/light-sheet.svg
+
+# ── Timer tab ───────────────────────────────────────────────────────────────
+ACT=1; { head
+ echo '<g transform="translate(190 18)" fill="none" stroke="#FFF" stroke-width="2"><circle r="7"/><path d="M0 -4v4l3 2M-2 -10h4" stroke-linecap="round"/></g><text x="202" y="25" fill="#FFF" font-size="20" font-weight="600">4:12</text>'
+ sun 24 18; echo '<text x="38" y="25" fill="#FFF" font-size="20" font-weight="600">70°</text>'; house 106 18 "#8E8E93"; echo '<text x="124" y="25" fill="#FFF" font-size="20" font-weight="600">72°</text>'
+ echo '<text x="300" y="26" fill="#FFF" font-size="22" font-weight="600" text-anchor="middle">5:48pm</text>'; wifi 412 19; gear 456 18
+ trow() { # y name time pct buttons
+  echo "<rect x=\"12\" y=\"$1\" width=\"456\" height=\"50\" rx=\"14\" fill=\"#1C1C1E\"/><text x=\"28\" y=\"$(( $1 + 29 ))\" fill=\"#8E8E93\" font-size=\"16\">$2</text><text x=\"358\" y=\"$(( $1 + 31 ))\" fill=\"#FFF\" font-size=\"20\" font-weight=\"600\" text-anchor=\"end\">$3</text>"
+  echo "<rect x=\"28\" y=\"$(( $1 + 43 ))\" width=\"424\" height=\"3\" rx=\"2\" fill=\"#2C2C2E\"/><rect x=\"28\" y=\"$(( $1 + 43 ))\" width=\"$(( 424 * $4 / 100 ))\" height=\"3\" rx=\"2\" fill=\"#F2F2F7\"/>"
+  [ "$5" = 1 ] && echo "<rect x=\"364\" y=\"$(( $1 + 6 ))\" width=\"52\" height=\"34\" rx=\"17\" fill=\"#2C2C2E\"/><text x=\"390\" y=\"$(( $1 + 28 ))\" fill=\"#FFF\" font-size=\"16\" text-anchor=\"middle\">+1m</text><circle cx=\"443\" cy=\"$(( $1 + 23 ))\" r=\"17\" fill=\"#2C2C2E\"/><path d=\"M437 $(( $1 + 17 ))l12 12M449 $(( $1 + 17 ))l-12 12\" stroke=\"#FFF\" stroke-width=\"2.2\" stroke-linecap=\"round\"/>"; }
+ trow 46 "Pasta" "4:12" 42 0; trow 104 "10 min" "7:48" 78 1; trow 162 "Custom 1:30:00" "1:12:05" 80 1
+ p=("1 min" "3 min" "5 min" "10 min" "15 min" "30 min"); for i in 0 1 2 3 4 5; do x=$((12 + (i%4)*117)); y=$((288 + (i/4)*68)); echo "<rect x=\"$x\" y=\"$y\" width=\"105\" height=\"58\" rx=\"24\" fill=\"#1C1C1E\"/><text x=\"$((x+52))\" y=\"$((y+35))\" fill=\"#FFF\" font-size=\"20\" font-weight=\"600\" text-anchor=\"middle\">${p[$i]}</text>"; done
+ echo '<rect x="246" y="356" width="222" height="58" rx="24" fill="#1C1C1E"/><text x="357" y="391" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">Custom…</text>'
+ tabs Lights Timer Music Favorites; foot; } > $O/timer.svg
+
+# ── Custom timer sheet ──────────────────────────────────────────────────────
+{ head; echo '<text x="20" y="42" fill="#FFF" font-size="20" font-weight="600">Custom Timer</text><text x="415" y="42" fill="#F2F2F7" font-size="20" font-weight="600" text-anchor="middle">Cancel</text>'
+ roll() { # cx above sel below unit
+  echo "<rect x=\"$(( $1 - 55 ))\" y=\"84\" width=\"110\" height=\"156\" rx=\"14\" fill=\"#1C1C1E\"/><rect x=\"$(( $1 - 55 ))\" y=\"140\" width=\"110\" height=\"44\" fill=\"#2C2C2E\"/>"
+  echo "<text x=\"$1\" y=\"123\" fill=\"#8E8E93\" font-size=\"20\" font-weight=\"600\" text-anchor=\"middle\">$2</text><text x=\"$1\" y=\"170\" fill=\"#FFF\" font-size=\"20\" font-weight=\"600\" text-anchor=\"middle\">$3</text><text x=\"$1\" y=\"217\" fill=\"#8E8E93\" font-size=\"20\" font-weight=\"600\" text-anchor=\"middle\">$4</text><text x=\"$1\" y=\"268\" fill=\"#8E8E93\" font-size=\"16\" text-anchor=\"middle\">$5</text>"; }
+ roll 110 "" 0 1 hours; roll 240 24 25 26 min; roll 370 59 00 01 sec
+ echo '<rect x="120" y="380" width="240" height="60" rx="24" fill="#F2F2F7"/><text x="240" y="417" fill="#000" font-size="20" font-weight="600" text-anchor="middle">Start</text>'; foot; } > $O/timer-custom.svg
+
+# ── Time's up ───────────────────────────────────────────────────────────────
+{ head
+ echo '<g transform="translate(240 120)" fill="#FFF"><path d="M-26 22h52l-7-10v-18a19 19 0 0 0-38 0v18Z"/><circle cy="30" r="7"/><path d="M-40 -18a40 40 0 0 1 12-20M40 -18a40 40 0 0 0-12-20" fill="none" stroke="#FFF" stroke-width="5" stroke-linecap="round"/></g>'
+ echo '<text x="240" y="207" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">Time'"'"'s up</text><text x="240" y="240" fill="#8E8E93" font-size="16" text-anchor="middle">Pasta</text>'
+ echo '<rect x="120" y="294" width="240" height="72" rx="24" fill="#F2F2F7"/><text x="240" y="337" fill="#000" font-size="20" font-weight="600" text-anchor="middle">Stop</text>'; foot; } > $O/timer-ring.svg
+
+# ── Favorites from Music Assistant ──────────────────────────────────────────
+ACT=3; { head; status "5:48pm" "" "#8E8E93"
+ cx=20; c=("All" "Playlists" "Radio" "Albums" "Artists"); w=(44 84 62 72 68); for i in 0 1 2 3 4; do f="#1C1C1E"; [ $i -eq 0 ] && f="#636366"; echo "<rect x=\"$cx\" y=\"46\" width=\"${w[$i]}\" height=\"36\" rx=\"18\" fill=\"$f\"/><text x=\"$((cx + ${w[$i]}/2))\" y=\"69\" fill=\"#FFF\" font-size=\"16\" text-anchor=\"middle\">${c[$i]}</text>"; cx=$((cx + ${w[$i]} + 6)); done
+ echo '<circle cx="408" cy="64" r="20" fill="#636366"/><g transform="translate(408 64)" fill="none" stroke="#FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M-9 -5h4c4 0 6 10 10 10h4M-9 5h4c4 0 6-10 10-10h4"/><path d="M6 -8l3 3-3 3M6 2l3 3-3 3"/></g><circle cx="452" cy="64" r="20" fill="#1C1C1E"/><text x="452" y="71" fill="#8E8E93" font-size="18" text-anchor="middle">↻</text>'
+ echo '<defs><clipPath id="grid"><rect x="0" y="92" width="480" height="332"/></clipPath></defs><g clip-path="url(#grid)">'
+ cols=("#1DB954" "#C06C84" "#E07A5F" "#355C7D" "#2A9D8F" "#6C5B7B"); names=("Alan Jackson Radio" "Best Dance Songs…" "Beyoncé Radio" "Peaceful Piano" "Spa" "Lo-Fi Beats")
+ for i in 0 1 2 3 4 5; do x=$((12 + (i%3)*158)); y=$((96 + (i/3)*184)); echo "<rect x=\"$x\" y=\"$y\" width=\"140\" height=\"140\" rx=\"12\" fill=\"${cols[$i]}\"/><text x=\"$((x+70))\" y=\"$((y+162))\" fill=\"#FFF\" font-size=\"13\" font-weight=\"500\" text-anchor=\"middle\">${names[$i]}</text>"; done
+ echo '</g>'; tabs Lights Timer Music Favorites; foot; } > $O/ma-favorites.svg
+
+# ── About (bottom of Settings) ──────────────────────────────────────────────
+{ head; hdr Settings
+ echo '<rect x="16" y="70" width="448" height="96" rx="14" fill="#1C1C1E"/><text x="32" y="102" fill="#FFF" font-size="16">Uptime</text><text x="448" y="102" fill="#8E8E93" font-size="16" text-anchor="end">3d 4h 12m</text><rect x="32" y="118" width="416" height="1" fill="#38383A"/><text x="32" y="146" fill="#FFF" font-size="16">Last restart</text><text x="448" y="146" fill="#8E8E93" font-size="16" text-anchor="end">Software</text>'
+ echo '<rect x="16" y="180" width="448" height="50" rx="14" fill="#1C1C1E"/><text x="240" y="211" fill="#FF453A" font-size="16" text-anchor="middle">Hold to restart</text>'
+ sec 32 268 "ABOUT THIS PROJECT"; echo '<rect x="16" y="282" width="448" height="176" rx="14" fill="#1C1C1E"/><rect x="32" y="298" width="144" height="144" rx="8" fill="#FFF"/>'
+ RANDOM=7; q=""; for r in $(seq 0 24); do for c in $(seq 0 24); do
+   inf=0; for o in "0 0" "0 18" "18 0"; do set -- $o; [ $r -ge $1 ] && [ $r -lt $(( $1 + 7 )) ] && [ $c -ge $2 ] && [ $c -lt $(( $2 + 7 )) ] && inf=1; done
+   [ $inf = 1 ] && continue; [ $((RANDOM % 2)) -eq 1 ] && q="$q<rect x=\"$((42 + c*5))\" y=\"$((308 + r*5))\" width=\"5\" height=\"5\"/>"; done; done
+ fp() { echo "<rect x=\"$1\" y=\"$2\" width=\"35\" height=\"35\" fill=\"#000\"/><rect x=\"$(( $1 + 5 ))\" y=\"$(( $2 + 5 ))\" width=\"25\" height=\"25\" fill=\"#FFF\"/><rect x=\"$(( $1 + 10 ))\" y=\"$(( $2 + 10 ))\" width=\"15\" height=\"15\" fill=\"#000\"/>"; }
+ echo "<g fill=\"#000\">$q</g>"; fp 42 308; fp 132 308; fp 42 398
+ echo '<text x="192" y="320" fill="#FFF" font-size="20" font-weight="600">esphome-lvgl-panel</text><text x="192" y="342" fill="#8E8E93" font-size="13">https://github.com/gjsiii/</text><text x="192" y="358" fill="#8E8E93" font-size="13">esphome-lvgl-panel</text>'
+ echo '<text x="192" y="386" fill="#8E8E93" font-size="13">Scan for the code, setup guides</text><text x="192" y="402" fill="#8E8E93" font-size="13">and updates.</text><text x="192" y="434" fill="#30D158" font-size="13" font-weight="500">Version 0.4.0  ·  v0.5.0 available</text>'
+ foot; } > $O/about.svg

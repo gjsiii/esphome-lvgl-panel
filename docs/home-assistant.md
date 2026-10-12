@@ -11,8 +11,22 @@ in `configuration.yaml`), then restart Home Assistant.
 | `panel_weather.yaml` | `sensor.panel_weather_forecast` — state: time of the last update; attributes `hourly` and `daily` (compact text the panels read). Refreshed every 30 minutes with `weather.get_forecasts`. | The weather sheet's forecast. Change `source:` to your weather entity. |
 | `panel_messages.yaml` | `script.panel_message` | Sending banners to several panels with optional fields. |
 | `panel_updates.yaml` | `sensor.esphome_lvgl_panel_latest` — the newest released version (from GitHub tags, every 6 hours). | The update notice in Settings. Optional. |
+| `panel_ma_favorites.yaml` | `sensor.panel_ma_favorites` — state: number of favorites; attribute `items` (compact list the panels read). Re-read every 15 minutes with `music_assistant.get_library`, and when a panel's refresh button is tapped. | `tabs/ma_favorites.yaml`. Set `ma_entry` to your Music Assistant config entry id (the entry picker in Developer Tools → Actions → `music_assistant.get_library` shows it). |
 
-One forecast sensor serves every panel in the house.
+One forecast sensor serves every panel in the house, and one favorites sensor
+every panel with the Music Assistant favorites tab.
+
+The favorites list is too long for the history database; keep it out:
+
+```yaml
+recorder:
+  exclude:
+    entities:
+      - sensor.panel_ma_favorites
+```
+
+Artwork links from Apple Music and Spotify are rewritten to ask for ~300 px
+images, which the panel decodes much faster than the 640–1000 px originals.
 
 ## Permission to control things
 

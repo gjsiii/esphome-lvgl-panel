@@ -112,6 +112,14 @@ packages:
       - path: items/speaker.yaml
         vars: { slot: 1, name: "Kitchen", entity: media_player.kitchen_speaker, leader: media_player.living_room_speaker }   # ◀
 
+      # ── Favorites live from Music Assistant (Waveshare P4; needs
+      #    ha/panel_ma_favorites.yaml). Use instead of tabs/favorites.yaml ─
+      # - path: tabs/ma_favorites.yaml
+      #   vars:
+      #     tab_position: 4
+      #     music_player: media_player.living_room_speaker
+      #     ma_url: "http://192.168.1.10:8095"      # ◀ Music Assistant
+
       # ── Timer tab (needs the voice feature) ────────────────────────────
       # - path: tabs/timer.yaml
       #   vars: { tab_position: 5 }

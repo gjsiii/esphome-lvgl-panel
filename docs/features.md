@@ -11,6 +11,7 @@ local `!include` form and every option.
 - [TV tab](#tv-tab)
 - [Music tab and Play on](#music-tab-and-play-on)
 - [Favorites tab](#favorites-tab)
+- [Favorites from Music Assistant](#favorites-from-music-assistant)
 - [Timer tab](#timer-tab)
 - [Weather](#weather)
 - [Climate](#climate)
@@ -91,6 +92,8 @@ the heading to say so: set `lights_title: "LIGHTS & SHADES"` in `substitutions`.
 > See [Room scenes with several lighting systems](home-assistant.md#room-scenes-with-several-lighting-systems).
 
 ## Light color sheet
+
+![Light color sheet](images/light-sheet.svg)
 
 Hold a light's name on the Lights tab. The sheet shows:
 
@@ -207,7 +210,42 @@ accepts — Spotify URLs, Music Assistant URIs (`apple_music--xxxx://playlist/�
 radio station URIs, etc. A quick way to find one: play the item in Music
 Assistant and copy its URI from the item's details.
 
+## Favorites from Music Assistant
+
+![Favorites from Music Assistant](images/ma-favorites.svg)
+
+The Favorites tab can instead show your **Music Assistant favorites**, live:
+favorite a playlist, station, album or artist in Music Assistant and it
+appears on the panel, with no reinstall. Chips filter the grid (All,
+Playlists, Radio, Albums, Artists; empty categories are hidden). Tap a tile to
+play it on the room's player, replacing what's queued.
+
+```yaml
+- path: tabs/ma_favorites.yaml
+  vars:
+    tab_position: 4
+    music_player: media_player.kitchen      # Music Assistant player to play on
+    ma_url: "http://192.168.0.10:8095"      # Music Assistant's address
+```
+
+- **Shuffle** (the crossed arrows next to the chips) applies to playlists,
+  albums and artists; radio never shuffles. The setting is kept across
+  restarts.
+- **Refresh** (the circular arrow) re-reads the list now; it is also re-read
+  every 15 minutes.
+- Up to 36 favorites, in the order playlists, radio, albums, artists.
+- Artwork is downloaded once, one tile at a time, when the list changes
+  (expect a few seconds of slightly jerky scrolling after a restart). JPEG and
+  PNG artwork are shown; anything else keeps the music-note placeholder.
+
+Needs the `panel_ma_favorites.yaml` package in Home Assistant (see
+[Home Assistant side](home-assistant.md#packages-to-install)). It keeps every
+picture in PSRAM (about 90 KB each), so use it on the Waveshare P4; the
+480×480 panels should keep `tabs/favorites.yaml`.
+
 ## Timer tab
+
+![Timer tab](images/timer.svg)
 
 On a panel with voice (the Waveshare P4), a Timer tab with preset buttons
 (1, 3, 5, 10, 15 and 30 minutes) and **Custom…** (hours / minutes / seconds
@@ -224,6 +262,10 @@ wheels, then Start).
   in the same list. Cancel those by voice ("cancel the pasta timer").
 - When a timer ends, the panel wakes, opens the tab, shows **Time's up** and
   chimes on its speaker until you tap **Stop** (or for 5 minutes).
+
+| Custom… | Time's up |
+|:---:|:---:|
+| ![Custom timer](images/timer-custom.svg) | ![Time's up](images/timer-ring.svg) |
 - While a timer runs, a timer icon in the status bar shows the time left;
   tap it to open the tab.
 
@@ -321,6 +363,8 @@ The entity needs `period_N` / `forecast_N` attributes (N = 1 to 5) and an
 text source shaped like that works.
 
 ## Snow report
+
+![Snow report](images/snow.svg)
 
 A winter-themed ski report for a mountain house. A snowflake chip in the
 status bar shows the last 24 hours of new snow; tap it for the sheet: new
@@ -522,10 +566,14 @@ sensor name can set `update_entity` in `substitutions`.)
 
 ## About and restart
 
+![About](images/about.svg)
+
 At the bottom of Settings: device name, panel version, ESPHome version, IP
 address, Wi-Fi network and signal, uptime, and the reason for the **last
 restart** (useful for spotting power problems — see
 [Troubleshooting](troubleshooting.md)). **Hold to restart** reboots the panel
 (holding prevents accidental restarts). Below it, **About this project** shows
-a QR code and the link to this repository. IP, signal, uptime, reset reason and
-Restart are also in Home Assistant.
+a QR code, the link to this repository and the panel version, which turns
+green with "vX.Y.Z available" when a newer release is out (see
+[Updates](#updates)). IP, signal, uptime, reset reason and Restart are also in
+Home Assistant.

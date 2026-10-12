@@ -111,6 +111,7 @@ orders the tab bar. Leave a tab out and it simply isn't there.
 | `tabs/tv_appletv.yaml` | `tab_position`, `tv_remote`, `tv_player`, `tv_volume_player`, `tv_mute_player` | Apple TV remote. `tv_volume_player` and `tv_mute_player` can be the Apple TV itself, a soundbar or the TV. |
 | `tabs/music.yaml` | `tab_position`, `music_player` | Now Playing for one speaker (a Music Assistant player works best). |
 | `tabs/favorites.yaml` | `tab_position` | Grid for `items/favorite.yaml`. |
+| `tabs/ma_favorites.yaml` | `tab_position`, `music_player`, `ma_url`, optional `favorites_entity` (default `sensor.panel_ma_favorites`) | Live Music Assistant favorites with category chips. Needs `ha/panel_ma_favorites.yaml`; Waveshare P4 only (artwork is kept in PSRAM). See [Favorites from Music Assistant](features.md#favorites-from-music-assistant). |
 | `tabs/timer.yaml` | `tab_position`, optional `preset_1` … `preset_6` (minutes; default 1, 3, 5, 10, 15, 30) | Preset, custom and voice timers. Needs `features/voice_assistant.yaml`. See [Timer tab](features.md#timer-tab). |
 
 ## Items

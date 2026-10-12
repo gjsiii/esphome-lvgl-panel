@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="480" viewBox="0 0 480 480" font-family="Inter, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+<rect width="480" height="480" rx="18" fill="#000"/>
+<defs><linearGradient id="snowbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0A1830"/><stop offset="1" stop-color="#1E3F6E"/></linearGradient></defs><rect width="480" height="480" rx="18" fill="url(#snowbg)"/>
+<g transform="translate(350 40)" stroke="#FFF" stroke-opacity=".07" stroke-width="10" stroke-linecap="round" fill="none">
+<g transform="rotate(0)"><path d="M0 0V-65 M0 -35l-21 -21 M0 -35l21 -21"/></g>
+<g transform="rotate(60)"><path d="M0 0V-65 M0 -35l-21 -21 M0 -35l21 -21"/></g>
+<g transform="rotate(120)"><path d="M0 0V-65 M0 -35l-21 -21 M0 -35l21 -21"/></g>
+<g transform="rotate(180)"><path d="M0 0V-65 M0 -35l-21 -21 M0 -35l21 -21"/></g>
+<g transform="rotate(240)"><path d="M0 0V-65 M0 -35l-21 -21 M0 -35l21 -21"/></g>
+<g transform="rotate(300)"><path d="M0 0V-65 M0 -35l-21 -21 M0 -35l21 -21"/></g>
+</g>
+<g transform="translate(40 450)" stroke="#FFF" stroke-opacity=".07" stroke-width="11" stroke-linecap="round" fill="none">
+<g transform="rotate(0)"><path d="M0 0V-75 M0 -41l-25 -25 M0 -41l25 -25"/></g>
+<g transform="rotate(60)"><path d="M0 0V-75 M0 -41l-25 -25 M0 -41l25 -25"/></g>
+<g transform="rotate(120)"><path d="M0 0V-75 M0 -41l-25 -25 M0 -41l25 -25"/></g>
+<g transform="rotate(180)"><path d="M0 0V-75 M0 -41l-25 -25 M0 -41l25 -25"/></g>
+<g transform="rotate(240)"><path d="M0 0V-75 M0 -41l-25 -25 M0 -41l25 -25"/></g>
+<g transform="rotate(300)"><path d="M0 0V-75 M0 -41l-25 -25 M0 -41l25 -25"/></g>
+</g>
+<g transform="translate(34 35)" stroke="#9FD3FF" stroke-opacity="1" stroke-width="2" stroke-linecap="round" fill="none">
+<g transform="rotate(0)"><path d="M0 0V-12 M0 -6l-4 -4 M0 -6l4 -4"/></g>
+<g transform="rotate(60)"><path d="M0 0V-12 M0 -6l-4 -4 M0 -6l4 -4"/></g>
+<g transform="rotate(120)"><path d="M0 0V-12 M0 -6l-4 -4 M0 -6l4 -4"/></g>
+<g transform="rotate(180)"><path d="M0 0V-12 M0 -6l-4 -4 M0 -6l4 -4"/></g>
+<g transform="rotate(240)"><path d="M0 0V-12 M0 -6l-4 -4 M0 -6l4 -4"/></g>
+<g transform="rotate(300)"><path d="M0 0V-12 M0 -6l-4 -4 M0 -6l4 -4"/></g>
+</g>
+<text x="54" y="42" fill="#FFF" font-size="20" font-weight="600">Breckenridge</text><text x="415" y="42" fill="#9FD3FF" font-size="20" font-weight="600" text-anchor="middle">Done</text>
+<rect x="20" y="68" width="440" height="136" rx="18" fill="#10274A" stroke="#2E5487"/>
+<text x="38" y="96" fill="#9FD3FF" font-size="13" font-weight="500" letter-spacing="1">NEW SNOW  ·  24 HOURS</text><text x="34" y="182" fill="#FFF" font-size="72" font-weight="300">14"</text>
+<rect x="270" y="86" width="1" height="100" fill="#2E5487"/>
+<text x="288" y="106" fill="#9FB6D6" font-size="16">48 hours</text><text x="442" y="106" fill="#FFF" font-size="20" font-weight="600" text-anchor="end">19"</text>
+<text x="288" y="142" fill="#9FB6D6" font-size="16">72 hours</text><text x="442" y="142" fill="#FFF" font-size="20" font-weight="600" text-anchor="end">22"</text>
+<text x="288" y="178" fill="#9FB6D6" font-size="16">7 days</text><text x="442" y="178" fill="#FFF" font-size="20" font-weight="600" text-anchor="end">31"</text>
+<rect x="20" y="216" width="140" height="92" rx="16" fill="#10274A" stroke="#2E5487"/>
+<text x="34" y="244" fill="#9FD3FF" font-size="13" font-weight="500" letter-spacing="1">BASE</text><text x="34" y="288" fill="#FFF" font-size="20" font-weight="600">58"</text>
+<rect x="170" y="216" width="140" height="92" rx="16" fill="#10274A" stroke="#2E5487"/>
+<text x="184" y="244" fill="#9FD3FF" font-size="13" font-weight="500" letter-spacing="1">SUMMIT</text><text x="184" y="288" fill="#FFF" font-size="20" font-weight="600">72"</text>
+<rect x="320" y="216" width="140" height="92" rx="16" fill="#10274A" stroke="#2E5487"/>
+<text x="334" y="244" fill="#9FD3FF" font-size="13" font-weight="500" letter-spacing="1">SEASON</text><text x="334" y="288" fill="#FFF" font-size="20" font-weight="600">187"</text>
+<rect x="20" y="320" width="440" height="104" rx="16" fill="#10274A" stroke="#2E5487"/>
+<text x="38" y="348" fill="#FFF" font-size="16">Lifts open</text><text x="442" y="348" fill="#9FB6D6" font-size="16" text-anchor="end">33 of 35</text><rect x="38" y="360" width="404" height="6" rx="3" fill="#0A1830"/><rect x="38" y="360" width="380" height="6" rx="3" fill="#9FD3FF"/>
+<text x="38" y="392" fill="#FFF" font-size="16">Runs open</text><text x="442" y="392" fill="#9FB6D6" font-size="16" text-anchor="end">168 of 187</text><rect x="38" y="404" width="404" height="6" rx="3" fill="#0A1830"/><rect x="38" y="404" width="362" height="6" rx="3" fill="#9FD3FF"/>
+<text x="240" y="456" fill="#9FD3FF" font-size="13" font-weight="500" text-anchor="middle">Open for the season</text>
+</svg>

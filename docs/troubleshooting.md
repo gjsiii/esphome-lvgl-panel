@@ -46,6 +46,17 @@ address (an IP rather than a cloud URL).
   `http://<HA IP>:8123`).
 - Some TV apps don't share artwork with HA — the corner stays empty.
 
+## Music Assistant favorites: empty tab, or a music note instead of artwork
+
+- **"Loading favorites…" never goes away:** `sensor.panel_ma_favorites` is
+  missing or empty. Check the package is installed, `ma_entry` is right, and
+  reload Template entities (Developer Tools → YAML).
+- **A tile shows a music note:** its artwork couldn't be decoded (the panel
+  reads JPEG and PNG; progressive JPEGs aren't supported) or there is none.
+  The tile still plays.
+- **New favorites don't appear:** tap the refresh icon on the tab; the list is
+  otherwise re-read every 15 minutes.
+
 ## The weather sheet shows dashes
 
 `sensor.panel_weather_forecast` is missing or `unavailable`: install
