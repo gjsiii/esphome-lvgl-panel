@@ -22,7 +22,7 @@ esphome:                       # 2. the panel's identity
 packages:                      # 3. the shared files it's built from
   panel:
     url: https://github.com/gjsiii/esphome-lvgl-panel
-    ref: v0.3.0
+    ref: v0.4.0
     refresh: 1d
     files:
       - hardware/guition-4848s040.yaml      # always
@@ -170,7 +170,7 @@ esphome:
 packages:
   panel:
     url: https://github.com/gjsiii/esphome-lvgl-panel
-    ref: v0.3.0
+    ref: v0.4.0
     refresh: 1d
     files:
       - hardware/guition-4848s040.yaml

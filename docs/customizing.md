@@ -169,7 +169,7 @@ Rules of thumb:
 
 1. Bump `panel_version` in `core/base.yaml` and add a section to `CHANGELOG.md`
    (mark anything that changes existing display files as **Breaking**).
-2. Commit, tag (`git tag -a v0.3.0 -m v0.3.0`) and push the commit and the tag.
+2. Commit, tag (`git tag -a v0.4.0 -m v0.4.0`) and push the commit and the tag.
 3. Each house changes `ref:` to the new tag and installs.
 
 To regenerate the documentation illustrations after a design change, run

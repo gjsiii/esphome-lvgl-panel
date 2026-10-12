@@ -57,7 +57,7 @@ repository.
    - Your scenes, lights, TV, speakers and favorites (see
      [Using the panel](features.md) for each).
    - Delete any feature you don't want — every one is optional.
-4. Pin a release: `ref: v0.3.0` (see [Updating](#6-updating)).
+4. Pin a release: `ref: v0.4.0` (see [Updating](#6-updating)).
 
 ### Secrets
 
@@ -124,7 +124,7 @@ forecast. [Using the panel](features.md) walks through every screen.
 Each display file names a release of this repository with `ref:`. To update:
 
 1. Read the [changelog](../CHANGELOG.md) for anything marked **Breaking**.
-2. Change `ref: v0.3.0` to the new tag.
+2. Change `ref: v0.4.0` to the new tag.
 3. ESPHome dashboard → **Update All** (or install each panel). Updates are over
    Wi-Fi.
 

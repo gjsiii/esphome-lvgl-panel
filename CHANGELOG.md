@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.4.0 — unreleased
+## v0.4.0 — 2026-10-12
 
 - **Waveshare ESP32-P4-WIFI6-Touch-LCD-4B** (4″ 720×720) support:
   `hardware/waveshare-esp32-p4-86-4b.yaml`, with the board's speaker and
