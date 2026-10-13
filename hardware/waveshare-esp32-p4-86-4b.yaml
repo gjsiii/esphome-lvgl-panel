@@ -51,6 +51,11 @@ esp32:
     type: esp-idf
     advanced:
       enable_idf_experimental_features: true
+      # The main loop also draws the screen. A full-screen LVGL redraw (e.g.
+      # waking from the night clock) runs deep, and RISC-V frames are larger
+      # than on the S3: 16 KB instead of ESPHome's 8 KB. "Loop Stack Free"
+      # (below) shows the smallest headroom seen since boot.
+      loop_task_stack_size: 16384
       # execute_from_psram: true would reduce OTA flicker, but has stopped
       # some units from booting.
     # Not used here: CONFIG_SPIRAM_FETCH_INSTRUCTIONS / CONFIG_SPIRAM_RODATA
@@ -249,3 +254,16 @@ media_player:
     on_idle:
       - delay: 100ms
       - switch.turn_off: audio_amplifier
+
+sensor:
+  # Smallest free space the main loop's stack has had since boot. Should
+  # stay well above 1000 B; lower means the stack above needs to grow.
+  - platform: template
+    name: Loop Stack Free
+    id: loop_stack_free
+    unit_of_measurement: B
+    accuracy_decimals: 0
+    entity_category: diagnostic
+    icon: mdi:layers-outline
+    update_interval: 60s
+    lambda: "return (float) uxTaskGetStackHighWaterMark(nullptr);"

@@ -11,6 +11,7 @@ local `!include` form and every option.
 - [TV tab](#tv-tab)
 - [Music tab and Play on](#music-tab-and-play-on)
 - [Favorites tab](#favorites-tab)
+- [Favorites from Music Assistant](#favorites-from-music-assistant)
 - [Timer tab](#timer-tab)
 - [Weather](#weather)
 - [Climate](#climate)
@@ -91,6 +92,8 @@ the heading to say so: set `lights_title: "LIGHTS & SHADES"` in `substitutions`.
 > See [Room scenes with several lighting systems](home-assistant.md#room-scenes-with-several-lighting-systems).
 
 ## Light color sheet
+
+![Light color sheet](images/light-sheet.svg)
 
 Hold a light's name on the Lights tab. The sheet shows:
 
@@ -207,7 +210,51 @@ accepts — Spotify URLs, Music Assistant URIs (`apple_music--xxxx://playlist/�
 radio station URIs, etc. A quick way to find one: play the item in Music
 Assistant and copy its URI from the item's details.
 
+## Favorites from Music Assistant
+
+![Favorites from Music Assistant](images/ma-favorites.svg)
+
+The Favorites tab can instead show your **Music Assistant favorites**, live:
+favorite a playlist, station, album or artist in Music Assistant and it
+appears on the panel, with no reinstall. Chips filter the grid (All,
+Playlists, Radio, Albums, Artists; empty categories are hidden). Tap a tile to
+play it on the room's player, replacing what's queued. The tile shows
+"Starting…" for a few seconds while Music Assistant gets going; other taps
+wait until then, so a second tap can't queue a second reload.
+
+```yaml
+- path: tabs/ma_favorites.yaml
+  vars:
+    tab_position: 4
+    music_player: media_player.kitchen      # Music Assistant player to play on
+    ma_url: "http://192.168.0.10:8095"      # Music Assistant's address
+```
+
+- **Shuffle** (the crossed arrows next to the chips) applies to playlists,
+  albums and artists; radio never shuffles. The setting is kept across
+  restarts.
+- **Refresh** (the circular arrow) re-reads the list now; it is also re-read
+  every 15 minutes.
+- Up to 36 favorites, in the order playlists, radio, albums, artists.
+- Artwork is downloaded once, one tile at a time, when the list changes
+  (expect a few seconds of slightly jerky scrolling after a restart). JPEG and
+  PNG artwork are shown; anything else keeps the music-note placeholder.
+
+Needs the `panel_ma_favorites.yaml` package in Home Assistant (see
+[Home Assistant side](home-assistant.md#packages-to-install)); update it
+together with the panels, since the two share a compact list format. Works on
+every board: each picture is kept in PSRAM (about 40 KB on 480×480, 90 KB on
+720×720), and the tab itself needs little internal RAM. The hand-picked
+`tabs/favorites.yaml` is still there if you prefer a few fixed tiles.
+
+**Images and memory:** every picture the panel downloads (album art, TV art,
+favorites, camera snapshots) goes through one of two shared image loaders,
+because each loader keeps an ~18 KB decoder in the board's internal RAM once
+it has been used. Each screen keeps its own copy of its picture in PSRAM.
+
 ## Timer tab
+
+![Timer tab](images/timer.svg)
 
 On a panel with voice (the Waveshare P4), a Timer tab with preset buttons
 (1, 3, 5, 10, 15 and 30 minutes) and **Custom…** (hours / minutes / seconds
@@ -224,6 +271,10 @@ wheels, then Start).
   in the same list. Cancel those by voice ("cancel the pasta timer").
 - When a timer ends, the panel wakes, opens the tab, shows **Time's up** and
   chimes on its speaker until you tap **Stop** (or for 5 minutes).
+
+| Custom… | Time's up |
+|:---:|:---:|
+| ![Custom timer](images/timer-custom.svg) | ![Time's up](images/timer-ring.svg) |
 - While a timer runs, a timer icon in the status bar shows the time left;
   tap it to open the tab.
 
@@ -322,6 +373,8 @@ text source shaped like that works.
 
 ## Snow report
 
+![Snow report](images/snow.svg)
+
 A winter-themed ski report for a mountain house. A snowflake chip in the
 status bar shows the last 24 hours of new snow; tap it for the sheet: new
 snow (24 hours, 48 hours, 72 hours, 7 days), base and summit depth, season
@@ -343,10 +396,19 @@ total, lifts and runs open, and opening day (or "Open for the season").
     lifts_entity: sensor.resort_lifts_open      # attribute `total` = all lifts
     runs_entity: sensor.resort_runs_open        # attribute `total` = all runs
     opening_entity: sensor.resort_opening_date  # YYYY-MM-DD
+    powder_inches: "3"                 # optional: powder-day note ("0" = off)
 ```
 
 Values are inches. Any entity you don't have can name one that doesn't exist;
 it shows "-". `chip_show: "nonzero"` shows the chip only after new snow.
+
+![Powder day on the sleep screen](images/powder-day.svg)
+
+**Powder day:** after at least `powder_inches` of new snow in 24 hours, the
+sleeping panel shows the clock with the total under the date
+("14″ new snow · Breckenridge"), even when Sleep screen is Blank. A panel
+already asleep switches over when the report updates; it goes back to your
+Sleep screen setting once the 24-hour total drops below the threshold.
 
 ## Camera pop-ups
 
@@ -389,16 +451,21 @@ what it heard and the answer, and speaks the reply. Tap anywhere (or
 - **Microphone icon** in the status bar: tap it to stop listening for the
   wake word (it turns into a red crossed-out mic), tap again to resume. It's
   also the *Mute Wake Word* switch in HA.
-- **Wake word:** "Okay Nabu" is on; "Hey Jarvis" can be turned on instead, on
-  the panel's device page in HA. The Assist pipeline (language, speech
-  engines, which conversation agent) is chosen there too.
+- **Settings → Voice** (on the panel): the wake word (**Okay Nabu** or **Hey
+  Jarvis**), **Mute wake word**, and **Reply volume**.
+- **Wake word:** "Okay Nabu" is on by default. Choose it in Settings → Voice
+  or on the panel's device page in HA. The Assist pipeline (language, speech
+  engines, which conversation agent) is chosen on the device page.
 - **Speaker:** replies and HA announcements play on the panel's own speaker
-  (the *Panel Speaker* media player in HA; its volume is the reply volume).
+  (the *Panel Speaker* media player in HA; its volume is the reply volume,
+  also set in Settings → Voice).
 - **Timers** set by voice show and ring on the [Timer tab](#timer-tab), if
   the panel has one.
 - The panel can't listen and play at the same time: while the panel's own
   speaker plays music, the wake word pauses. Speakers elsewhere in the room
   (a Sonos playing on the Music tab) don't affect it.
+
+![Settings → Voice](images/voice-settings.svg)
 
 Set up Assist in Home Assistant first (Settings → Voice assistants). See
 [Home Assistant side](home-assistant.md#voice) for the entities.
@@ -448,6 +515,7 @@ Assistant (device page → Configuration), so you can change panels remotely.
 | | **Auto-open TV & Music** | Bring up the TV or Music tab when playback starts. |
 | | **Messages wake at full brightness** | Off: messages wake a sleeping panel dimly. On: to your brightness. |
 | | **Lock settings with PIN** | See [PIN lock](#pin-lock). |
+| Voice | **Wake word**, **Mute wake word**, **Reply volume** | Panels with [voice](#voice) only. |
 | About | | See [About and restart](#about-and-restart). |
 
 ## Screen dimming, sleep and the night clock
@@ -461,6 +529,8 @@ Assistant (device page → Configuration), so you can change panels remotely.
     presses whatever is underneath.
   - **Clock / Red clock** — a large, dim clock and date that shifts a few
     pixels every minute. A tap wakes the panel.
+  - On a [powder day](#snow-report) the clock is shown, with the new snow
+    under the date, even when Sleep screen is Blank.
 - Any open sheet (Settings, Weather, Climate…) closes when the screen dims, so
   the panel always wakes to its tabs.
 - **Presence wake** (optional) wakes a sleeping panel to the dim level when an
@@ -522,10 +592,14 @@ sensor name can set `update_entity` in `substitutions`.)
 
 ## About and restart
 
+![About](images/about.svg)
+
 At the bottom of Settings: device name, panel version, ESPHome version, IP
 address, Wi-Fi network and signal, uptime, and the reason for the **last
 restart** (useful for spotting power problems — see
 [Troubleshooting](troubleshooting.md)). **Hold to restart** reboots the panel
 (holding prevents accidental restarts). Below it, **About this project** shows
-a QR code and the link to this repository. IP, signal, uptime, reset reason and
-Restart are also in Home Assistant.
+a QR code, the link to this repository and the panel version, which turns
+green with "vX.Y.Z available" when a newer release is out (see
+[Updates](#updates)). IP, signal, uptime, reset reason and Restart are also in
+Home Assistant.

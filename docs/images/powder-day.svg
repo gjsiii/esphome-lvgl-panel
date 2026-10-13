@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="480" viewBox="0 0 480 480" font-family="Inter, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+<rect width="480" height="480" rx="18" fill="#000"/>
+<text x="240" y="230" fill="#FFF" font-size="120" font-weight="200" text-anchor="middle">6:48</text><text x="240" y="280" fill="#FFF" fill-opacity=".7" font-size="20" font-weight="600" text-anchor="middle">Thursday, January 15</text>
+<g transform="translate(104 323)" stroke="#FFF" stroke-opacity="1" stroke-width="2" stroke-linecap="round" fill="none">
+<g transform="rotate(0)"><path d="M0 0V-11 M0 -6l-3 -3 M0 -6l3 -3"/></g>
+<g transform="rotate(60)"><path d="M0 0V-11 M0 -6l-3 -3 M0 -6l3 -3"/></g>
+<g transform="rotate(120)"><path d="M0 0V-11 M0 -6l-3 -3 M0 -6l3 -3"/></g>
+<g transform="rotate(180)"><path d="M0 0V-11 M0 -6l-3 -3 M0 -6l3 -3"/></g>
+<g transform="rotate(240)"><path d="M0 0V-11 M0 -6l-3 -3 M0 -6l3 -3"/></g>
+<g transform="rotate(300)"><path d="M0 0V-11 M0 -6l-3 -3 M0 -6l3 -3"/></g>
+</g>
+<text x="123" y="330" fill="#FFF" font-size="20" font-weight="600">14″ new snow · Breckenridge</text>
+</svg>

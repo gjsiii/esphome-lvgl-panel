@@ -1428,11 +1428,11 @@ lvgl:
                         styles: section_header
                         align: TOP_LEFT
                         x: ${32*px}
-                        y: 1190
+                        y: ${1190*px}
 
                     - obj:
                         align: TOP_MID
-                        y: 1212
+                        y: ${1212*px}
                         width: ${448*px}
                         height: ${216*px}
                         styles: card
@@ -1547,11 +1547,11 @@ lvgl:
                         styles: section_header
                         align: TOP_LEFT
                         x: ${32*px}
-                        y: 1444
+                        y: ${1444*px}
 
                     - obj:
                         align: TOP_MID
-                        y: 1466
+                        y: ${1466*px}
                         width: ${448*px}
                         height: ${332*px}
                         styles: card
@@ -1683,7 +1683,7 @@ lvgl:
                     # Restart (hold, so a stray tap can't reboot the panel)
                     - button:
                         align: TOP_MID
-                        y: 1814
+                        y: ${1814*px}
                         width: ${448*px}
                         height: ${50*px}
                         styles: card
@@ -1703,10 +1703,10 @@ lvgl:
                         styles: section_header
                         align: TOP_LEFT
                         x: ${32*px}
-                        y: 1888
+                        y: ${1888*px}
                     - obj:
                         align: TOP_MID
-                        y: 1910
+                        y: ${1910*px}
                         width: ${448*px}
                         height: ${176*px}
                         styles: card
@@ -2077,7 +2077,7 @@ lvgl:
                         id: night_clock_box
                         align: CENTER
                         width: ${440*px}
-                        height: ${200*px}
+                        height: ${240*px}
                         styles: transparent
                         clickable: false
                         scrollable: false
@@ -2094,6 +2094,30 @@ lvgl:
                               text_font: font_title
                               align: TOP_MID
                               y: ${150*px}
+                          # Optional note under the date, set by a feature
+                          # (e.g. powder day, features/snow_report.yaml)
+                          - obj:
+                              id: night_note
+                              align: TOP_MID
+                              y: ${190*px}
+                              width: SIZE_CONTENT
+                              height: SIZE_CONTENT
+                              styles: transparent
+                              layout:
+                                type: FLEX
+                                flex_flow: ROW
+                                flex_align_cross: CENTER
+                                pad_column: ${8*px}
+                              hidden: true
+                              widgets:
+                                - label:
+                                    id: lbl_night_note_icon
+                                    text: ""
+                                    text_font: icons_sm
+                                - label:
+                                    id: lbl_night_note
+                                    text: ""
+                                    text_font: font_title
 
   # ── Message banner (core/messages.yaml) ──────────────────────────────────
   # On the top layer: above every page and sheet, and not closed on dim.

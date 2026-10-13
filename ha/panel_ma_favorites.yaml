@@ -1,0 +1,130 @@
+# LVGL panel: Music Assistant favorites
+#
+# Reads your Music Assistant favorites (playlists, radio stations, albums and
+# artists) and stores a compact list the panels' Favorites tab subscribes to
+# (see esphome/panel/tabs/ma_favorites.yaml). Re-read every 15 minutes, when
+# HA starts, and when a panel's refresh button is tapped.
+#
+#   state:  number of favorites listed (at most 36)
+#   items:  "cat|name|uri|art;…", kept short because the panels hold it in
+#           their scarcest memory:
+#             cat  p playlist, r radio, a album, t artist
+#             uri  the item id for Music Assistant library items
+#                  ("library://playlist/62" → "62"), else the full URI
+#             art  the artwork URL with a common prefix replaced by a code
+#                  (~p ~s ~m ~c Spotify, ~a Apple Music, ~x SiriusXM; Apple
+#                  and Spotify are asked for a ~300 px version), a Music
+#                  Assistant image id, or empty
+#           Update the panels (tabs/ma_favorites.yaml) together with this.
+#
+# Install: copy this file into HA's /config/packages/ and set `ma_entry` below
+# to your Music Assistant config entry id (Settings → Devices & services →
+# Music Assistant → ⋮ → the id is in the page address, or use the entry
+# picker in Developer Tools → Actions → music_assistant.get_library). If
+# packages aren't enabled yet, add to configuration.yaml
+#   homeassistant:
+#     packages: !include_dir_named packages
+# and restart Home Assistant.
+#
+# The list is too large for the history database; keep it out with
+#   recorder:
+#     exclude:
+#       entities:
+#         - sensor.panel_ma_favorites
+
+template:
+  - triggers:
+      - trigger: time_pattern
+        minutes: "/15"
+      - trigger: homeassistant
+        event: start
+      - trigger: event
+        event_type: event_template_reloaded
+      # The refresh button on a panel's Favorites tab
+      - trigger: event
+        event_type: esphome.panel_favorites_refresh
+    actions:
+      - variables:
+          ma_entry: 01KJZBNKETFDEA8N5PPDPVDHYA
+      - action: music_assistant.get_library
+        continue_on_error: true
+        data:
+          config_entry_id: "{{ ma_entry }}"
+          media_type: playlist
+          favorite: true
+          order_by: name
+          limit: 36
+        response_variable: playlists
+      - action: music_assistant.get_library
+        continue_on_error: true
+        data:
+          config_entry_id: "{{ ma_entry }}"
+          media_type: radio
+          favorite: true
+          order_by: name
+          limit: 36
+        response_variable: radios
+      - action: music_assistant.get_library
+        continue_on_error: true
+        data:
+          config_entry_id: "{{ ma_entry }}"
+          media_type: album
+          favorite: true
+          order_by: name
+          limit: 36
+        response_variable: albums
+      - action: music_assistant.get_library
+        continue_on_error: true
+        data:
+          config_entry_id: "{{ ma_entry }}"
+          media_type: artist
+          favorite: true
+          order_by: name
+          limit: 36
+        response_variable: artists
+      - variables:
+          fav_items: >-
+            {%- set ns = namespace(out=[]) -%}
+            {%- set groups = [
+                  ('playlist', playlists if playlists is defined else {}),
+                  ('radio', radios if radios is defined else {}),
+                  ('album', albums if albums is defined else {}),
+                  ('artist', artists if artists is defined else {})] -%}
+            {%- set codes = {'playlist': 'p', 'radio': 'r', 'album': 'a', 'artist': 't'} -%}
+            {%- set prefixes = [
+                  ('https://pickasso.spotifycdn.com/image/ab67c0de0000deef/dt/v1/img/', '~p'),
+                  ('https://i.scdn.co/image/', '~s'),
+                  ('https://mosaic.scdn.co/300/', '~m'),
+                  ('https://image-cdn-', '~c'),
+                  ('https://is1-ssl.mzstatic.com/image/thumb/', '~a'),
+                  ('http://pri.art.prod.streaming.siriusxm.com/images/chan/', '~x')] -%}
+            {%- for cat, resp in groups -%}
+              {%- set items = resp['items'] if resp is mapping and 'items' in resp else [] -%}
+              {%- for i in items if i.uri is defined and ns.out | count < 36 -%}
+                {%- set name = ((i.name | default('')) | replace('|', ' ') | replace(';', ','))[:40] -%}
+                {%- set img = i.image if i.image is string else '' -%}
+                {#- Smaller artwork: Apple Music ("…/1000x1000bb.jpg", "cc",
+                    "SC.DN01" …), Spotify album covers (640 px id → 300 px id)
+                    and Spotify playlist mosaics (640 → 300) -#}
+                {%- set img = img | regex_replace('/\\d+x\\d+([A-Za-z][^/]*\\.jpg)', '/300x300\\1')
+                                  | replace('ab67616d0000b273', 'ab67616d00001e02')
+                                  | replace('mosaic.scdn.co/640/', 'mosaic.scdn.co/300/') -%}
+                {%- set art = img.split('/imageproxy/')[1].split('?')[0] if '/imageproxy/' in img
+                              else img | replace('|', '%7C') | replace(';', '%3B') -%}
+                {%- set ap = namespace(v=art) -%}
+                {%- for full, code in prefixes if ap.v.startswith(full) -%}
+                  {%- set ap.v = code ~ ap.v[full | length:] -%}
+                {%- endfor -%}
+                {%- set lib = 'library://' ~ cat ~ '/' -%}
+                {%- set uri = i.uri[lib | length:] if i.uri.startswith(lib) else i.uri -%}
+                {%- set ns.out = ns.out + [codes[cat] ~ '|' ~ name ~ '|' ~ uri ~ '|' ~ ap.v] -%}
+              {%- endfor -%}
+            {%- endfor -%}
+            {{ ns.out | join(';') }}
+    sensor:
+      - name: Panel MA Favorites
+        unique_id: panel_ma_favorites
+        icon: mdi:playlist-star
+        state: "{{ fav_items.split(';') | reject('eq', '') | list | count }}"
+        attributes:
+          items: "{{ fav_items }}"

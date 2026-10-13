@@ -57,7 +57,7 @@ repository.
    - Your scenes, lights, TV, speakers and favorites (see
      [Using the panel](features.md) for each).
    - Delete any feature you don't want — every one is optional.
-4. Pin a release: `ref: v0.4.0` (see [Updating](#6-updating)).
+4. Pin a release: `ref: v0.5.0` (see [Updating](#6-updating)).
 
 ### Secrets
 
@@ -71,7 +71,8 @@ living_room_panel_api_key: "…"        # 32 random bytes, base64
 living_room_panel_ap_password: "…"    # fallback hotspot, 8+ characters
 ```
 
-Make an API key on any Linux/macOS terminal with
+The API key also protects over-the-air updates: only someone with the key
+can install new firmware. Make one on any Linux/macOS terminal with
 `head -c 32 /dev/urandom | base64`, or let the ESPHome dashboard generate one
 when you create a new device and copy it over.
 
@@ -124,7 +125,7 @@ forecast. [Using the panel](features.md) walks through every screen.
 Each display file names a release of this repository with `ref:`. To update:
 
 1. Read the [changelog](../CHANGELOG.md) for anything marked **Breaking**.
-2. Change `ref: v0.4.0` to the new tag.
+2. Change `ref:` (e.g. `v0.4.0`) to the new tag.
 3. ESPHome dashboard → **Update All** (or install each panel). Updates are over
    Wi-Fi.
 

@@ -1,5 +1,56 @@
 # Changelog
 
+## v0.5.0 — 2026-10-13
+
+- **Favorites from Music Assistant** (`tabs/ma_favorites.yaml` with the new
+  `ha/panel_ma_favorites.yaml` package): your Music Assistant favorites
+  (playlists, radio, albums, artists) as a live artwork grid with category
+  chips, Shuffle and refresh. Change favorites in Music Assistant; no
+  reinstall. Up to 36, on any board (artwork is kept in PSRAM; the tab needs
+  little internal RAM). The hand-picked `tabs/favorites.yaml` is unchanged.
+  **Update `ha/panel_ma_favorites.yaml` in Home Assistant together with the
+  panels**: the list now uses short codes to save panel memory.
+- **More free memory, especially on 480×480 panels:** album art, TV art,
+  favorites artwork and camera pop-ups now share two image loaders
+  (`core/images.yaml`) instead of one each. Every loader keeps an ~18 KB
+  decoder in internal RAM once used; a typical 480 panel had four, so about
+  35 KB is freed. HTTPS artwork (Spotify, Apple Music) now uses PSRAM for its
+  TLS buffers on the Guition boards.
+- **Powder day** (snow report): after at least `powder_inches` (default 3)
+  of new snow in 24 hours, the sleeping panel shows the clock with the total
+  under the date ("14″ new snow · Breckenridge"), even when Sleep screen is
+  Blank. A panel already asleep switches over when the report updates.
+- **Settings → Voice** (panels with voice): choose the wake word (Okay Nabu
+  or Hey Jarvis), mute it, and set the reply volume on the panel itself.
+- **Over-the-air updates now use the API key** (encrypted and authenticated)
+  instead of a separate OTA password. This saves about 3.5 KB of flash and
+  some RAM, and removes ESPHome's "'ota' password wastes significant flash"
+  warning. **Upgrading:** the `ota_password` substitution is no longer used;
+  delete it from your display file (leaving it does no harm). Updating from
+  a panel built with ESPHome 2026.9 or later installs normally over Wi-Fi.
+  For a panel last built with an older ESPHome, first install v0.4.0 with a
+  current ESPHome (or update over USB).
+- Music tab: Music Assistant album art now shows, including SiriusXM channel
+  logos. Its image server sends PNG
+  by default; the panel now asks it for a 256 px JPEG.
+- Favorites: a tapped tile shows "Starting…" for a few seconds and further
+  taps wait, so impatient taps no longer queue several reloads in Music
+  Assistant (which then played through them one after another).
+- Fixed on the ESP32-P4 board: an occasional restart (Fault, sometimes after
+  a flash of solid colour) when the panel was tapped awake from the night
+  clock. Redrawing the whole screen needed about 8.2 KB of the main loop's
+  8 KB stack; it now has 16 KB. A new **Loop Stack Free** diagnostic sensor
+  shows the least headroom since boot.
+- Fixed on 720×720: the lower part of Settings (Restart, About this project)
+  sat too high and overlapped the rows above.
+- Fixed a compiler format warning in Settings → About (uptime).
+- Fixed: the status-bar mic icon showed muted when the wake word was on, and
+  the reverse.
+- Docs: new illustrations of the snow report, Timer tab (with Custom… and
+  Time's up), Music Assistant favorites, light color sheet and About; the
+  Lights tab now shows a shade slider; README gallery has a third row. Also
+  the powder-day sleep screen and Settings → Voice.
+
 ## v0.4.0 — 2026-10-12
 
 - **Waveshare ESP32-P4-WIFI6-Touch-LCD-4B** (4″ 720×720) support:

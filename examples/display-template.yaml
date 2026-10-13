@@ -15,7 +15,6 @@ substitutions:
   wifi_ssid: !secret wifi_ssid
   wifi_password: !secret wifi_password
   ap_password: !secret living_room_panel_ap_password  # ◀ fallback hotspot, 8+ chars
-  # ota_password: !secret living_room_panel_ota_password   # optional
 
   # ── Site ─────────────────────────────────────────────────────────────────
   ha_url: "http://homeassistant.local:8123"           # ◀ your HA address (for artwork)
@@ -36,7 +35,7 @@ esphome:
 packages:
   panel:
     url: https://github.com/gjsiii/esphome-lvgl-panel
-    ref: v0.4.0                                       # ◀ release to build from
+    ref: v0.5.0                                       # ◀ release to build from
     refresh: 1d
     files:
       # ── Board + core (always) ──────────────────────────────────────────
@@ -111,6 +110,14 @@ packages:
           music_player: media_player.living_room_speaker      # ◀ Music Assistant player works best
       - path: items/speaker.yaml
         vars: { slot: 1, name: "Kitchen", entity: media_player.kitchen_speaker, leader: media_player.living_room_speaker }   # ◀
+
+      # ── Favorites live from Music Assistant (Waveshare P4; needs
+      #    ha/panel_ma_favorites.yaml). Use instead of tabs/favorites.yaml ─
+      # - path: tabs/ma_favorites.yaml
+      #   vars:
+      #     tab_position: 4
+      #     music_player: media_player.living_room_speaker
+      #     ma_url: "http://192.168.1.10:8095"      # ◀ Music Assistant
 
       # ── Timer tab (needs the voice feature) ────────────────────────────
       # - path: tabs/timer.yaml

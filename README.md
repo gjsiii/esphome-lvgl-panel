@@ -13,6 +13,10 @@ each panel keeps its own rooms, lights, speakers and TV.
 |:---:|:---:|:---:|:---:|
 | ![Weather sheet](docs/images/weather.svg) | ![Climate sheet](docs/images/climate.svg) | ![Settings](docs/images/settings.svg) | ![Night clock](docs/images/night-clock.svg) |
 
+| Snow report | Timer | Music Assistant favorites | Voice |
+|:---:|:---:|:---:|:---:|
+| ![Snow report](docs/images/snow.svg) | ![Timer tab](docs/images/timer.svg) | ![Favorites from Music Assistant](docs/images/ma-favorites.svg) | ![Voice](docs/images/voice.svg) |
+
 *Illustrations drawn to the panel's real layout and colors; photos welcome.*
 
 ## What it does
@@ -24,7 +28,9 @@ each panel keeps its own rooms, lights, speakers and TV.
 - **Music** — Now Playing for a Music Assistant or Sonos speaker: artwork,
   progress, play/pause, volume, shuffle, repeat, and **Play on** to group other
   speakers.
-- **Favorites** — a grid of playlists and stations, one tap to play.
+- **Favorites** — a grid of playlists and stations, one tap to play: a few
+  hand-picked tiles, or your Music Assistant favorites,
+  live, with Playlists / Radio / Albums / Artists chips.
 - **Timer** — on the Waveshare P4 panel: preset and custom timers, and timers
   set by voice, with a chime when time's up.
 - **Status bar** — time, outside weather, indoor temperature, small status

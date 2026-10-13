@@ -12,6 +12,8 @@
 #   device page (Wake word select). The Assist pipeline is chosen there too.
 # - Mic icon in the status bar: tap to mute/unmute the wake word (also the
 #   "Mute Wake Word" switch in HA). Red mic-off while muted.
+# - Settings → Voice: wake word (Okay Nabu / Hey Jarvis), mute, and the
+#   volume of spoken replies.
 # - The mic and the panel's own speaker can't run at the same time, so the
 #   wake word pauses while the panel speaker plays media (not announcements
 #   or replies). Speakers elsewhere in the room don't affect it.
@@ -20,7 +22,9 @@ micro_wake_word:
   id: mww
   models:
     - model: okay_nabu
-    - model: hey_jarvis   # off by default; turn on in HA
+      id: ww_okay_nabu
+    - model: hey_jarvis   # off by default; turn on in HA or in Settings
+      id: ww_hey_jarvis
   on_wake_word_detected:
     - script.execute: voice_overlay_listening
     - voice_assistant.start:
@@ -139,10 +143,13 @@ switch:
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
     entity_category: config
+    # Icon and Settings → Voice follow the new state (turn_on/off actions
+    # run before the switch publishes it, so they would see the old one)
+    on_state:
+      - script.execute: voice_mic_icon
     turn_on_action:
       - voice_assistant.stop:
       - micro_wake_word.stop:
-      - script.execute: voice_mic_icon
     turn_off_action:
       - if:
           condition:
@@ -153,7 +160,6 @@ switch:
                   media_player.is_playing:
           then:
             - micro_wake_word.start:
-      - script.execute: voice_mic_icon
 
 api:
   on_client_connected:
@@ -207,6 +213,45 @@ script:
                 id: lbl_voice_mic
                 text: "\U000F036C" # mdi-microphone
                 text_color: ${c_text_2}
+      - script.execute: voice_settings_refresh
+
+  # Settings → Voice: show the current wake word, mute state and volume
+  - id: voice_settings_refresh
+    then:
+      - lambda: |-
+          bool jarvis = id(ww_hey_jarvis)->is_enabled() && !id(ww_okay_nabu)->is_enabled();
+          if (jarvis) {
+            lv_obj_add_state(id(voice_seg_jarvis), LV_STATE_CHECKED);
+            lv_obj_clear_state(id(voice_seg_nabu), LV_STATE_CHECKED);
+          } else {
+            lv_obj_add_state(id(voice_seg_nabu), LV_STATE_CHECKED);
+            lv_obj_clear_state(id(voice_seg_jarvis), LV_STATE_CHECKED);
+          }
+          if (id(mute_wake_word).state) lv_obj_add_state(id(lv_sw_voice_mute), LV_STATE_CHECKED);
+          else lv_obj_clear_state(id(lv_sw_voice_mute), LV_STATE_CHECKED);
+          if (!lv_obj_has_state(id(slider_voice_volume), LV_STATE_PRESSED)) {
+            int v = (int) lroundf(id(panel_media_player)->volume * 100.0f);
+            lv_slider_set_value(id(slider_voice_volume), v, LV_ANIM_OFF);
+            char buf[8];
+            snprintf(buf, sizeof(buf), "%d%%", v);
+            lv_label_set_text(id(lbl_voice_volume), buf);
+          }
+
+  # Choose the wake word (one at a time, like HA's Wake word select)
+  - id: voice_set_wake_word
+    parameters:
+      jarvis: bool
+    then:
+      - if:
+          condition:
+            lambda: "return jarvis;"
+          then:
+            - micro_wake_word.enable_model: ww_hey_jarvis
+            - micro_wake_word.disable_model: ww_okay_nabu
+          else:
+            - micro_wake_word.enable_model: ww_okay_nabu
+            - micro_wake_word.disable_model: ww_hey_jarvis
+      - script.execute: voice_settings_refresh
 
 font:
   - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
@@ -227,6 +272,34 @@ esphome:
       then:
         - lambda: "lv_obj_set_parent(id(btn_voice_mic), id(status_chips));"
         - script.execute: voice_mic_icon
+    # Settings → Voice: a section above ABOUT; everything from ABOUT down
+    # moves down to make room (as the update card does at the top)
+    - priority: -305
+      then:
+        - lambda: |-
+            const int32_t at = ${(1444*px)|int};       // where ABOUT starts
+            const int32_t shift = ${(254*px)|int};     // header + card + gap
+            uint32_t n = lv_obj_get_child_cnt(id(settings_panel));
+            for (uint32_t k = 0; k < n; k++) {
+              lv_obj_t *c = lv_obj_get_child(id(settings_panel), k);
+              int32_t y = lv_obj_get_style_y(c, LV_PART_MAIN);
+              if (y >= at) lv_obj_set_y(c, y + shift);
+            }
+            lv_obj_set_parent(id(voice_settings_header), id(settings_panel));
+            lv_obj_set_parent(id(voice_settings_card), id(settings_panel));
+            lv_obj_set_y(id(voice_settings_header), at);
+            lv_obj_set_y(id(voice_settings_card), at + ${(22*px)|int});
+        - script.execute: voice_settings_refresh
+
+# While Settings is open, follow changes made in HA (wake word, volume)
+interval:
+  - interval: 2s
+    then:
+      - if:
+          condition:
+            lambda: "return !lv_obj_has_flag(id(settings_panel), LV_OBJ_FLAG_HIDDEN);"
+          then:
+            - script.execute: voice_settings_refresh
 
 lvgl:
   pages:
@@ -247,6 +320,158 @@ lvgl:
                   align: CENTER
             on_click:
               - switch.toggle: mute_wake_word
+
+        # Settings → Voice (moved into the Settings sheet at boot)
+        - label:
+            id: voice_settings_header
+            text: "VOICE"
+            styles: section_header
+            align: TOP_LEFT
+            x: ${32*px}
+        - obj:
+            id: voice_settings_card
+            align: TOP_MID
+            width: ${448*px}
+            height: ${216*px}
+            styles: card
+            clickable: false
+            scrollable: false
+            scrollbar_mode: "off"
+            widgets:
+              - label:
+                  text: "Wake word"
+                  align: TOP_LEFT
+                  x: ${16*px}
+                  y: ${17*px//1}
+              # Okay Nabu | Hey Jarvis
+              - obj:
+                  align: TOP_RIGHT
+                  x: -${12*px}
+                  y: ${9*px//1}
+                  width: ${232*px}
+                  height: ${36*px}
+                  radius: ${10*px}
+                  bg_color: ${c_surface_2}
+                  bg_opa: COVER
+                  border_width: 0
+                  pad_all: 0
+                  clickable: false
+                  scrollable: false
+                  widgets:
+                    - button:
+                        id: voice_seg_nabu
+                        align: LEFT_MID
+                        x: ${2*px}
+                        width: ${113*px//1}
+                        height: ${32*px}
+                        radius: ${8*px}
+                        pad_all: 0
+                        bg_opa: TRANSP
+                        checked:
+                          bg_color: ${c_selected}
+                          bg_opa: COVER
+                        widgets:
+                          - label:
+                              text: "Okay Nabu"
+                              text_color: ${c_text}
+                              align: CENTER
+                        on_click:
+                          - script.execute:
+                              id: voice_set_wake_word
+                              jarvis: false
+                    - button:
+                        id: voice_seg_jarvis
+                        align: RIGHT_MID
+                        x: -${2*px}
+                        width: ${113*px//1}
+                        height: ${32*px}
+                        radius: ${8*px}
+                        pad_all: 0
+                        bg_opa: TRANSP
+                        checked:
+                          bg_color: ${c_selected}
+                          bg_opa: COVER
+                        widgets:
+                          - label:
+                              text: "Hey Jarvis"
+                              text_color: ${c_text}
+                              align: CENTER
+                        on_click:
+                          - script.execute:
+                              id: voice_set_wake_word
+                              jarvis: true
+              - obj:   # divider
+                  align: TOP_RIGHT
+                  y: ${54*px}
+                  width: ${432*px}
+                  height: 1
+                  bg_color: ${c_separator}
+                  bg_opa: COVER
+                  border_width: 0
+                  radius: 0
+                  clickable: false
+              - label:
+                  text: "Mute wake word"
+                  align: TOP_LEFT
+                  x: ${16*px}
+                  y: ${71*px//1}
+              - switch:
+                  id: lv_sw_voice_mute
+                  align: TOP_RIGHT
+                  x: -${16*px}
+                  y: ${66*px}
+                  width: ${52*px}
+                  height: ${30*px}
+                  on_click:
+                    - lambda: |-
+                        if (lv_obj_has_state(id(lv_sw_voice_mute), LV_STATE_CHECKED)) id(mute_wake_word).turn_on();
+                        else id(mute_wake_word).turn_off();
+              - obj:   # divider
+                  align: TOP_RIGHT
+                  y: ${108*px}
+                  width: ${432*px}
+                  height: 1
+                  bg_color: ${c_separator}
+                  bg_opa: COVER
+                  border_width: 0
+                  radius: 0
+                  clickable: false
+              - label:
+                  text: "Reply volume"
+                  align: TOP_LEFT
+                  x: ${16*px}
+                  y: ${125*px//1}
+              - label:
+                  id: lbl_voice_volume
+                  text: ""
+                  text_color: ${c_text_2}
+                  align: TOP_RIGHT
+                  x: -${16*px}
+                  y: ${125*px//1}
+              - slider:
+                  id: slider_voice_volume
+                  align: BOTTOM_MID
+                  y: -${14*px}
+                  width: ${416*px}
+                  height: ${44*px}
+                  min_value: 0
+                  max_value: 100
+                  value: 50
+                  bg_color: ${c_surface_2}
+                  radius: ${14*px}
+                  indicator:
+                    radius: ${14*px}
+                  on_value:
+                    - lvgl.label.update:
+                        id: lbl_voice_volume
+                        text: !lambda |-
+                          char buf[8];
+                          snprintf(buf, sizeof(buf), "%d%%", (int) x);
+                          return std::string(buf);
+                  on_release:
+                    - media_player.volume_set:
+                        id: panel_media_player
+                        volume: !lambda "return x / 100.0f;"
 
   # Above every page and sheet, and not closed when the screen dims
   top_layer:

@@ -46,6 +46,20 @@ address (an IP rather than a cloud URL).
   `http://<HA IP>:8123`).
 - Some TV apps don't share artwork with HA — the corner stays empty.
 
+## Music Assistant favorites: empty tab, or a music note instead of artwork
+
+- **"Loading favorites…" never goes away:** `sensor.panel_ma_favorites` is
+  missing or empty. Check the package is installed, `ma_entry` is right, and
+  reload Template entities (Developer Tools → YAML).
+- **A tile shows a music note:** its artwork couldn't be decoded (the panel
+  reads JPEG and PNG; progressive JPEGs aren't supported) or there is none.
+  The tile still plays.
+- **New favorites don't appear:** tap the refresh icon on the tab; the list is
+  otherwise re-read every 15 minutes.
+- **Every tile shows a music note after an update:** the panel and
+  `ha/panel_ma_favorites.yaml` in Home Assistant are from different releases.
+  Copy the package from the same release and reload Template entities.
+
 ## The weather sheet shows dashes
 
 `sensor.panel_weather_forecast` is missing or `unavailable`: install
@@ -88,6 +102,11 @@ On the panel's device page in HA, turn off **Settings PIN Lock** or clear
   `dsi_pclk` to `28MHz`.
 - **The picture is sideways or upside down:** set `lvgl_rotation` to `"90"`,
   `"180"` or `"270"` to match the mounting. Touch follows automatically.
+- **Restarted (Fault) when woken from the night clock, sometimes after a
+  flash of solid colour:** fixed in v0.5.0. Redrawing the whole screen needed
+  just over the main loop's 8 KB stack; the hardware package now gives it
+  16 KB (`loop_task_stack_size`). The **Loop Stack Free** diagnostic sensor
+  shows the least headroom since boot; it should stay well above 1000 B.
 - **The screen goes dark during an update:** on purpose; it avoids flicker
   while the new firmware is written.
 - **Restarts in a loop with "vApplicationGetTimerTaskMemory" in the USB

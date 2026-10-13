@@ -452,6 +452,53 @@ script:
                 if (id(sw_msg_full).state) lv_obj_add_state(id(lv_sw_msg_full), LV_STATE_CHECKED);
                 else lv_obj_clear_state(id(lv_sw_msg_full), LV_STATE_CHECKED);
 
+  # Go to sleep: a blank screen (backlight off, LVGL paused) or the night
+  # clock. The clock is used at night, when Sleep Screen is Clock or Red
+  # clock, and while a feature has a note to show (night_note_on, e.g. the
+  # snow report on a powder day). Also re-run by such a feature while the
+  # panel sleeps, to switch between the two.
+  - id: sleep_screen
+    mode: restart
+    then:
+      - if:
+          condition:
+            lambda: "return !id(night_now) && id(sel_sleep_screen).active_index().value_or(0) == 0 && !id(night_note_on);"
+          then:
+            - lambda: "lv_obj_add_flag(id(night_clock), LV_OBJ_FLAG_HIDDEN);"
+            - light.turn_off:
+                id: display_backlight
+                transition_length: 1s
+            - lvgl.pause:
+            - lambda: "id(screen_state) = 2;"
+            - logger.log: "Sleep: blank screen"
+          else:
+            - if:
+                condition: lvgl.is_paused
+                then:
+                  - lvgl.resume:
+                  - lvgl.widget.redraw:
+            - script.execute: night_clock_colors
+            - lambda: |-
+                lv_obj_clear_flag(id(night_clock), LV_OBJ_FLAG_HIDDEN);
+                lv_obj_move_foreground(id(night_clock));
+                id(screen_state) = 3;
+            - script.execute: update_clock
+            - logger.log: "Sleep: night clock"
+            - light.turn_on:
+                id: display_backlight
+                brightness: !lambda "return std::min(${night_clock_brightness}f, (id(night_now) ? std::min(id(user_brightness), id(night_level)) : id(user_brightness)));"
+                transition_length: 1s
+
+  # Night clock text colour: red at night or with Sleep Screen = Red clock
+  - id: night_clock_colors
+    then:
+      - lambda: |-
+          bool red = id(night_now) || id(sel_sleep_screen).active_index().value_or(0) == 2;   // night: always red
+          lv_color_t c = lv_color_hex(red ? 0xFF3B30 : 0xFFFFFF);
+          for (lv_obj_t *o : {id(lbl_night_time), id(lbl_night_date), id(lbl_night_note_icon), id(lbl_night_note)})
+            lv_obj_set_style_text_color(o, c, LV_PART_MAIN);
+          lv_obj_set_style_text_opa(id(lbl_night_date), LV_OPA_70, LV_PART_MAIN);
+
   # Is it night? On entering or leaving the window, apply the brightness
   # change to an awake screen and recolor a showing night clock.
   - id: night_check
@@ -479,12 +526,7 @@ script:
             call.set_transition_length(2000);
             call.perform();
           }
-          if (id(screen_state) == 3) {
-            bool red = now || id(sel_sleep_screen).active_index().value_or(0) == 2;
-            lv_color_t c = lv_color_hex(red ? 0xFF3B30 : 0xFFFFFF);
-            lv_obj_set_style_text_color(id(lbl_night_time), c, LV_PART_MAIN);
-            lv_obj_set_style_text_color(id(lbl_night_date), c, LV_PART_MAIN);
-          }
+          if (id(screen_state) == 3) id(night_clock_colors).execute();
 
   # Gear tapped: open Settings, or the PIN keypad if Settings is locked
   - id: open_settings
@@ -625,32 +667,7 @@ interval:
                      lv_disp_get_inactive_time(NULL) >= id(off_after_ms);
           then:
             - script.execute: close_sheets
-            - if:
-                condition:
-                  lambda: "return !id(night_now) && id(sel_sleep_screen).active_index().value_or(0) == 0;"
-                then:
-                  - light.turn_off:
-                      id: display_backlight
-                      transition_length: 1s
-                  - lvgl.pause:
-                  - lambda: "id(screen_state) = 2;"
-                  - logger.log: "Sleep: blank screen"
-                else:
-                  - lambda: |-
-                      bool red = id(night_now) || id(sel_sleep_screen).active_index().value_or(0) == 2;   // night: always red
-                      lv_color_t c = lv_color_hex(red ? 0xFF3B30 : 0xFFFFFF);
-                      lv_obj_set_style_text_color(id(lbl_night_time), c, LV_PART_MAIN);
-                      lv_obj_set_style_text_color(id(lbl_night_date), c, LV_PART_MAIN);
-                      lv_obj_set_style_text_opa(id(lbl_night_date), LV_OPA_70, LV_PART_MAIN);
-                      lv_obj_clear_flag(id(night_clock), LV_OBJ_FLAG_HIDDEN);
-                      lv_obj_move_foreground(id(night_clock));
-                      id(screen_state) = 3;
-                  - script.execute: update_clock
-                  - logger.log: "Sleep: night clock"
-                  - light.turn_on:
-                      id: display_backlight
-                      brightness: !lambda "return std::min(${night_clock_brightness}f, (id(night_now) ? std::min(id(user_brightness), id(night_level)) : id(user_brightness)));"
-                      transition_length: 1s
+            - script.execute: sleep_screen
 
   # Night window check (every 30 s and whenever a night setting changes)
   - interval: 30s

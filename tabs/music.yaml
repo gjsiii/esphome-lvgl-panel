@@ -23,6 +23,10 @@ globals:
   - id: last_album_art_url
     type: std::string
     initial_value: '""'
+  # The album art shown: a PSRAM copy of the shared art loader's picture
+  - id: album_art_dsc
+    type: lv_image_dsc_t *
+    initial_value: "nullptr"
 
 esphome:
   on_boot:
@@ -30,6 +34,7 @@ esphome:
       then:
         - lambda: |-
             lv_obj_t *tab = lv_tabview_add_tab(id(main_tabview), "Music");
+            ::lv_image_set_src(id(lvgl_album_art), (const void *) nullptr);   // empty until the first art
             lv_obj_set_style_pad_all(tab, 0, 0);
             lv_obj_set_scrollbar_mode(tab, LV_SCROLLBAR_MODE_OFF);
             lv_obj_set_parent(id(content_music), tab);
@@ -64,10 +69,16 @@ script:
                 condition:
                   lambda: "return !id(img_busy) || millis() - id(img_busy_ms) > 15000;"
                 timeout: 15s
-            - lambda: "id(img_busy) = true; id(img_busy_ms) = millis();"
-            - online_image.set_url:
-                id: album_art_image
-                url: !lambda "return url;"
+            - lambda: |-
+                id(img_busy) = true;
+                id(img_busy_ms) = millis();
+                // Shared loader (core/images.yaml); keep a copy of the picture
+                id(art_cb) = [](bool ok) {
+                  if (!ok) { ESP_LOGW("music", "Album art download failed"); return; }
+                  id(img_show)(id(lvgl_album_art), &id(album_art_dsc), id(art_loader)->get_lv_image_dsc(), ${(180*px)|int});
+                };
+                id(art_loader)->set_url(url);
+                id(art_loader)->update();
 
 sensor:
   - platform: homeassistant
@@ -208,25 +219,19 @@ text_sensor:
             - script.execute:
                 id: load_album_art
                 url: !lambda |-
-                  if (x.rfind("http", 0) == 0) return x;
-                  return std::string("${ha_url}") + x;
-
-image:
-  - platform: online_image
-    id: album_art_image
-    url: "https://www.home-assistant.io/images/favicon-192x192.png"
-    format: JPEG
-    type: RGB565
-    resize: "${(180*px)|int}x${(180*px)|int}"
-    on_download_finished:
-      - lambda: "id(img_busy) = false;"
-      - logger.log: "Album art downloaded, updating LVGL widget"
-      - lvgl.image.update:
-          id: lvgl_album_art
-          src: album_art_image
-    on_error:
-      - lambda: "id(img_busy) = false;"
-      - logger.log: "Album art download failed"
+                  std::string u = x.rfind("http", 0) == 0 ? x : std::string("${ha_url}") + x;
+                  // SiriusXM channel logos: its https certificate isn't in the
+                  // panel's certificate bundle, but the same file is on http
+                  if (u.rfind("https://pri.art.prod.streaming.siriusxm.com/", 0) == 0) u.erase(4, 1);
+                  // Music Assistant artwork comes as a 512 px PNG; ask its
+                  // image proxy for a 256 px JPEG, which the panel decodes
+                  if (u.find("/imageproxy") != std::string::npos) {
+                    size_t f = u.find("fmt=png");
+                    if (f != std::string::npos) u.replace(f, 7, "fmt=jpeg");
+                    f = u.find("size=512");
+                    if (f != std::string::npos) u.replace(f, 8, "size=256");
+                  }
+                  return u;
 
 lvgl:
   pages:
@@ -276,7 +281,7 @@ lvgl:
                   widgets:
                     - image:
                         id: lvgl_album_art
-                        src: album_art_image
+                        src: art_loader   # replaced by a copy (load_album_art)
                         align: CENTER
 
               # ── Track Name ────────────────────────────
