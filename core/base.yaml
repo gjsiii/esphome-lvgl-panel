@@ -172,6 +172,17 @@ globals:
     type: bool
     initial_value: "false"
 
+  # A note from Home Assistant for the night clock (features/sleep_notes.yaml:
+  # a sleep message or a birthday), shown before a holiday countdown.
+  # night_msg_force: show the clock even when Sleep Screen is Blank.
+  - id: night_msg_text
+    type: std::string
+  - id: night_msg_icon
+    type: std::string
+  - id: night_msg_force
+    type: bool
+    initial_value: "false"
+
   # A lesser note for the night clock (e.g. a holiday countdown,
   # features/holidays.yaml): shown under the date when the clock is showing
   # anyway and no night_note_on feature is using the row. Empty text = none.
@@ -192,21 +203,23 @@ globals:
     initial_value: "std::function<void(bool)>()"
 
 script:
-  # Show the lesser night clock note (night_info_*) unless a night_note_on
-  # feature owns the row
+  # The night clock's note row, unless a night_note_on feature (powder day)
+  # owns it: a note from HA (night_msg_*), else a lesser note (night_info_*,
+  # e.g. a holiday countdown), else nothing
   - id: night_note_show
     mode: restart
     then:
       - lambda: |-
           if (id(night_note_on)) return;
-          if (id(night_info_text).empty()) {
+          bool msg = !id(night_msg_text).empty();
+          if (!msg && id(night_info_text).empty()) {
             lv_obj_add_flag(id(night_note), LV_OBJ_FLAG_HIDDEN);
             return;
           }
-          if (id(night_info_font) != nullptr)
-            lv_obj_set_style_text_font(id(lbl_night_note_icon), id(night_info_font), LV_PART_MAIN);
-          lv_label_set_text(id(lbl_night_note_icon), id(night_info_icon).c_str());
-          lv_label_set_text(id(lbl_night_note), id(night_info_text).c_str());
+          const lv_font_t *f = msg ? id(icons_sm)->get_lv_font() : id(night_info_font);
+          if (f != nullptr) lv_obj_set_style_text_font(id(lbl_night_note_icon), f, LV_PART_MAIN);
+          lv_label_set_text(id(lbl_night_note_icon), (msg ? id(night_msg_icon) : id(night_info_icon)).c_str());
+          lv_label_set_text(id(lbl_night_note), (msg ? id(night_msg_text) : id(night_info_text)).c_str());
           lv_obj_clear_flag(id(night_note), LV_OBJ_FLAG_HIDDEN);
           if (id(screen_state) == 3) id(night_clock_colors).execute();
 

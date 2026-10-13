@@ -52,6 +52,21 @@ esphome:
               lv_obj_add_flag(id(music_btn_playon), LV_OBJ_FLAG_HIDDEN);
 
 script:
+  # Night clock: "Title · Artist" on its own line while music plays
+  - id: night_music_update
+    mode: restart
+    then:
+      - lambda: |-
+          const std::string &t = id(media_title_text).state, &a = id(media_artist_text).state;
+          bool show = id(media_state_text).state == "playing" && !t.empty() && t != "unknown";
+          if (show) {
+            std::string line = (a.empty() || a == "unknown") ? t : t + " \u00B7 " + a;
+            lv_label_set_text(id(lbl_night_music), line.c_str());
+            lv_obj_clear_flag(id(lbl_night_music), LV_OBJ_FLAG_HIDDEN);
+          } else {
+            lv_obj_add_flag(id(lbl_night_music), LV_OBJ_FLAG_HIDDEN);
+          }
+
   # Debounced album art fetch: rapid track skips restart the delay, so only
   # the final track's art is downloaded (downloads briefly block the UI)
   - id: load_album_art
@@ -152,6 +167,8 @@ text_sensor:
       - lambda: |-
           bool grouped = x.find(',') != std::string::npos;   // 2+ members
           lv_obj_set_style_text_color(id(lbl_music_playon), lv_color_hex(grouped ? ${c_text} : ${c_text_2}), LV_PART_MAIN);
+          if (grouped) lv_obj_clear_flag(id(music_btn_match), LV_OBJ_FLAG_HIDDEN);
+          else lv_obj_add_flag(id(music_btn_match), LV_OBJ_FLAG_HIDDEN);
 
   - platform: homeassistant
     id: music_repeat
@@ -173,6 +190,7 @@ text_sensor:
       - lvgl.label.update:
           id: lbl_track_name
           text: !lambda "return x.c_str();"
+      - script.execute: night_music_update
 
   - platform: homeassistant
     id: media_artist_text
@@ -182,6 +200,7 @@ text_sensor:
       - lvgl.label.update:
           id: lbl_artist_name
           text: !lambda "return x.c_str();"
+      - script.execute: night_music_update
 
   # Player state: show pause while playing, play otherwise.
   # Also brings up the Music tab when playback (re)starts after a real stop.
@@ -189,6 +208,7 @@ text_sensor:
     id: media_state_text
     entity_id: ${music_player}
     on_value:
+      - script.execute: night_music_update
       - lvgl.label.update:
           id: lbl_music_playpause
           text: !lambda |-
@@ -544,6 +564,35 @@ lvgl:
                   align: TOP_MID
                   y: ${100*px}
                   width: ${448*px}
-                  height: ${370*px}
+                  height: ${300*px}
                   styles: transparent
                   scrollbar_mode: "off"
+              # Match volumes: every grouped speaker to this room's level
+              - button:
+                  id: music_btn_match
+                  align: BOTTOM_MID
+                  y: -${16*px}
+                  width: ${240*px}
+                  height: ${48*px}
+                  radius: ${24*px}
+                  bg_color: ${c_surface_2}
+                  bg_opa: COVER
+                  hidden: true
+                  widgets:
+                    - label:
+                        text: "Match volumes"
+                        text_font: font_title
+                        align: CENTER
+                  on_click:
+                    - homeassistant.action:
+                        action: media_player.volume_set
+                        data:
+                          # group_members "['media_player.a', 'media_player.b']" -> "media_player.a,media_player.b"
+                          entity_id: !lambda |-
+                            std::string out;
+                            for (char c : id(music_group).state)
+                              if (c != '[' && c != ']' && c != '\'' && c != '"' && c != ' ') out += c;
+                            return out;
+                          volume_level: !lambda |-
+                            float v = id(music_volume_level).state;
+                            return isnan(v) ? 0.5f : v;

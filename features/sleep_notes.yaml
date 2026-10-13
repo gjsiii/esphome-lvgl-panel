@@ -1,0 +1,53 @@
+# Feature: notes from Home Assistant on the night clock — a sleep message
+# you type into a helper, and birthdays from Date helpers ("3 days until
+# Emma's birthday", "Happy birthday, Emma!").
+#
+#   sleep_notes: !include panel/features/sleep_notes.yaml
+#
+# Needs ha/panel_notes.yaml in Home Assistant, which works the note out (so
+# the panel only keeps one short text). The note shows under the night
+# clock's date, ahead of a holiday countdown; a powder day still comes first.
+# A sleep message and a birthday on the day make a sleeping panel show the
+# clock even when its Sleep Screen is Blank.
+
+defaults:
+  note_entity: sensor.panel_night_note
+
+text_sensor:
+  - platform: homeassistant
+    id: sleep_note_text
+    entity_id: ${note_entity}
+    on_value:
+      - script.execute: sleep_note_apply
+  - platform: homeassistant
+    id: sleep_note_icon
+    entity_id: ${note_entity}
+    attribute: icon
+    on_value:
+      - script.execute: sleep_note_apply
+  - platform: homeassistant
+    id: sleep_note_force
+    entity_id: ${note_entity}
+    attribute: force
+    on_value:
+      - script.execute: sleep_note_apply
+
+script:
+  - id: sleep_note_apply
+    mode: restart
+    then:
+      # The three values arrive one after another: wait for the last
+      - delay: 300ms
+      - lambda: |-
+          std::string t = id(sleep_note_text).state;
+          if (t == "unknown" || t == "unavailable") t = "";
+          const std::string &ic = id(sleep_note_icon).state;
+          id(night_msg_text) = t;
+          id(night_msg_icon) = ic == "cake" ? "\U000F00EB" : "\U000F0369";   // mdi-cake-variant / mdi-message-text
+          bool force = !t.empty() && id(sleep_note_force).state == "true";
+          bool changed = force != id(night_msg_force);
+          id(night_msg_force) = force;
+          if (!id(ui_ready)) return;
+          id(night_note_show).execute();
+          // Switch a sleeping panel between the blank screen and the clock
+          if (changed && id(screen_state) >= 2) id(sleep_screen).execute();

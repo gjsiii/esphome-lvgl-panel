@@ -2077,7 +2077,7 @@ lvgl:
                         id: night_clock_box
                         align: CENTER
                         width: ${440*px}
-                        height: ${240*px}
+                        height: ${270*px}
                         styles: transparent
                         clickable: false
                         scrollable: false
@@ -2118,6 +2118,17 @@ lvgl:
                                     id: lbl_night_note
                                     text: ""
                                     text_font: font_title
+                          # Now playing (tabs/music.yaml), dimmer, its own line
+                          - label:
+                              id: lbl_night_music
+                              text: ""
+                              text_font: font_body
+                              long_mode: DOT
+                              width: ${420*px}
+                              text_align: CENTER
+                              align: TOP_MID
+                              y: ${234*px}
+                              hidden: true
 
   # ── Message banner (core/messages.yaml) ──────────────────────────────────
   # On the top layer: above every page and sheet, and not closed on dim.

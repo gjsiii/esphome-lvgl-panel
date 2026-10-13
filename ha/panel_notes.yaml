@@ -1,0 +1,138 @@
+# Home Assistant package: sleep-screen notes and reminders for the LVGL panels.
+#
+# Install: copy to /config/packages/panel_notes.yaml (see panel_weather.yaml
+# for how to enable packages), then restart Home Assistant. Reminders also
+# need panel_messages.yaml (script.panel_message).
+#
+# Everything is set up with ordinary helpers (Settings > Devices & services >
+# Helpers); nothing here reads your calendar.
+#
+#   Sleep message   "Panel Sleep Message" (created by this package): type a
+#                   short note and every panel with features/sleep_notes.yaml
+#                   shows it under the night clock's date. Clear it to remove.
+#   Birthdays       a Date helper per person, named "Birthday: Emma" (any
+#                   year). The week before: "3 days until Emma's birthday";
+#                   on the day: "Happy birthday, Emma!".
+#   Reminders       a Schedule helper per reminder, named "Reminder: Trash
+#                   night", with its weekly times. When a time block starts,
+#                   the panels listed under `panels:` below get a banner that
+#                   stays until tapped.
+#
+# A sleep message and a birthday on the day make a sleeping panel show the
+# clock even when its Sleep Screen is Blank.
+
+input_text:
+  panel_sleep_message:
+    name: Panel Sleep Message
+    icon: mdi:message-text
+    max: 60
+    initial: ""
+
+template:
+  - triggers:
+      - trigger: homeassistant
+        event: start
+      - trigger: event
+        event_type: event_template_reloaded
+      - trigger: time_pattern
+        minutes: "/5"
+      - trigger: state
+        entity_id: input_text.panel_sleep_message
+    variables:
+      # The note: sleep message first, then the next birthday within a week
+      note: >-
+        {% set msg = states('input_text.panel_sleep_message') | trim %}
+        {% if msg not in ['', 'unknown', 'unavailable'] %}
+          {{ {'text': msg[:60], 'icon': 'message', 'force': true} | to_json }}
+        {% else %}
+          {% set today = now().date() %}
+          {% set ns = namespace(best=999, names=[]) %}
+          {% for s in states.input_datetime
+               if s.entity_id.startswith('input_datetime.birthday')
+               and s.attributes.has_date | default(false)
+               and s.state not in ['unknown', 'unavailable', ''] %}
+            {% set m = s.state[5:7] | int(0) %}
+            {% set d = s.state[8:10] | int(0) %}
+            {% if m > 0 and d > 0 %}
+              {% set name = (s.name.split(':', 1)[1] if ':' in s.name else s.name | replace('Birthday', '')) | trim %}
+              {% set ns2 = namespace(days=999) %}
+              {% for y in [today.year, today.year + 1] %}
+                {% set leap = (y % 4 == 0 and y % 100 != 0) or y % 400 == 0 %}
+                {% set dd = 28 if (m == 2 and d == 29 and not leap) else d %}
+                {% set n = (strptime(y ~ '-' ~ m ~ '-' ~ dd, '%Y-%m-%d').date() - today).days %}
+                {% if n >= 0 and n < ns2.days %}{% set ns2.days = n %}{% endif %}
+              {% endfor %}
+              {% if ns2.days < ns.best %}
+                {% set ns.best = ns2.days %}{% set ns.names = [name] %}
+              {% elif ns2.days == ns.best %}
+                {% set ns.names = ns.names + [name] %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          {% set who = ns.names | join(' & ') %}
+          {% set whose = who ~ "'s " ~ ('birthdays' if ns.names | count > 1 else 'birthday') %}
+          {% if ns.best == 0 %}
+            {{ {'text': 'Happy birthday, ' ~ who ~ '!', 'icon': 'cake', 'force': true} | to_json }}
+          {% elif ns.best == 1 %}
+            {{ {'text': whose ~ (' are' if ns.names | count > 1 else ' is') ~ ' tomorrow!', 'icon': 'cake', 'force': false} | to_json }}
+          {% elif ns.best <= 7 %}
+            {{ {'text': ns.best ~ ' days until ' ~ whose, 'icon': 'cake', 'force': false} | to_json }}
+          {% else %}
+            {{ {'text': '', 'icon': '', 'force': false} | to_json }}
+          {% endif %}
+        {% endif %}
+    sensor:
+      - name: Panel Night Note
+        unique_id: panel_night_note
+        icon: mdi:message-text-clock
+        state: "{{ (note | from_json).text if note is string else note.text }}"
+        attributes:
+          icon: "{{ (note | from_json).icon if note is string else note.icon }}"
+          force: "{{ ((note | from_json).force if note is string else note.force) | lower }}"
+
+automation:
+  - id: panel_reminders
+    alias: Panel reminders
+    description: >-
+      Banner on the panels when a "Reminder: …" Schedule helper's time block
+      starts (package panel_notes.yaml).
+    mode: queued
+    variables:
+      # ESPHome device names of the panels that get reminders
+      panels:
+        - esp-kitchen-720x720
+        - esp-family-room-480x480
+        - esp-g-bedside-4848s040
+        - esp-girls-bedroom-4848s040
+    triggers:
+      # Each minute, half a minute after schedule blocks start, so every
+      # block is seen exactly once
+      - trigger: time_pattern
+        minutes: "/1"
+        seconds: 30
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ states.schedule
+             | selectattr('entity_id', 'search', '^schedule\.reminder')
+             | selectattr('state', 'eq', 'on')
+             | selectattr('last_changed', 'gt', now() - timedelta(seconds=60))
+             | list | count > 0 }}
+    actions:
+      - repeat:
+          for_each: >-
+            {{ states.schedule
+               | selectattr('entity_id', 'search', '^schedule\.reminder')
+               | selectattr('state', 'eq', 'on')
+               | selectattr('last_changed', 'gt', now() - timedelta(seconds=60))
+               | map(attribute='entity_id') | list }}
+          sequence:
+            - action: script.panel_message
+              data:
+                panels: "{{ panels }}"
+                title: >-
+                  {% set n = state_attr(repeat.item, 'friendly_name') | default(repeat.item, true) %}
+                  {{ (n.split(':', 1)[1] if ':' in n else n | replace('Reminder', '')) | trim }}
+                message: "{{ state_attr(repeat.item, 'message') | default('', true) }}"
+                icon: bell
+                seconds: 0

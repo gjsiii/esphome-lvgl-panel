@@ -468,7 +468,7 @@ script:
     then:
       - if:
           condition:
-            lambda: "return !id(night_now) && id(sel_sleep_screen).active_index().value_or(0) == 0 && !id(night_note_on);"
+            lambda: "return !id(night_now) && id(sel_sleep_screen).active_index().value_or(0) == 0 && !id(night_note_on) && !id(night_msg_force);"
           then:
             - lambda: "lv_obj_add_flag(id(night_clock), LV_OBJ_FLAG_HIDDEN);"
             - light.turn_off:
@@ -501,11 +501,12 @@ script:
       - lambda: |-
           bool red = id(night_now) || id(sel_sleep_screen).active_index().value_or(0) == 2;   // night: always red
           lv_color_t c = lv_color_hex(red ? 0xFF3B30 : 0xFFFFFF);
-          for (lv_obj_t *o : {id(lbl_night_time), id(lbl_night_date), id(lbl_night_note_icon), id(lbl_night_note)})
+          for (lv_obj_t *o : {id(lbl_night_time), id(lbl_night_date), id(lbl_night_note_icon), id(lbl_night_note), id(lbl_night_music)})
             lv_obj_set_style_text_color(o, c, LV_PART_MAIN);
           lv_obj_set_style_text_opa(id(lbl_night_date), LV_OPA_70, LV_PART_MAIN);
+          lv_obj_set_style_text_opa(id(lbl_night_music), LV_OPA_50, LV_PART_MAIN);
           // A lesser note's own icon colour (not in red mode)
-          if (!red && !id(night_note_on) && id(night_info_color) != 0)
+          if (!red && !id(night_note_on) && id(night_msg_text).empty() && id(night_info_color) != 0)
             lv_obj_set_style_text_color(id(lbl_night_note_icon), lv_color_hex(id(night_info_color)), LV_PART_MAIN);
           if (id(night_clock_hook)) id(night_clock_hook)(red);
 

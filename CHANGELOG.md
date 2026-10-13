@@ -12,6 +12,19 @@
   panel's **Holiday Theme** switch in Home Assistant, so each room can
   differ; **Holiday Preview** (disabled in HA by default) shows a theme
   early.
+- **Match volumes** in Play on: one tap sets every grouped speaker to this
+  room's volume.
+- **Now playing on the night clock:** a dimmer line with the title and
+  artist while music plays (panels with the Music tab).
+- **Sleep screen notes** (`features/sleep_notes.yaml` with the new
+  `ha/panel_notes.yaml` package): a **Panel Sleep Message** text helper shown
+  under the night clock's date, and birthdays from Date helpers named
+  `Birthday: …` (a countdown the week before, "Happy birthday, …!" on the
+  day). A message, or a birthday on the day, shows the clock even when Sleep
+  screen is Blank.
+- **Reminders from Schedule helpers** (`ha/panel_notes.yaml`): a Schedule
+  helper named `Reminder: …` puts a banner on the listed panels when each
+  time block starts.
 - Docs: new Holiday themes and Play on illustrations; both features listed
   with their entities in [Home Assistant side](docs/home-assistant.md).
 

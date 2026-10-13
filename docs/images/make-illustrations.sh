@@ -128,7 +128,8 @@ ACT=0; { head; status "8:42pm" "" "#8E8E93"
  v() { # y pct: the grouped speaker's volume row
   echo "<g transform=\"translate(44 $(( $1 + 20 )))\" fill=\"#8E8E93\"><path d=\"M-9 -4h5l6 -6v20l-6 -6h-5z\"/><path d=\"M5 -5a7 7 0 0 1 0 10\" fill=\"none\" stroke=\"#8E8E93\" stroke-width=\"2\" stroke-linecap=\"round\"/></g>"
   echo "<rect x=\"74\" y=\"$(( $1 + 8 ))\" width=\"366\" height=\"24\" rx=\"12\" fill=\"#2C2C2E\"/><rect x=\"74\" y=\"$(( $1 + 8 ))\" width=\"$(( 366 * $2 / 100 ))\" height=\"24\" rx=\"12\" fill=\"#F2F2F7\"/>"; }
- r 100 Kitchen 1; v 160 60; r 210 "Dining Room" 0; foot; } > $O/play-on.svg
+ r 100 Kitchen 1; v 160 60; r 210 "Dining Room" 0
+ echo '<rect x="120" y="404" width="240" height="48" rx="24" fill="#2C2C2E"/><text x="240" y="435" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">Match volumes</text>'; foot; } > $O/play-on.svg
 
 # ── PIN keypad ──────────────────────────────────────────────────────────────
 { head; echo '<text x="240" y="54" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">Enter PIN</text>'
@@ -236,6 +237,13 @@ pumpkin() { # cx cy color
  bat 250 70 1.1 "#8E44AD"; ghost 40 250 1.2 "#E8E8F0"; bat 445 280 1.2 "#8E44AD"; ghost 300 440 1.1 "#E8E8F0"
  echo '<text x="240" y="230" fill="#FFF" font-size="120" font-weight="200" text-anchor="middle">9:41</text><text x="240" y="280" fill="#FFF" fill-opacity=".7" font-size="20" font-weight="600" text-anchor="middle">Tuesday, October 13</text>'
  pumpkin 119 323 "#FF7518"; echo '<text x="138" y="330" fill="#FFF" font-size="20" font-weight="600">18 days until Halloween</text>'; foot; } > $O/holiday.svg
+
+# ── Sleep screen note: a birthday, with now playing underneath ─────────────
+cake() { # cx cy color
+  echo "<g transform=\"translate($1 $2)\" fill=\"$3\"><rect x=\"-9\" y=\"-1\" width=\"18\" height=\"10\" rx=\"2\"/><rect x=\"-1.2\" y=\"-8\" width=\"2.4\" height=\"6\"/><path d=\"M0 -13c2 2 2 4 0 4s-2 -2 0 -4z\"/></g>"; }
+{ head; echo '<text x="240" y="215" fill="#FFF" font-size="120" font-weight="200" text-anchor="middle">7:05</text><text x="240" y="265" fill="#FFF" fill-opacity=".7" font-size="20" font-weight="600" text-anchor="middle">Saturday, March 14</text>'
+ cake 135 309 "#FFF"; echo '<text x="154" y="316" fill="#FFF" font-size="20" font-weight="600">Happy birthday, Emma!</text>'
+ echo '<text x="240" y="356" fill="#FFF" fill-opacity=".5" font-size="16" font-weight="500" text-anchor="middle">Still Out There Running · Nathaniel Rateliff</text>'; foot; } > $O/sleep-note.svg
 
 # ── Settings → Voice (panels with voice) ────────────────────────────────────
 { head; hdr Settings

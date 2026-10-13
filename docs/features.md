@@ -20,6 +20,7 @@ local `!include` form and every option.
 - [Snow report](#snow-report)
 - [Camera pop-ups](#camera-pop-ups)
 - [Holiday themes](#holiday-themes)
+- [Sleep screen notes](#sleep-screen-notes)
 - [Voice](#voice)
 - [Messages from Home Assistant](#messages-from-home-assistant)
 - [Settings](#settings)
@@ -176,7 +177,8 @@ Tap a speaker to add it to the music playing in this room; tap again to remove
 it. A checkmark shows which speakers are grouped, and the corner icon lights
 up while any are. A grouped speaker also gets its own **volume slider** under
 its name, for when one room is louder than the others (the main slider still
-sets this room's speaker). Grouping uses `media_player.join` / `unjoin` with this room's
+sets this room's speaker). **Match volumes** (at the bottom, while speakers
+are grouped) sets every grouped speaker to this room's volume in one tap. Grouping uses `media_player.join` / `unjoin` with this room's
 player as the leader.
 
 ```yaml
@@ -474,6 +476,34 @@ The icons come from the icon font, so a theme costs a few KB of flash and
 very little memory. If a 480×480 panel's night clock feels slow, use
 `decorations: 0`.
 
+## Sleep screen notes
+
+![Birthday and now playing on the night clock](images/sleep-note.svg)
+
+Notes from Home Assistant for the night clock, set up with ordinary helpers
+(Settings → Devices & services → Helpers) — nothing reads your calendar:
+
+- **Sleep message:** type into **Panel Sleep Message** (a text helper, up to
+  60 characters) and every panel's sleep screen shows it under the date,
+  e.g. "Back at 6 — Mom". Clear it to remove it. While it is set, a panel
+  whose Sleep screen is Blank shows the clock instead, so it can be read.
+- **Birthdays:** add a **Date** helper per person named `Birthday: Emma`
+  with the birth date (any year). The week before, the clock shows "3 days
+  until Emma's birthday", then "Emma's birthday is tomorrow!", and on the day
+  "Happy birthday, Emma!" with a cake — on the day even on Blank sleep
+  screens. Birthdays on the same day are shown together.
+
+The order under the date is: [powder day](#snow-report), then the sleep
+message, then a birthday, then a [holiday](#holiday-themes) countdown.
+
+```yaml
+- path: features/sleep_notes.yaml
+```
+
+Needs `panel_notes.yaml` in Home Assistant (see
+[Home Assistant side](home-assistant.md#packages-to-install)), which also
+sends **reminders** (see [Messages](#messages-from-home-assistant)).
+
 ## Voice
 
 ![Voice](images/voice.svg)
@@ -530,6 +560,13 @@ data:
   seconds: 30        # 0 = until tapped
 ```
 
+**Reminders without the calendar:** with `panel_notes.yaml` installed, add a
+**Schedule** helper named `Reminder: Trash night` and give it its weekly
+times (say Monday 19:00–19:15). When a time block starts, the panels listed
+in the package get a "Trash night" banner with a bell, which stays until
+tapped. Edit the `panels:` list at the top of the package to choose which
+panels get reminders.
+
 Each panel also offers `esphome.<panel_name>_show_message` and
 `esphome.<panel_name>_clear_message` directly (dashes in the name become
 underscores). See [Home Assistant side](home-assistant.md#messages) for
@@ -574,6 +611,9 @@ Assistant (device page → Configuration), so you can change panels remotely.
     under the date, even when Sleep screen is Blank.
   - With a [holiday theme](#holiday-themes) on, the clock shows the countdown
     under the date and a few holiday icons drift past.
+  - A [sleep message or birthday](#sleep-screen-notes) shows under the date
+    (and, on the day, turns a Blank sleep screen into the clock).
+  - While music plays, a dimmer line under that shows the title and artist.
 - Any open sheet (Settings, Weather, Climate…) closes when the screen dims, so
   the panel always wakes to its tabs.
 - **Presence wake** (optional) wakes a sleeping panel to the dim level when an

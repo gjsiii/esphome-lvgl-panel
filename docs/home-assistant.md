@@ -11,6 +11,7 @@ in `configuration.yaml`), then restart Home Assistant.
 | `panel_weather.yaml` | `sensor.panel_weather_forecast` — state: time of the last update; attributes `hourly` and `daily` (compact text the panels read). Refreshed every 30 minutes with `weather.get_forecasts`. | The weather sheet's forecast. Change `source:` to your weather entity. |
 | `panel_messages.yaml` | `script.panel_message` | Sending banners to several panels with optional fields. |
 | `panel_updates.yaml` | `sensor.esphome_lvgl_panel_latest` — the newest released version (from GitHub tags, every 6 hours). | The update notice in Settings. Optional. |
+| `panel_notes.yaml` | `input_text.panel_sleep_message`, `sensor.panel_night_note` (the night clock note: a sleep message, or the next birthday within a week, from Date helpers named `Birthday: …`), and the *Panel reminders* automation (banners when a Schedule helper named `Reminder: …` starts a time block). | `features/sleep_notes.yaml` and reminders. Edit the `panels:` list in the automation. Needs `panel_messages.yaml` for reminders. |
 | `panel_ma_favorites.yaml` | `sensor.panel_ma_favorites` — state: number of favorites; attribute `items` (compact list the panels read). Re-read every 15 minutes with `music_assistant.get_library`, and when a panel's refresh button is tapped. | `tabs/ma_favorites.yaml`. Set `ma_entry` to your Music Assistant config entry id (the entry picker in Developer Tools → Actions → `music_assistant.get_library` shows it). |
 
 One forecast sensor serves every panel in the house, and one favorites sensor

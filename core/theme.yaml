@@ -68,6 +68,8 @@ font:
         "\U000F05AA", # mdi-wifi-off (HA disconnected)
         "\U000F0F54", # mdi-home-thermometer (climate readout)
         "\U000F0717", # mdi-snowflake (snow report chip)
+        "\U000F0369", # mdi-message-text (sleep message, features/sleep_notes.yaml)
+        "\U000F00EB", # mdi-cake-variant (birthday, features/sleep_notes.yaml)
         # Weather conditions (HA weather states)
         "\U000F0599", # mdi-weather-sunny            sunny
         "\U000F0594", # mdi-weather-night            clear-night
