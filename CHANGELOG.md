@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.5.0 — unreleased
+## v0.5.0 — 2026-10-13
 
 - **Favorites from Music Assistant** (`tabs/ma_favorites.yaml` with the new
   `ha/panel_ma_favorites.yaml` package): your Music Assistant favorites

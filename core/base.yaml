@@ -8,7 +8,7 @@ substitutions:
   idle_dim_brightness: "0.30"  # dim level (never brighter than the user's setting)
 
   # Version of these shared files (shown in Settings → About)
-  panel_version: "0.5.0-dev"
+  panel_version: "0.5.0"
   project_name: "esphome-lvgl-panel"
   project_url: "https://github.com/gjsiii/esphome-lvgl-panel"
 
