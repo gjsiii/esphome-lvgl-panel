@@ -46,6 +46,9 @@ each panel keeps its own rooms, lights, speakers and TV.
   A mic icon in the status bar mutes it.
 - **Messages** — Home Assistant automations can put a banner on any panel
   ("Washer done", "Mail arrived").
+- **Holiday themes** — Halloween, Christmas, Valentine's Day and St. Patrick's
+  Day colours, a countdown and drifting icons on the night clock; switched on
+  per panel from Home Assistant.
 - **Screen care** — dims, sleeps or shows a night clock; night mode; nightly
   anti-burn.
 - **Settings on the panel and in Home Assistant** — brightness, slider color,

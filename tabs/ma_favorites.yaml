@@ -336,7 +336,7 @@ script:
                 id(maf_busy_name) = lv_label_get_text(id(maf_names)[index]);
                 lv_label_set_text(id(maf_names)[index], "Starting…");
                 lv_obj_t *frame = lv_obj_get_parent(id(maf_arts)[index]);
-                lv_obj_set_style_outline_color(frame, lv_color_hex(id(accent_rgb)), LV_PART_MAIN);
+                lv_obj_set_style_outline_color(frame, lv_color_hex(id(accent_override) ? id(accent_override) : id(accent_rgb)), LV_PART_MAIN);
                 lv_obj_set_style_outline_width(frame, ${(3*px)|int}, LV_PART_MAIN);
                 lv_obj_set_style_outline_pad(frame, ${(2*px)|int}, LV_PART_MAIN);
             - script.execute: maf_unbusy

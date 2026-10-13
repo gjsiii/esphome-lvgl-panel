@@ -1,5 +1,6 @@
 # Item: one speaker in the Music tab's "Play on" sheet. Tap to add it to
-# (or remove it from) the music playing on this room's player.
+# (or remove it from) the music playing on this room's player. While it is
+# playing along, a volume slider for that speaker shows under its name.
 #
 # Include once per extra speaker; `slot` sets the order and must be unique.
 #   spk_1: !include
@@ -22,7 +23,7 @@ esphome:
   on_boot:
     - priority: -20${slot}
       then:
-        - lambda: "lv_obj_set_parent(id(spk_row_${slot}), id(speaker_list));"
+        - lambda: "lv_obj_set_parent(id(spk_item_${slot}), id(speaker_list));"
 
 text_sensor:
   # The leader's group, e.g. "['media_player.family_room_2', 'media_player.kitchen']"
@@ -34,51 +35,106 @@ text_sensor:
       - lambda: |-
           bool in = x.find("'${entity}'") != std::string::npos;
           id(spk_in_${slot}) = in;
-          if (in) lv_obj_clear_flag(id(spk_check_${slot}), LV_OBJ_FLAG_HIDDEN);
-          else lv_obj_add_flag(id(spk_check_${slot}), LV_OBJ_FLAG_HIDDEN);
+          for (lv_obj_t *o : {id(spk_check_${slot}), id(spk_vol_row_${slot})}) {
+            if (in) lv_obj_clear_flag(o, LV_OBJ_FLAG_HIDDEN);
+            else lv_obj_add_flag(o, LV_OBJ_FLAG_HIDDEN);
+          }
+
+sensor:
+  # This speaker's own volume (the slider follows it unless a finger is on it)
+  - platform: homeassistant
+    id: spk_volume_${slot}
+    entity_id: ${entity}
+    attribute: volume_level
+    on_value:
+      - lambda: |-
+          if (isnan(x) || lv_obj_has_state(id(spk_vol_${slot}), LV_STATE_PRESSED)) return;
+          lv_slider_set_value(id(spk_vol_${slot}), lroundf(x * 100.0f), LV_ANIM_OFF);
 
 lvgl:
   pages:
     - id: holding_spk_${slot}
       skip: true
       widgets:
-        - button:
-            id: spk_row_${slot}
+        # The speaker's row (tap to add or remove) and, while it plays along,
+        # its volume slider underneath
+        - obj:
+            id: spk_item_${slot}
             width: ${440*px}
-            height: ${56*px}
-            radius: ${14*px}
-            pad_all: 0
+            height: SIZE_CONTENT
+            styles: transparent
+            scrollable: false
+            layout:
+              type: FLEX
+              flex_flow: COLUMN
+              pad_row: ${4*px}
             widgets:
-              - label:
-                  text: "\U000F04C3" # mdi-speaker
-                  text_font: icons_md
-                  text_color: ${c_text_2}
-                  align: LEFT_MID
-                  x: ${14*px}
-              - label:
-                  text: "${name}"
-                  align: LEFT_MID
-                  x: ${54*px}
-              - label:
-                  id: spk_check_${slot}
-                  text: "\U000F012C" # mdi-check
-                  text_font: icons_md
-                  text_color: ${c_accent}
-                  align: RIGHT_MID
-                  x: -${14*px}
+              - button:
+                  id: spk_row_${slot}
+                  width: ${440*px}
+                  height: ${56*px}
+                  radius: ${14*px}
+                  pad_all: 0
+                  widgets:
+                    - label:
+                        text: "\U000F04C3" # mdi-speaker
+                        text_font: icons_md
+                        text_color: ${c_text_2}
+                        align: LEFT_MID
+                        x: ${14*px}
+                    - label:
+                        text: "${name}"
+                        align: LEFT_MID
+                        x: ${54*px}
+                    - label:
+                        id: spk_check_${slot}
+                        text: "\U000F012C" # mdi-check
+                        text_font: icons_md
+                        text_color: ${c_accent}
+                        align: RIGHT_MID
+                        x: -${14*px}
+                        hidden: true
+                  on_click:
+                    - if:
+                        condition:
+                          lambda: "return id(spk_in_${slot});"
+                        then:
+                          - homeassistant.action:
+                              action: media_player.unjoin
+                              data:
+                                entity_id: ${entity}
+                        else:
+                          - homeassistant.action:
+                              action: media_player.join
+                              data:
+                                entity_id: ${leader}
+                                group_members: ${entity}
+              - obj:
+                  id: spk_vol_row_${slot}
+                  width: ${440*px}
+                  height: ${40*px}
+                  styles: transparent
+                  scrollable: false
                   hidden: true
-            on_click:
-              - if:
-                  condition:
-                    lambda: "return id(spk_in_${slot});"
-                  then:
-                    - homeassistant.action:
-                        action: media_player.unjoin
-                        data:
-                          entity_id: ${entity}
-                  else:
-                    - homeassistant.action:
-                        action: media_player.join
-                        data:
-                          entity_id: ${leader}
-                          group_members: ${entity}
+                  widgets:
+                    - label:
+                        text: "\U000F057E" # mdi-volume-high (in icons_md)
+                        text_font: icons_md
+                        text_color: ${c_text_2}
+                        align: LEFT_MID
+                        x: ${14*px}
+                    - slider:
+                        id: spk_vol_${slot}
+                        align: LEFT_MID
+                        x: ${54*px}
+                        width: ${366*px}
+                        height: ${24*px}
+                        min_value: 0
+                        max_value: 100
+                        value: 0
+                        on_release:
+                          - homeassistant.action:
+                              action: media_player.volume_set
+                              data:
+                                entity_id: ${entity}
+                                volume_level: !lambda "return x / 100.0f;"

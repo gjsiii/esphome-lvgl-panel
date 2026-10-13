@@ -172,7 +172,44 @@ globals:
     type: bool
     initial_value: "false"
 
+  # A lesser note for the night clock (e.g. a holiday countdown,
+  # features/holidays.yaml): shown under the date when the clock is showing
+  # anyway and no night_note_on feature is using the row. Empty text = none.
+  - id: night_info_text
+    type: std::string
+  - id: night_info_icon
+    type: std::string
+  - id: night_info_font
+    type: const lv_font_t *
+    initial_value: "nullptr"
+  - id: night_info_color
+    type: uint32_t
+    initial_value: "0"
+  # Called with red = true/false when the night clock recolours, so a feature
+  # can colour its own night clock parts
+  - id: night_clock_hook
+    type: std::function<void(bool)>
+    initial_value: "std::function<void(bool)>()"
+
 script:
+  # Show the lesser night clock note (night_info_*) unless a night_note_on
+  # feature owns the row
+  - id: night_note_show
+    mode: restart
+    then:
+      - lambda: |-
+          if (id(night_note_on)) return;
+          if (id(night_info_text).empty()) {
+            lv_obj_add_flag(id(night_note), LV_OBJ_FLAG_HIDDEN);
+            return;
+          }
+          if (id(night_info_font) != nullptr)
+            lv_obj_set_style_text_font(id(lbl_night_note_icon), id(night_info_font), LV_PART_MAIN);
+          lv_label_set_text(id(lbl_night_note_icon), id(night_info_icon).c_str());
+          lv_label_set_text(id(lbl_night_note), id(night_info_text).c_str());
+          lv_obj_clear_flag(id(night_note), LV_OBJ_FLAG_HIDDEN);
+          if (id(screen_state) == 3) id(night_clock_colors).execute();
+
   # Tab bar labels: selected tab in primary text, others in secondary text.
   # Runs when the tab changes (by touch or by a media tab auto-selecting).
   - id: refresh_tab_bar

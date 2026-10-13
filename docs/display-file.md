@@ -126,7 +126,7 @@ Items are repeated: include one per light, scene, app, speaker or favorite.
 | `items/fan.yaml` | `slot`, `name`, `entity` | sliders | Fan speed (percentage) slider. |
 | `items/cover.yaml` | `slot`, `name`, `entity` | sliders | Shade / blind / curtain position slider; tap the name to open, close or stop. |
 | `items/tv_app.yaml` | `slot`, `icon`, `source`, `entity` | TV apps | `icon`: path to an image relative to the display file; `source`: the Apple TV source name. |
-| `items/speaker.yaml` | `slot`, `name`, `entity`, `leader` | Play on | `leader` is this room's `music_player`. |
+| `items/speaker.yaml` | `slot`, `name`, `entity`, `leader` | Play on | `leader` is this room's `music_player`. A grouped speaker shows its own volume slider. |
 | `items/favorite.yaml` | `slot`, `name`, `image`, `media_content_id`, `player`, `shuffle` | favorites | `image` relative to the display file; `shuffle: "true"` / `"false"`. |
 
 ## Features
@@ -142,6 +142,7 @@ Each feature is included at most once, except camera pop-ups and status chips.
 | `features/snow_report.yaml` | `title`, `chip_slot`, `chip_show`, `new_24h_entity`, `new_48h_entity`, `new_72h_entity`, `new_7d_entity`, `base_entity`, `summit_entity`, `season_entity`, `lifts_entity`, `runs_entity`, `opening_entity`; optional `powder_inches` (default `"3"`) | Snowflake chip (24 h new snow), the ski report sheet and the powder-day sleep note. See [Snow report](features.md#snow-report). |
 | `features/camera_popup.yaml` | `popup_id`, `title`, `trigger_entity`, `camera_entity` | One per trigger. |
 | `features/presence_wake.yaml` | `presence_entity` | Wake on presence. |
+| `features/holidays.yaml` | optional `decorations` (default `8`) | Holiday themes, off until the panel's **Holiday Theme** switch is turned on in HA. See [Holiday themes](features.md#holiday-themes). |
 | `features/voice_assistant.yaml` | — | Wake word and Home Assistant Assist, with a mic button in the status bar. Needs a board with a speaker and microphones (Waveshare P4). See [Voice](features.md#voice). |
 
 ## Values and quoting

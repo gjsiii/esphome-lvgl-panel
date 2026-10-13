@@ -35,6 +35,11 @@ globals:
   - id: accent_ui_update
     type: bool
     initial_value: "false"
+  # A feature's colour used instead of the user's slider color while it is
+  # set (0 = none), e.g. a holiday theme (features/holidays.yaml)
+  - id: accent_override
+    type: uint32_t
+    initial_value: "0"
   - id: dim_after_ms
     type: uint32_t
     initial_value: "30000"
@@ -290,7 +295,7 @@ script:
             lambda: "return id(ui_ready);"
           then:
             - lambda: |-
-                lv_color_t c = lv_color_hex(id(accent_rgb));
+                lv_color_t c = lv_color_hex(id(accent_override) ? id(accent_override) : id(accent_rgb));
                 std::function<void(lv_obj_t *)> paint = [&](lv_obj_t *o) {
                   if (lv_obj_check_type(o, &lv_slider_class) || lv_obj_check_type(o, &lv_bar_class))
                     lv_obj_set_style_bg_color(o, c, LV_PART_INDICATOR);
@@ -300,7 +305,8 @@ script:
                   for (uint32_t k = 0; k < n; k++) paint(lv_obj_get_child(o, k));
                 };
                 paint(id(ui_root));
-                lv_obj_set_style_bg_color(id(accent_preview), c, LV_PART_MAIN);
+                // The preview shows the user's own color, not a feature's
+                lv_obj_set_style_bg_color(id(accent_preview), lv_color_hex(id(accent_rgb)), LV_PART_MAIN);
 
   # The Slider Color light changed (panel sliders or HA): work out the color,
   # repaint, and move the panel's Hue/Saturation/Brightness sliders to match
@@ -353,7 +359,7 @@ script:
             lambda: "return id(ui_ready);"
           then:
             - lambda: |-
-                uint32_t a = id(accent_rgb);
+                uint32_t a = id(accent_override) ? id(accent_override) : id(accent_rgb);
                 float lum = (0.2126f * ((a >> 16) & 0xFF) + 0.7152f * ((a >> 8) & 0xFF) +
                              0.0722f * (a & 0xFF)) / 255.0f;
                 auto mode = id(sel_slider_text).active_index();
@@ -498,6 +504,10 @@ script:
           for (lv_obj_t *o : {id(lbl_night_time), id(lbl_night_date), id(lbl_night_note_icon), id(lbl_night_note)})
             lv_obj_set_style_text_color(o, c, LV_PART_MAIN);
           lv_obj_set_style_text_opa(id(lbl_night_date), LV_OPA_70, LV_PART_MAIN);
+          // A lesser note's own icon colour (not in red mode)
+          if (!red && !id(night_note_on) && id(night_info_color) != 0)
+            lv_obj_set_style_text_color(id(lbl_night_note_icon), lv_color_hex(id(night_info_color)), LV_PART_MAIN);
+          if (id(night_clock_hook)) id(night_clock_hook)(red);
 
   # Is it night? On entering or leaving the window, apply the brightness
   # change to an awake screen and recolor a showing night clock.

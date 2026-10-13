@@ -19,6 +19,7 @@ local `!include` form and every option.
 - [Marine forecast](#marine-forecast)
 - [Snow report](#snow-report)
 - [Camera pop-ups](#camera-pop-ups)
+- [Holiday themes](#holiday-themes)
 - [Voice](#voice)
 - [Messages from Home Assistant](#messages-from-home-assistant)
 - [Settings](#settings)
@@ -173,7 +174,9 @@ artwork, shuffle/repeat and grouping are all reliable).
 
 Tap a speaker to add it to the music playing in this room; tap again to remove
 it. A checkmark shows which speakers are grouped, and the corner icon lights
-up while any are. Grouping uses `media_player.join` / `unjoin` with this room's
+up while any are. A grouped speaker also gets its own **volume slider** under
+its name, for when one room is louder than the others (the main slider still
+sets this room's speaker). Grouping uses `media_player.join` / `unjoin` with this room's
 player as the leader.
 
 ```yaml
@@ -433,6 +436,39 @@ substream entity loads fastest. Each refresh briefly pauses touch while the
 image downloads, which is why the default is every 5 seconds
 (`camera_refresh_seconds`).
 
+## Holiday themes
+
+While a holiday is near, the panel takes on its colours:
+
+- the **slider color** changes to the holiday's (your own color comes back
+  afterwards);
+- a small icon sits left of the status-bar clock;
+- the [night clock](#screen-dimming-sleep-and-the-night-clock) shows a
+  countdown under the date ("12 days until Halloween", then "Happy
+  Halloween!") and a few icons drift slowly across it.
+
+| Holiday | When | Look |
+|---|---|---|
+| Halloween | Oct 1 – 31 | Orange; pumpkin; bats and ghosts float up |
+| Christmas | Dec 1 – 26 | Red; pine tree; falling snow |
+| Valentine's Day | Feb 7 – 14 | Pink; hearts |
+| St. Patrick's Day | Mar 10 – 17 | Green; clovers in green and gold |
+
+```yaml
+- path: features/holidays.yaml
+  vars: { decorations: 8 }     # optional: drifting icons (0 = none)
+```
+
+Each panel has a **Holiday Theme** switch in Home Assistant (with its other
+configuration entities); themes stay off until you turn it on, so you can
+choose which rooms get them. **Holiday Preview** (disabled in HA until you
+enable it) shows one holiday's theme now, whatever the date. At night, and
+with the Red clock, the drifting icons turn dim red like the clock.
+
+The icons come from the icon font, so a theme costs a few KB of flash and
+very little memory. If a 480×480 panel's night clock feels slow, use
+`decorations: 0`.
+
 ## Voice
 
 ![Voice](images/voice.svg)
@@ -531,6 +567,8 @@ Assistant (device page → Configuration), so you can change panels remotely.
     pixels every minute. A tap wakes the panel.
   - On a [powder day](#snow-report) the clock is shown, with the new snow
     under the date, even when Sleep screen is Blank.
+  - With a [holiday theme](#holiday-themes) on, the clock shows the countdown
+    under the date and a few holiday icons drift past.
 - Any open sheet (Settings, Weather, Climate…) closes when the screen dims, so
   the panel always wakes to its tabs.
 - **Presence wake** (optional) wakes a sleeping panel to the dim level when an

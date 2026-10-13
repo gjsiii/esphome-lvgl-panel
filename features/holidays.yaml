@@ -1,0 +1,267 @@
+# Feature: holiday themes. While a holiday is near, the panel takes on its
+# colours: the slider color, a small icon left of the status-bar clock, a
+# countdown under the night clock's date ("12 days until Halloween") and a
+# few icons drifting slowly across the night clock.
+#
+#   holidays: !include
+#     file: panel/features/holidays.yaml
+#     vars:
+#       decorations: 8     # optional: drifting icons on the night clock (0 = none)
+#
+# Off until you turn on the panel's **Holiday Theme** switch in Home
+# Assistant (a configuration entity, so each panel can differ). Windows:
+#
+#   Halloween           Oct 1 - Oct 31
+#   Christmas           Dec 1 - Dec 26
+#   Valentine's Day     Feb 7 - Feb 14
+#   St. Patrick's Day   Mar 10 - Mar 17
+#
+# The **Holiday Preview** select (disabled in HA until you enable it) shows
+# one holiday's theme now, whatever the date, for trying them out.
+#
+# Memory: two small icon fonts in flash; the icons themselves live with the
+# other screen objects in PSRAM. The drifting icons only redraw a few small
+# areas, but use decorations: 0 on a panel where the night clock feels slow.
+
+defaults:
+  decorations: "8"
+
+globals:
+  # Holiday shown (-1 = none) and the day (and preview choice) it was
+  # worked out for
+  - id: holiday_idx
+    type: int
+    initial_value: "-1"
+  - id: holiday_day
+    type: int
+    initial_value: "-1"
+  - id: holiday_status_icon
+    type: lv_obj_t *
+    initial_value: "nullptr"
+  - id: holiday_decor
+    type: lv_obj_t *
+    initial_value: "nullptr"
+
+switch:
+  - platform: template
+    name: Holiday Theme
+    id: sw_holiday
+    icon: mdi:party-popper
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - script.execute: holiday_check
+    on_turn_off:
+      - script.execute: holiday_check
+
+select:
+  - platform: template
+    name: Holiday Preview
+    id: sel_holiday_preview
+    icon: mdi:calendar-star
+    entity_category: config
+    disabled_by_default: true
+    optimistic: true
+    restore_value: true
+    options: ["By date", "Halloween", "Christmas", "Valentine's Day", "St. Patrick's Day"]
+    initial_option: "By date"
+    on_value:
+      - script.execute: holiday_check
+
+esphome:
+  on_boot:
+    # After the screen is built (core/settings.yaml sets ui_ready at -310)
+    - priority: -320
+      then:
+        - lambda: |-
+            // Icon left of the status-bar clock (placed by holiday_place)
+            lv_obj_t *icon = lv_label_create(lv_obj_get_parent(id(lbl_time)));
+            lv_obj_set_style_text_font(icon, id(holiday_icons)->get_lv_font(), LV_PART_MAIN);
+            lv_obj_add_flag(icon, LV_OBJ_FLAG_HIDDEN);
+            id(holiday_status_icon) = icon;
+            // Drifting icons: behind the night clock's text
+            lv_obj_t *d = lv_obj_create(id(night_clock));
+            lv_obj_remove_style_all(d);
+            lv_obj_set_size(d, LV_PCT(100), LV_PCT(100));
+            lv_obj_clear_flag(d, (lv_obj_flag_t) (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE));
+            lv_obj_move_background(d);
+            lv_obj_add_flag(d, LV_OBJ_FLAG_HIDDEN);
+            id(holiday_decor) = d;
+            for (int i = 0; i < ${decorations}; i++) {
+              lv_obj_t *l = lv_label_create(d);
+              lv_obj_set_style_text_font(l, id(holiday_decor_font)->get_lv_font(), LV_PART_MAIN);
+              lv_label_set_text(l, "");
+            }
+            // Night clock recolour (red at night): the drifting icons follow
+            id(night_clock_hook) = [](bool red) { id(holiday_colors)->execute(red); };
+        - script.execute: holiday_check
+
+interval:
+  # The date (and so the countdown) changes once a day; checking each minute
+  # also catches the clock arriving from HA after boot. Re-placing the
+  # status icon follows the clock's width (e.g. 9:59 -> 10:00).
+  - interval: 60s
+    then:
+      - script.execute: holiday_check
+      - script.execute: holiday_place
+
+script:
+  # Which holiday (if any) applies today, and show it
+  - id: holiday_check
+    mode: restart
+    then:
+      - lambda: |-
+          if (!id(ui_ready)) return;
+          auto t = id(ha_time).now();
+          int preview = (int) id(sel_holiday_preview).active_index().value_or(0);   // 0 = by date
+          int idx = -1;
+          // month/day windows; the countdown target is the holiday itself
+          struct H { int m1, d1, m2, d2, tm, td; };
+          static const H H_[4] = {
+            {10, 1, 10, 31, 10, 31},   // Halloween
+            {12, 1, 12, 26, 12, 25},   // Christmas
+            { 2, 7,  2, 14,  2, 14},   // Valentine's Day
+            { 3, 10, 3, 17,  3, 17},   // St. Patrick's Day
+          };
+          int today = -1;
+          if (id(sw_holiday).state) {
+            if (preview > 0) {
+              idx = preview - 1;
+            } else if (t.is_valid()) {
+              int md = t.month * 100 + t.day_of_month;
+              for (int i = 0; i < 4; i++)
+                if (md >= H_[i].m1 * 100 + H_[i].d1 && md <= H_[i].m2 * 100 + H_[i].d2) idx = i;
+            }
+          }
+          if (t.is_valid()) today = t.day_of_year;
+          int key = today * 8 + preview;   // the day and the preview choice
+          if (idx == id(holiday_idx) && key == id(holiday_day)) return;   // nothing new
+          id(holiday_idx) = idx;
+          id(holiday_day) = key;
+
+          static const char *const NAME[4] = {"Halloween", "Christmas", "Valentine's Day", "St. Patrick's Day"};
+          static const char *const GREET[4] = {"Happy Halloween!", "Merry Christmas!", "Happy Valentine's Day!",
+                                               "Happy St. Patrick's Day!"};
+          static const uint32_t ACCENT[4] = {0xFF7518, 0xE53935, 0xFF4F81, 0x2EAD4B};
+          static const char *const ICON[4] = {"\U000F0BBF", "\U000F0405", "\U000F02D1", "\U000F0816"};   // pumpkin, pine-tree, heart, clover
+          static const uint32_t ICON_COLOR[4] = {0xFF7518, 0x2E9E4F, 0xFF4F81, 0x2EAD4B};
+
+          if (idx < 0) {
+            id(accent_override) = 0;
+            lv_obj_add_flag(id(holiday_status_icon), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(id(holiday_decor), LV_OBJ_FLAG_HIDDEN);
+            for (uint32_t i = 0; i < lv_obj_get_child_cnt(id(holiday_decor)); i++)
+              lv_anim_delete(lv_obj_get_child(id(holiday_decor), i), nullptr);
+            id(night_info_text) = "";
+          } else {
+            id(accent_override) = ACCENT[idx];
+            lv_label_set_text(id(holiday_status_icon), ICON[idx]);
+            lv_obj_set_style_text_color(id(holiday_status_icon), lv_color_hex(ICON_COLOR[idx]), LV_PART_MAIN);
+            lv_obj_clear_flag(id(holiday_status_icon), LV_OBJ_FLAG_HIDDEN);
+
+            // Countdown (or the greeting on the day) for the night clock
+            std::string note;
+            if (preview > 0 || today < 0) {
+              note = GREET[idx];
+            } else {
+              static const int CUM[12] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+              int y = t.year;
+              bool leap = (y % 4 == 0 && y % 100 != 0) || y % 400 == 0;
+              int target = CUM[H_[idx].tm - 1] + H_[idx].td + (leap && H_[idx].tm > 2 ? 1 : 0);
+              int days = target - today;
+              if (days <= 0) note = GREET[idx];
+              else if (days == 1) note = std::string(NAME[idx]) + " is tomorrow!";
+              else note = std::to_string(days) + " days until " + NAME[idx];
+            }
+            id(night_info_text) = note;
+            id(night_info_icon) = ICON[idx];
+            id(night_info_font) = id(holiday_icons)->get_lv_font();
+            id(night_info_color) = ICON_COLOR[idx];
+
+            // Drifting icons: Halloween's bats and ghosts float up; the rest fall
+            static const char *const DECO[4][2] = {
+              {"\U000F0B5F", "\U000F02A0"},   // bat, ghost
+              {"\U000F0717", "\U000F0717"},   // snowflake
+              {"\U000F02D1", "\U000F02D1"},   // heart
+              {"\U000F0816", "\U000F0816"},   // clover
+            };
+            lv_obj_t *d = id(holiday_decor);
+            uint32_t n = lv_obj_get_child_cnt(d);
+            if (n > 0) {
+              lv_obj_clear_flag(d, LV_OBJ_FLAG_HIDDEN);
+              const int W = lv_display_get_horizontal_resolution(nullptr);
+              const int Hh = lv_display_get_vertical_resolution(nullptr);
+              const int sz = ${(40*px)|int};
+              const bool up = idx == 0;
+              for (uint32_t i = 0; i < n; i++) {
+                lv_obj_t *l = lv_obj_get_child(d, i);
+                lv_label_set_text(l, DECO[idx][i % 2]);
+                // Spread across the width, each with its own speed and start
+                int x = (int) (W * (i + 0.5f) / n) - sz / 2 + (int) (random_uint32() % (sz / 2 + 1)) - sz / 4;
+                lv_obj_set_x(l, x);
+                lv_anim_delete(l, nullptr);
+                lv_anim_t a;
+                lv_anim_init(&a);
+                lv_anim_set_var(&a, l);
+                lv_anim_set_exec_cb(&a, [](void *o, int32_t v) { lv_obj_set_y((lv_obj_t *) o, v); });
+                if (up) lv_anim_set_values(&a, Hh, -sz);
+                else lv_anim_set_values(&a, -sz, Hh);
+                lv_anim_set_duration(&a, 22000 + random_uint32() % 14000);
+                lv_anim_set_delay(&a, random_uint32() % 20000);
+                lv_anim_set_repeat_count(&a, LV_ANIM_REPEAT_INFINITE);
+                lv_obj_set_y(l, up ? Hh : -sz);
+                lv_anim_start(&a);
+              }
+            }
+          }
+          id(apply_accent).execute();
+          id(update_slider_labels).execute();
+          id(night_note_show).execute();
+          id(holiday_place).execute();
+          bool red = id(night_now) || id(sel_sleep_screen).active_index().value_or(0) == 2;
+          id(holiday_colors).execute(red);
+
+  # Keep the status icon just left of the clock
+  - id: holiday_place
+    then:
+      - lambda: |-
+          lv_obj_t *icon = id(holiday_status_icon);
+          if (icon == nullptr || lv_obj_has_flag(icon, LV_OBJ_FLAG_HIDDEN)) return;
+          lv_obj_update_layout(id(lbl_time));
+          lv_obj_align_to(icon, id(lbl_time), LV_ALIGN_OUT_LEFT_MID, -${(6*px)|int}, 0);
+
+  # Drifting icons: the holiday's colours, or dim red like the clock at night
+  - id: holiday_colors
+    parameters:
+      red: bool
+    then:
+      - lambda: |-
+          lv_obj_t *d = id(holiday_decor);
+          int idx = id(holiday_idx);
+          if (d == nullptr || idx < 0) return;
+          static const uint32_t C[4][2] = {
+            {0x8E44AD, 0xE8E8F0},   // purple bats, pale ghosts
+            {0xDCEBFF, 0xDCEBFF},   // snow
+            {0xFF4F81, 0xFFB3C6},   // hearts
+            {0x2EAD4B, 0xD4AF37},   // green and gold clovers
+          };
+          for (uint32_t i = 0; i < lv_obj_get_child_cnt(d); i++) {
+            lv_obj_t *l = lv_obj_get_child(d, i);
+            lv_obj_set_style_text_color(l, lv_color_hex(red ? 0xFF3B30 : C[idx][i % 2]), LV_PART_MAIN);
+            lv_obj_set_style_text_opa(l, red ? LV_OPA_30 : LV_OPA_50, LV_PART_MAIN);
+          }
+
+font:
+  # Status bar and night clock note
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
+    id: holiday_icons
+    size: ${22*px}
+    bpp: 4
+    glyphs: ["\U000F0BBF", "\U000F0405", "\U000F02D1", "\U000F0816"] # pumpkin, pine-tree, heart, clover
+  # Drifting icons on the night clock
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
+    id: holiday_decor_font
+    size: ${40*px}
+    bpp: 4
+    glyphs: ["\U000F0B5F", "\U000F02A0", "\U000F0717", "\U000F02D1", "\U000F0816"] # bat, ghost, snowflake, heart, clover

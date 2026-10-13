@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.6.0 — unreleased
+
+- **Play on: a volume slider per speaker.** A speaker grouped with this
+  room's music shows its own slider under its name in the Play on sheet; the
+  main slider still sets this room's speaker. No display file changes.
+- **Holiday themes** (`features/holidays.yaml`, optional): Halloween,
+  Christmas, Valentine's Day and St. Patrick's Day each bring their colour
+  (slider color), an icon by the status-bar clock, a countdown on the night
+  clock and a few icons drifting across it. Off until you turn on the
+  panel's **Holiday Theme** switch in Home Assistant, so each room can
+  differ; **Holiday Preview** (disabled in HA by default) shows a theme
+  early.
+
 ## v0.5.0 — 2026-10-13
 
 - **Favorites from Music Assistant** (`tabs/ma_favorites.yaml` with the new
