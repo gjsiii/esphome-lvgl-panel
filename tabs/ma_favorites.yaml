@@ -76,6 +76,12 @@ globals:
     type: bool
     restore_value: true
     initial_value: "true"
+  # Tile just tapped (-1: none) and its caption while it shows "Starting…"
+  - id: maf_busy
+    type: int
+    initial_value: "-1"
+  - id: maf_busy_name
+    type: std::string
 
 esphome:
   on_boot:
@@ -173,7 +179,8 @@ script:
                         : cat == "artist" ? 't' : (cat.size() == 1 ? cat[0] : 0);
               id(maf_cat)[n] = code;
               std::string nm = x.substr(a + 1, b - a - 1);
-              lv_label_set_text(id(maf_names)[n], nm.c_str());
+              if (n == id(maf_busy)) id(maf_busy_name) = nm;   // shown again after "Starting…"
+              else lv_label_set_text(id(maf_names)[n], nm.c_str());
               id(maf_uri)[n] = pos(b + 1, c - b - 1);
               id(maf_art)[n] = pos(c + 1, e - c - 1);
               // FNV-1a of the artwork text: a changed picture is fetched again
@@ -312,15 +319,27 @@ script:
           }
       - script.execute: maf_load_next
 
-  # Tap a tile: play it on the room's player, then set shuffle
+  # Tap a tile: play it on the room's player, then set shuffle. The tile
+  # shows "Starting…" for a few seconds and further taps are ignored, since
+  # Music Assistant can take a moment to start and every extra tap would
+  # queue another full reload of the player.
   - id: maf_play
     parameters:
       index: int
     then:
       - if:
           condition:
-            lambda: "return index >= 0 && index < id(maf_count) && id(maf_cat)[index] != 0;"
+            lambda: "return index >= 0 && index < id(maf_count) && id(maf_cat)[index] != 0 && id(maf_busy) < 0;"
           then:
+            - lambda: |-
+                id(maf_busy) = index;
+                id(maf_busy_name) = lv_label_get_text(id(maf_names)[index]);
+                lv_label_set_text(id(maf_names)[index], "Starting…");
+                lv_obj_t *frame = lv_obj_get_parent(id(maf_arts)[index]);
+                lv_obj_set_style_outline_color(frame, lv_color_hex(id(accent_rgb)), LV_PART_MAIN);
+                lv_obj_set_style_outline_width(frame, ${(3*px)|int}, LV_PART_MAIN);
+                lv_obj_set_style_outline_pad(frame, ${(2*px)|int}, LV_PART_MAIN);
+            - script.execute: maf_unbusy
             - homeassistant.action:
                 action: music_assistant.play_media
                 data:
@@ -344,6 +363,18 @@ script:
                 data:
                   entity_id: ${music_player}
                   shuffle: !lambda "return (id(maf_shuffle) && id(maf_cat)[index] != 'r') ? std::string(\"true\") : std::string(\"false\");"
+
+  # After a tap: back to the tile's name and accept taps again
+  - id: maf_unbusy
+    mode: restart
+    then:
+      - delay: 4s
+      - lambda: |-
+          int i = id(maf_busy);
+          id(maf_busy) = -1;
+          if (i < 0 || i >= 36) return;
+          lv_label_set_text(id(maf_names)[i], id(maf_busy_name).c_str());
+          lv_obj_set_style_outline_width(lv_obj_get_parent(id(maf_arts)[i]), 0, LV_PART_MAIN);
 
 font:
   - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf

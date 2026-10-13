@@ -33,6 +33,13 @@
 - Music tab: Music Assistant album art now shows, including SiriusXM channel
   logos. Its image server sends PNG
   by default; the panel now asks it for a 256 px JPEG.
+- Favorites: a tapped tile shows "Starting…" for a few seconds and further
+  taps wait, so impatient taps no longer queue several reloads in Music
+  Assistant (which then played through them one after another).
+- ESP32-P4 board: the main loop (which also draws the screen) gets a 16 KB
+  stack instead of 8 KB, and a new **Loop Stack Free** diagnostic sensor
+  shows the least headroom it has had. Investigating rare restarts when the
+  panel is woken from the night clock.
 - Fixed on 720×720: the lower part of Settings (Restart, About this project)
   sat too high and overlapped the rows above.
 - Fixed a compiler format warning in Settings → About (uptime).
