@@ -27,6 +27,8 @@
 - Fixed on 720×720: the lower part of Settings (Restart, About this project)
   sat too high and overlapped the rows above.
 - Fixed a compiler format warning in Settings → About (uptime).
+- Fixed: the status-bar mic icon showed muted when the wake word was on, and
+  the reverse.
 - Docs: new illustrations of the snow report, Timer tab (with Custom… and
   Time's up), Music Assistant favorites, light color sheet and About; the
   Lights tab now shows a shade slider; README gallery has a third row. Also

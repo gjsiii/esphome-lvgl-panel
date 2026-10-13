@@ -143,10 +143,13 @@ switch:
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
     entity_category: config
+    # Icon and Settings → Voice follow the new state (turn_on/off actions
+    # run before the switch publishes it, so they would see the old one)
+    on_state:
+      - script.execute: voice_mic_icon
     turn_on_action:
       - voice_assistant.stop:
       - micro_wake_word.stop:
-      - script.execute: voice_mic_icon
     turn_off_action:
       - if:
           condition:
@@ -157,7 +160,6 @@ switch:
                   media_player.is_playing:
           then:
             - micro_wake_word.start:
-      - script.execute: voice_mic_icon
 
 api:
   on_client_connected:
