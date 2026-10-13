@@ -11,11 +11,13 @@
 #       ma_url: "http://192.168.0.10:8095"          # Music Assistant (for artwork)
 #       # favorites_entity: sensor.panel_ma_favorites   # optional (default)
 #
-# Needs ha/panel_ma_favorites.yaml in Home Assistant. Up to 36 favorites.
-# Artwork is downloaded one tile at a time through a single image loader and
-# copied into PSRAM (about 90 KB per tile at 720x720), so this tab suits
-# boards with plenty of PSRAM (the Waveshare P4). On the 480x480 boards use
-# tabs/favorites.yaml instead.
+# Needs ha/panel_ma_favorites.yaml in Home Assistant (same release: its short
+# "cat|name|uri|art" codes are expanded here). Up to 36 favorites, on every
+# board. Artwork comes one tile at a time through the shared art loader
+# (core/images.yaml) and each tile keeps a copy in PSRAM (about 40 KB per
+# tile on 480x480, 90 KB on 720x720). The tiles are built at boot with one
+# tap handler for all, and the list is kept only once (the HA text), so the
+# tab needs little internal RAM.
 #
 # Shuffle (the icon next to the chips) applies to playlists, albums and
 # artists; radio never shuffles. The refresh icon asks HA to re-read the
@@ -25,44 +27,44 @@ defaults:
   favorites_entity: sensor.panel_ma_favorites
 
 globals:
-  # The list from HA: category (playlist / radio / album / artist) and URI
+  # Per tile, from the HA text (maf_items): category code (p r a t, 0 =
+  # none), where the URI and the artwork sit in the text (offset << 16 |
+  # length), and a hash of the artwork wanted / last asked for
   - id: maf_cat
-    type: std::vector<std::string>
-    initial_value: "std::vector<std::string>()"
+    type: std::vector<char>
+    initial_value: "std::vector<char>(36, 0)"
   - id: maf_uri
-    type: std::vector<std::string>
-    initial_value: "std::vector<std::string>()"
-  # Per tile: artwork wanted, artwork being/last downloaded, needs download
+    type: std::vector<uint32_t>
+    initial_value: "std::vector<uint32_t>(36, 0)"
   - id: maf_art
-    type: std::vector<std::string>
-    initial_value: "std::vector<std::string>(36)"
-  - id: maf_req
-    type: std::vector<std::string>
-    initial_value: "std::vector<std::string>(36)"
-  - id: maf_need
-    type: std::vector<int>
-    initial_value: "std::vector<int>(36, 0)"
-  # Widgets and image loaders, by tile (filled at boot)
+    type: std::vector<uint32_t>
+    initial_value: "std::vector<uint32_t>(36, 0)"
+  - id: maf_want
+    type: std::vector<uint32_t>
+    initial_value: "std::vector<uint32_t>(36, 0)"
+  - id: maf_have
+    type: std::vector<uint32_t>
+    initial_value: "std::vector<uint32_t>(36, 0)"
+  - id: maf_count
+    type: int
+    initial_value: "0"
+  # Widgets by tile (built at boot) and each tile's artwork (PSRAM copy)
   - id: maf_tiles
     type: std::vector<lv_obj_t *>
-    initial_value: "std::vector<lv_obj_t *>()"
+    initial_value: "std::vector<lv_obj_t *>(36, nullptr)"
   - id: maf_names
     type: std::vector<lv_obj_t *>
-    initial_value: "std::vector<lv_obj_t *>()"
+    initial_value: "std::vector<lv_obj_t *>(36, nullptr)"
   - id: maf_arts
     type: std::vector<lv_obj_t *>
-    initial_value: "std::vector<lv_obj_t *>()"
-  # Each tile's artwork: a copy of the loader's picture in PSRAM
+    initial_value: "std::vector<lv_obj_t *>(36, nullptr)"
   - id: maf_dscs
     type: std::vector<lv_image_dsc_t *>
     initial_value: "std::vector<lv_image_dsc_t *>(36, nullptr)"
-  # Tile whose artwork is being fetched (-1: none), and by which loader
+  # Tile whose artwork is being fetched (-1: none)
   - id: maf_loading
     type: int
     initial_value: "-1"
-  - id: maf_loading_png
-    type: bool
-    initial_value: "false"
   # Chip filter: 0 All, 1 Playlists, 2 Radio, 3 Albums, 4 Artists
   - id: maf_filter
     type: int
@@ -84,9 +86,53 @@ esphome:
             lv_obj_set_style_pad_all(tab, 0, 0);
             lv_obj_set_scrollbar_mode(tab, LV_SCROLLBAR_MODE_OFF);
             lv_obj_set_parent(id(content_maf), tab);
-            id(maf_tiles) = {id(maf_tile_1), id(maf_tile_2), id(maf_tile_3), id(maf_tile_4), id(maf_tile_5), id(maf_tile_6), id(maf_tile_7), id(maf_tile_8), id(maf_tile_9), id(maf_tile_10), id(maf_tile_11), id(maf_tile_12), id(maf_tile_13), id(maf_tile_14), id(maf_tile_15), id(maf_tile_16), id(maf_tile_17), id(maf_tile_18), id(maf_tile_19), id(maf_tile_20), id(maf_tile_21), id(maf_tile_22), id(maf_tile_23), id(maf_tile_24), id(maf_tile_25), id(maf_tile_26), id(maf_tile_27), id(maf_tile_28), id(maf_tile_29), id(maf_tile_30), id(maf_tile_31), id(maf_tile_32), id(maf_tile_33), id(maf_tile_34), id(maf_tile_35), id(maf_tile_36)};
-            id(maf_names) = {id(maf_name_1), id(maf_name_2), id(maf_name_3), id(maf_name_4), id(maf_name_5), id(maf_name_6), id(maf_name_7), id(maf_name_8), id(maf_name_9), id(maf_name_10), id(maf_name_11), id(maf_name_12), id(maf_name_13), id(maf_name_14), id(maf_name_15), id(maf_name_16), id(maf_name_17), id(maf_name_18), id(maf_name_19), id(maf_name_20), id(maf_name_21), id(maf_name_22), id(maf_name_23), id(maf_name_24), id(maf_name_25), id(maf_name_26), id(maf_name_27), id(maf_name_28), id(maf_name_29), id(maf_name_30), id(maf_name_31), id(maf_name_32), id(maf_name_33), id(maf_name_34), id(maf_name_35), id(maf_name_36)};
-            id(maf_arts) = {id(maf_art_1), id(maf_art_2), id(maf_art_3), id(maf_art_4), id(maf_art_5), id(maf_art_6), id(maf_art_7), id(maf_art_8), id(maf_art_9), id(maf_art_10), id(maf_art_11), id(maf_art_12), id(maf_art_13), id(maf_art_14), id(maf_art_15), id(maf_art_16), id(maf_art_17), id(maf_art_18), id(maf_art_19), id(maf_art_20), id(maf_art_21), id(maf_art_22), id(maf_art_23), id(maf_art_24), id(maf_art_25), id(maf_art_26), id(maf_art_27), id(maf_art_28), id(maf_art_29), id(maf_art_30), id(maf_art_31), id(maf_art_32), id(maf_art_33), id(maf_art_34), id(maf_art_35), id(maf_art_36)};
+            lv_obj_t *grid = id(maf_grid);
+            lv_obj_set_layout(grid, LV_LAYOUT_FLEX);
+            lv_obj_set_flex_flow(grid, LV_FLEX_FLOW_ROW_WRAP);
+            lv_obj_set_flex_align(grid, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+            lv_obj_set_style_pad_row(grid, ${(12*px)|int}, 0);
+            lv_obj_set_style_pad_column(grid, ${(18*px)|int}, 0);
+            // 36 tiles: artwork frame (music note until the art arrives) and
+            // a caption; one tap handler for all, the tile number in user_data
+            const lv_font_t *note = id(maf_note)->get_lv_font();
+            const lv_font_t *caption = id(font_caption)->get_lv_font();
+            for (int i = 0; i < 36; i++) {
+              lv_obj_t *tile = lv_button_create(grid);
+              lv_obj_set_size(tile, ${(140*px)|int}, ${(172*px)|int});
+              lv_obj_set_style_bg_opa(tile, LV_OPA_TRANSP, LV_PART_MAIN);
+              lv_obj_set_style_pad_all(tile, 0, LV_PART_MAIN);
+              lv_obj_set_style_bg_color(tile, lv_color_hex(${c_surface}), LV_PART_MAIN | LV_STATE_PRESSED);
+              lv_obj_set_style_bg_opa(tile, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_PRESSED);
+              lv_obj_add_flag(tile, LV_OBJ_FLAG_HIDDEN);
+              lv_obj_t *frame = lv_obj_create(tile);
+              lv_obj_add_style(frame, id(art_frame), LV_PART_MAIN);
+              lv_obj_set_size(frame, ${(140*px)|int}, ${(140*px)|int});
+              lv_obj_align(frame, LV_ALIGN_TOP_MID, 0, 0);
+              lv_obj_clear_flag(frame, LV_OBJ_FLAG_CLICKABLE);
+              lv_obj_clear_flag(frame, LV_OBJ_FLAG_SCROLLABLE);
+              lv_obj_t *ph = lv_label_create(frame);
+              lv_label_set_text(ph, "\U000F075A");   // mdi-music
+              lv_obj_set_style_text_font(ph, note, LV_PART_MAIN);
+              lv_obj_set_style_text_color(ph, lv_color_hex(${c_text_2}), LV_PART_MAIN);
+              lv_obj_center(ph);
+              lv_obj_t *img = lv_image_create(frame);
+              lv_obj_center(img);
+              lv_obj_add_flag(img, LV_OBJ_FLAG_HIDDEN);
+              lv_obj_t *name = lv_label_create(tile);
+              lv_label_set_text(name, "");
+              lv_obj_set_style_text_font(name, caption, LV_PART_MAIN);
+              lv_obj_set_style_text_color(name, lv_color_hex(${c_text}), LV_PART_MAIN);
+              lv_obj_set_style_text_align(name, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
+              lv_label_set_long_mode(name, LV_LABEL_LONG_DOT);
+              lv_obj_set_width(name, ${(136*px)|int});
+              lv_obj_align(name, LV_ALIGN_TOP_MID, 0, ${(148*px)|int});
+              lv_obj_add_event_cb(tile, [](lv_event_t *e) {
+                id(maf_play)->execute((int) (intptr_t) lv_event_get_user_data(e));
+              }, LV_EVENT_CLICKED, (void *) (intptr_t) i);
+              id(maf_tiles)[i] = tile;
+              id(maf_arts)[i] = img;
+              id(maf_names)[i] = name;
+            }
         - script.execute: maf_shuffle_show
         - script.execute: maf_apply
         # The list may have arrived before the tab was built
@@ -101,44 +147,51 @@ text_sensor:
       - script.execute: maf_parse
 
 script:
-  # "cat|name|uri|art;cat|name|uri|art;…" → tiles
+  # "cat|name|uri|art;…" → tiles (names go straight to the labels; URIs and
+  # artwork stay in the HA text, found by offset)
   - id: maf_parse
     then:
       - lambda: |-
-          if (id(maf_tiles).size() != 36) return;
+          if (id(maf_tiles)[0] == nullptr) return;
           const std::string &x = id(maf_items).state;
           if (x.empty()) return;
-          std::vector<std::string> cat, nm, uri, art;
+          auto pos = [](size_t off, size_t len) -> uint32_t {
+            return off < 65536 && len < 65536 ? (uint32_t) (off << 16 | len) : 0;
+          };
+          int n = 0;
           size_t p = 0;
-          while (p < x.size() && cat.size() < 36) {
+          while (p < x.size() && n < 36) {
             size_t e = x.find(';', p);
             if (e == std::string::npos) e = x.size();
-            std::string it = x.substr(p, e - p);
-            p = e + 1;
-            size_t a = it.find('|');
-            if (a == std::string::npos) continue;
-            size_t b = it.find('|', a + 1);
-            if (b == std::string::npos) continue;
-            size_t c = it.find('|', b + 1);
-            if (c == std::string::npos) continue;
-            cat.push_back(it.substr(0, a));
-            nm.push_back(it.substr(a + 1, b - a - 1));
-            uri.push_back(it.substr(b + 1, c - b - 1));
-            art.push_back(it.substr(c + 1));
-          }
-          id(maf_cat) = cat;
-          id(maf_uri) = uri;
-          for (int i = 0; i < 36; i++) {
-            std::string want = i < (int) art.size() ? art[i] : std::string();
-            if (i < (int) nm.size()) lv_label_set_text(id(maf_names)[i], nm[i].c_str());
-            if (want != id(maf_art)[i]) {
-              // New artwork: show the placeholder until it arrives
-              id(maf_art)[i] = want;
-              lv_obj_add_flag(id(maf_arts)[i], LV_OBJ_FLAG_HIDDEN);
-              lv_obj_clear_flag(lv_obj_get_child(lv_obj_get_parent(id(maf_arts)[i]), 0), LV_OBJ_FLAG_HIDDEN);
+            size_t a = x.find('|', p), b = std::string::npos, c = std::string::npos;
+            if (a < e) b = x.find('|', a + 1);
+            if (b < e) c = x.find('|', b + 1);
+            if (c < e) {
+              // Category: p r a t (older HA packages sent the full word)
+              std::string cat = x.substr(p, a - p);
+              char code = cat == "playlist" ? 'p' : cat == "radio" ? 'r' : cat == "album" ? 'a'
+                        : cat == "artist" ? 't' : (cat.size() == 1 ? cat[0] : 0);
+              id(maf_cat)[n] = code;
+              std::string nm = x.substr(a + 1, b - a - 1);
+              lv_label_set_text(id(maf_names)[n], nm.c_str());
+              id(maf_uri)[n] = pos(b + 1, c - b - 1);
+              id(maf_art)[n] = pos(c + 1, e - c - 1);
+              // FNV-1a of the artwork text: a changed picture is fetched again
+              uint32_t h = 2166136261u;
+              for (size_t k = c + 1; k < e; k++) h = (h ^ (uint8_t) x[k]) * 16777619u;
+              if (e == c + 1) h = 0;
+              if (h != id(maf_want)[n]) {
+                id(maf_want)[n] = h;
+                // New artwork: the placeholder until it arrives
+                lv_obj_add_flag(id(maf_arts)[n], LV_OBJ_FLAG_HIDDEN);
+                lv_obj_clear_flag(lv_obj_get_child(lv_obj_get_parent(id(maf_arts)[n]), 0), LV_OBJ_FLAG_HIDDEN);
+              }
+              n++;
             }
-            id(maf_need)[i] = !want.empty() && want != id(maf_req)[i];
+            p = e + 1;
           }
+          for (int i = n; i < 36; i++) { id(maf_cat)[i] = 0; id(maf_want)[i] = 0; }
+          id(maf_count) = n;
           id(maf_ready) = true;
       - script.execute: maf_apply
       - script.execute: maf_load_next
@@ -147,17 +200,17 @@ script:
   - id: maf_apply
     then:
       - lambda: |-
-          if (id(maf_tiles).size() != 36) return;
-          static const char *const cats[5] = {"", "playlist", "radio", "album", "artist"};
-          int n = (int) id(maf_cat).size();
+          if (id(maf_tiles)[0] == nullptr) return;
+          static const char codes[5] = {0, 'p', 'r', 'a', 't'};
+          int n = id(maf_count);
           int counts[5] = {n, 0, 0, 0, 0};
           for (int i = 0; i < n; i++)
             for (int k = 1; k < 5; k++)
-              if (id(maf_cat)[i] == cats[k]) counts[k]++;
+              if (id(maf_cat)[i] == codes[k]) counts[k]++;
           if (id(maf_filter) > 0 && counts[id(maf_filter)] == 0) id(maf_filter) = 0;
           int f = id(maf_filter);
           for (int i = 0; i < 36; i++) {
-            bool show = i < n && (f == 0 || id(maf_cat)[i] == cats[f]);
+            bool show = i < n && (f == 0 || id(maf_cat)[i] == codes[f]);
             if (show) lv_obj_clear_flag(id(maf_tiles)[i], LV_OBJ_FLAG_HIDDEN);
             else lv_obj_add_flag(id(maf_tiles)[i], LV_OBJ_FLAG_HIDDEN);
           }
@@ -195,8 +248,9 @@ script:
       - lambda: "id(maf_filter) = f;"
       - script.execute: maf_apply
 
-  # Download the next tile's artwork, one at a time (shares the image lock
-  # with album art and camera pop-ups)
+  # Download the next tile's artwork, one at a time, through the shared art
+  # loader (core/images.yaml; the image lock is shared with album art, TV
+  # art and camera pop-ups)
   - id: maf_load_next
     mode: restart
     then:
@@ -206,41 +260,40 @@ script:
             lambda: "return !id(img_busy) || millis() - id(img_busy_ms) > 15000;"
           timeout: 20s
       - lambda: |-
-          int n = -1;
-          for (int i = 0; i < (int) id(maf_need).size(); i++)
-            if (id(maf_need)[i]) { n = i; break; }
-          if (n < 0) return;
-          const std::string &a = id(maf_art)[n];
-          std::string u = a.rfind("http", 0) == 0 ? a : std::string("${ma_url}/imageproxy/") + a;
-          // Music Assistant's image proxy: a 256 px JPEG (the panel can't
-          // decode its default PNG)
-          if (u.find("/imageproxy") != std::string::npos) {
-            size_t f = u.find("fmt=png");
-            if (f != std::string::npos) u.replace(f, 7, "fmt=jpeg");
-            f = u.find("size=");
-            if (f != std::string::npos) {
-              size_t e = u.find('&', f);
-              u.replace(f, (e == std::string::npos ? u.size() : e) - f, "size=256");
+          // Expand the short codes from ha/panel_ma_favorites.yaml
+          static const char *const prefixes[6][2] = {
+            {"~p", "https://pickasso.spotifycdn.com/image/ab67c0de0000deef/dt/v1/img/"},
+            {"~s", "https://i.scdn.co/image/"},
+            {"~m", "https://mosaic.scdn.co/300/"},
+            {"~c", "https://image-cdn-"},
+            {"~a", "https://is1-ssl.mzstatic.com/image/thumb/"},
+            {"~x", "http://pri.art.prod.streaming.siriusxm.com/images/chan/"}};
+          const std::string &x = id(maf_items).state;
+          for (int n = 0; n < id(maf_count); n++) {
+            if (id(maf_want)[n] == 0 || id(maf_want)[n] == id(maf_have)[n]) continue;
+            id(maf_have)[n] = id(maf_want)[n];   // asked for (not retried if it fails)
+            uint32_t ap = id(maf_art)[n];
+            if ((ap >> 16) + (ap & 0xFFFF) > x.size() || (ap & 0xFFFF) == 0) continue;
+            std::string a = x.substr(ap >> 16, ap & 0xFFFF);
+            std::string u;
+            if (a[0] == '~') {
+              for (auto &pf : prefixes)
+                if (a.compare(0, 2, pf[0]) == 0) { u = std::string(pf[1]) + a.substr(2); break; }
+            } else if (a.rfind("http", 0) == 0) {
+              u = a;
             } else {
-              u += (u.find('?') == std::string::npos ? "?" : "&");
-              u += "size=256";
+              // A Music Assistant image id: its proxy, as a 256 px JPEG
+              u = std::string("${ma_url}/imageproxy/") + a + "?size=256&fmt=jpeg";
             }
-            if (u.find("fmt=") == std::string::npos) u += "&fmt=jpeg";
+            if (u.empty()) continue;
+            id(maf_loading) = n;
+            id(img_busy) = true;
+            id(img_busy_ms) = millis();
+            id(art_cb) = [](bool ok) { id(maf_art_done)->execute(ok); };
+            id(art_loader)->set_url(u);
+            id(art_loader)->update();
+            return;
           }
-          // PNG artwork (e.g. SiriusXM channel logos) goes to the PNG loader
-          std::string path = u.substr(0, u.find('?'));
-          std::string ext = path.size() > 4 ? path.substr(path.size() - 4) : std::string();
-          for (auto &c : ext) c = (char) tolower((unsigned char) c);
-          bool png = ext == ".png";
-          id(maf_need)[n] = 0;
-          id(maf_req)[n] = a;
-          id(maf_loading) = n;
-          id(maf_loading_png) = png;
-          id(img_busy) = true;
-          id(img_busy_ms) = millis();
-          auto *loader = png ? id(maf_loader_png) : id(maf_loader);
-          loader->set_url(u);
-          loader->update();
 
   # A download ended: show the artwork (or keep the placeholder) and go on
   - id: maf_art_done
@@ -248,37 +301,15 @@ script:
       ok: bool
     then:
       - lambda: |-
-          int index = id(maf_loading);
+          int i = id(maf_loading);
           id(maf_loading) = -1;
-          id(img_busy) = false;
-          if (!ok || index < 0 || index >= (int) id(maf_arts).size()) return;
-          if (id(maf_req)[index] != id(maf_art)[index]) return;   // list changed meanwhile
-          // Copy the picture out of the loader (it is reused for the next tile)
-          lv_image_dsc_t *src = id(maf_loading_png) ? id(maf_loader_png)->get_lv_image_dsc()
-                                                     : id(maf_loader)->get_lv_image_dsc();
-          if (src == nullptr || src->data == nullptr || src->data_size == 0) return;
-          // A new descriptor each time, so LVGL never mistakes it for the
-          // tile's previous picture; the old one is freed after the switch
-          auto *nd = (lv_image_dsc_t *) heap_caps_malloc(sizeof(lv_image_dsc_t), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-          auto *buf = (uint8_t *) heap_caps_malloc(src->data_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-          if (nd == nullptr || buf == nullptr) {
-            if (nd != nullptr) heap_caps_free(nd);
-            if (buf != nullptr) heap_caps_free(buf);
-            return;
+          if (!ok || i < 0 || i >= 36) return;
+          if (id(maf_have)[i] != id(maf_want)[i]) return;   // list changed meanwhile
+          lv_obj_t *img = id(maf_arts)[i];
+          if (id(img_show)(img, &id(maf_dscs)[i], id(art_loader)->get_lv_image_dsc(), ${(140*px)|int})) {
+            lv_obj_clear_flag(img, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(lv_obj_get_child(lv_obj_get_parent(img), 0), LV_OBJ_FLAG_HIDDEN);
           }
-          memcpy(buf, src->data, src->data_size);
-          *nd = *src;
-          nd->data = buf;
-          lv_obj_t *img = id(maf_arts)[index];
-          ::lv_image_set_src(img, (const void *) nd);
-          lv_image_dsc_t *old = id(maf_dscs)[index];
-          id(maf_dscs)[index] = nd;
-          if (old != nullptr) {
-            heap_caps_free((void *) old->data);
-            heap_caps_free(old);
-          }
-          lv_obj_clear_flag(img, LV_OBJ_FLAG_HIDDEN);
-          lv_obj_add_flag(lv_obj_get_child(lv_obj_get_parent(img), 0), LV_OBJ_FLAG_HIDDEN);
       - script.execute: maf_load_next
 
   # Tap a tile: play it on the room's player, then set shuffle
@@ -288,20 +319,31 @@ script:
     then:
       - if:
           condition:
-            lambda: "return index >= 0 && index < (int) id(maf_uri).size();"
+            lambda: "return index >= 0 && index < id(maf_count) && id(maf_cat)[index] != 0;"
           then:
             - homeassistant.action:
                 action: music_assistant.play_media
                 data:
                   entity_id: ${music_player}
-                  media_id: !lambda "return id(maf_uri)[index];"
-                  media_type: !lambda "return id(maf_cat)[index];"
+                  media_id: !lambda |-
+                    const std::string &x = id(maf_items).state;
+                    uint32_t up = id(maf_uri)[index];
+                    if ((up >> 16) + (up & 0xFFFF) > x.size()) return std::string();
+                    std::string u = x.substr(up >> 16, up & 0xFFFF);
+                    if (u.find("://") != std::string::npos) return u;
+                    // A library item id: "62" → "library://playlist/62"
+                    char c = id(maf_cat)[index];
+                    const char *t = c == 'p' ? "playlist" : c == 'r' ? "radio" : c == 'a' ? "album" : "artist";
+                    return std::string("library://") + t + "/" + u;
+                  media_type: !lambda |-
+                    char c = id(maf_cat)[index];
+                    return std::string(c == 'p' ? "playlist" : c == 'r' ? "radio" : c == 'a' ? "album" : "artist");
                   enqueue: replace
             - homeassistant.action:
                 action: media_player.shuffle_set
                 data:
                   entity_id: ${music_player}
-                  shuffle: !lambda 'return (id(maf_shuffle) && id(maf_cat)[index] != "radio") ? std::string("true") : std::string("false");'
+                  shuffle: !lambda "return (id(maf_shuffle) && id(maf_cat)[index] != 'r') ? std::string(\"true\") : std::string(\"false\");"
 
 font:
   - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
@@ -314,39 +356,6 @@ font:
     size: ${48*px}
     bpp: 4
     glyphs: ["\U000F075A"] # mdi-music
-
-image:
-  # One loader per format for all tiles: each picture is copied to its tile
-  # when done (one decoder each; a loader per tile would need ~600 KB of
-  # internal RAM)
-  - platform: online_image
-    id: maf_loader
-    url: "https://www.home-assistant.io/images/favicon-192x192.png"
-    format: JPEG
-    type: RGB565
-    resize: "${(140*px)|int}x${(140*px)|int}"
-    on_download_finished:
-      - script.execute:
-          id: maf_art_done
-          ok: true
-    on_error:
-      - script.execute:
-          id: maf_art_done
-          ok: false
-  - platform: online_image
-    id: maf_loader_png
-    url: "https://www.home-assistant.io/images/favicon-192x192.png"
-    format: PNG
-    type: RGB565
-    resize: "${(140*px)|int}x${(140*px)|int}"
-    on_download_finished:
-      - script.execute:
-          id: maf_art_done
-          ok: true
-    on_error:
-      - script.execute:
-          id: maf_art_done
-          ok: false
 
 lvgl:
   pages:
@@ -553,1560 +562,4 @@ lvgl:
                   pad_top: ${4*px}
                   pad_left: ${12*px}
                   pad_bottom: ${12*px}
-                  layout:
-                    type: FLEX
-                    flex_flow: ROW_WRAP
-                    flex_align_main: START
-                    flex_align_cross: START
-                    flex_align_track: START
-                    pad_row: ${12*px}
-                    pad_column: ${18*px}
-                  widgets:
-                    - button:
-                        id: maf_tile_1
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_1
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_1
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 0
-                    - button:
-                        id: maf_tile_2
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_2
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_2
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 1
-                    - button:
-                        id: maf_tile_3
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_3
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_3
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 2
-                    - button:
-                        id: maf_tile_4
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_4
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_4
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 3
-                    - button:
-                        id: maf_tile_5
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_5
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_5
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 4
-                    - button:
-                        id: maf_tile_6
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_6
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_6
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 5
-                    - button:
-                        id: maf_tile_7
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_7
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_7
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 6
-                    - button:
-                        id: maf_tile_8
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_8
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_8
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 7
-                    - button:
-                        id: maf_tile_9
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_9
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_9
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 8
-                    - button:
-                        id: maf_tile_10
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_10
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_10
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 9
-                    - button:
-                        id: maf_tile_11
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_11
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_11
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 10
-                    - button:
-                        id: maf_tile_12
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_12
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_12
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 11
-                    - button:
-                        id: maf_tile_13
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_13
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_13
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 12
-                    - button:
-                        id: maf_tile_14
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_14
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_14
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 13
-                    - button:
-                        id: maf_tile_15
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_15
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_15
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 14
-                    - button:
-                        id: maf_tile_16
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_16
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_16
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 15
-                    - button:
-                        id: maf_tile_17
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_17
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_17
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 16
-                    - button:
-                        id: maf_tile_18
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_18
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_18
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 17
-                    - button:
-                        id: maf_tile_19
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_19
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_19
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 18
-                    - button:
-                        id: maf_tile_20
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_20
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_20
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 19
-                    - button:
-                        id: maf_tile_21
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_21
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_21
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 20
-                    - button:
-                        id: maf_tile_22
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_22
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_22
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 21
-                    - button:
-                        id: maf_tile_23
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_23
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_23
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 22
-                    - button:
-                        id: maf_tile_24
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_24
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_24
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 23
-                    - button:
-                        id: maf_tile_25
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_25
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_25
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 24
-                    - button:
-                        id: maf_tile_26
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_26
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_26
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 25
-                    - button:
-                        id: maf_tile_27
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_27
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_27
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 26
-                    - button:
-                        id: maf_tile_28
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_28
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_28
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 27
-                    - button:
-                        id: maf_tile_29
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_29
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_29
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 28
-                    - button:
-                        id: maf_tile_30
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_30
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_30
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 29
-                    - button:
-                        id: maf_tile_31
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_31
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_31
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 30
-                    - button:
-                        id: maf_tile_32
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_32
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_32
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 31
-                    - button:
-                        id: maf_tile_33
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_33
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_33
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 32
-                    - button:
-                        id: maf_tile_34
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_34
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_34
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 33
-                    - button:
-                        id: maf_tile_35
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_35
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_35
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 34
-                    - button:
-                        id: maf_tile_36
-                        width: ${140*px}
-                        height: ${172*px}
-                        bg_opa: TRANSP
-                        pad_all: 0
-                        hidden: true
-                        pressed:
-                          bg_color: ${c_surface}
-                          bg_opa: COVER
-                        widgets:
-                          - obj:
-                              align: TOP_MID
-                              width: ${140*px}
-                              height: ${140*px}
-                              styles: art_frame
-                              clickable: false
-                              scrollable: false
-                              widgets:
-                                - label:
-                                    text: "\U000F075A" # mdi-music (until the artwork arrives)
-                                    text_font: maf_note
-                                    text_color: ${c_text_2}
-                                    align: CENTER
-                                - image:
-                                    id: maf_art_36
-                                    src: maf_loader
-                                    align: CENTER
-                                    hidden: true
-                          - label:
-                              id: maf_name_36
-                              text: ""
-                              text_font: font_caption
-                              text_color: ${c_text}
-                              text_align: CENTER
-                              long_mode: DOT
-                              width: ${136*px}
-                              align: TOP_MID
-                              y: ${148*px}
-                        on_click:
-                          - script.execute:
-                              id: maf_play
-                              index: 35
+                  # Wrapping rows of tiles (flex layout and tiles: set at boot)

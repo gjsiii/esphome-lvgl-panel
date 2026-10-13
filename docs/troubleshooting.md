@@ -56,6 +56,9 @@ address (an IP rather than a cloud URL).
   The tile still plays.
 - **New favorites don't appear:** tap the refresh icon on the tab; the list is
   otherwise re-read every 15 minutes.
+- **Every tile shows a music note after an update:** the panel and
+  `ha/panel_ma_favorites.yaml` in Home Assistant are from different releases.
+  Copy the package from the same release and reload Template entities.
 
 ## The weather sheet shows dashes
 

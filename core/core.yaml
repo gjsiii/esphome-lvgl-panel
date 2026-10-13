@@ -9,6 +9,7 @@
 packages:
   connection: !include connection.yaml
   base: !include base.yaml
+  images: !include images.yaml
   settings: !include settings.yaml
   messages: !include messages.yaml
   about: !include about.yaml

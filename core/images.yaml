@@ -1,0 +1,127 @@
+# Shared image loaders. Once it has shown a picture, every online_image keeps
+# its decoder (about 18 KB of internal RAM, the scarcest memory on the
+# 480x480 boards) until the panel restarts, so the panel uses just two:
+#
+#   art_loader  album art (Music tab), Apple TV art (TV tab) and Music
+#               Assistant favorites. JPEG or PNG, chosen by the server's
+#               Content-Type (only one decoder exists at a time).
+#   cam_loader  camera pop-up snapshots (features/camera_popup.yaml).
+#
+# A screen asks for a picture by taking the image lock (img_busy, see
+# core/base.yaml), setting art_cb / cam_cb, then set_url + update on the
+# loader. When the download ends the lock is released and the callback runs
+# with ok = true / false; it shows the picture with img_show, which copies it
+# (shrunk to fit, if asked) into the screen's own PSRAM image, so the loader
+# is free for the next picture.
+
+globals:
+  # Who gets the picture art_loader / cam_loader is downloading
+  - id: art_cb
+    type: std::function<void(bool)>
+    initial_value: "std::function<void(bool)>()"
+  - id: cam_cb
+    type: std::function<void(bool)>
+    initial_value: "std::function<void(bool)>()"
+  # img_show(widget, &slot, picture, box): copy picture into a new PSRAM image,
+  # shrunk to fit a box x box square (0 = full size), show it on the image
+  # widget and free the one the slot held before. False if out of memory.
+  - id: img_show
+    type: std::function<bool(lv_obj_t *, lv_image_dsc_t **, const lv_image_dsc_t *, int)>
+    initial_value: |-
+      [](lv_obj_t *img, lv_image_dsc_t **slot, const lv_image_dsc_t *src, int box) -> bool {
+        if (img == nullptr || slot == nullptr || src == nullptr || src->data == nullptr || src->data_size == 0) return false;
+        const int sw = src->header.w, sh = src->header.h;
+        int dw = sw, dh = sh;
+        if (src->header.cf == LV_COLOR_FORMAT_RGB565 && box > 0 && (sw > box || sh > box)) {
+          if (sw >= sh) { dw = box; dh = std::max(1, sh * box / sw); }
+          else { dh = box; dw = std::max(1, sw * box / sh); }
+        }
+        const bool scale = dw != sw || dh != sh;
+        const size_t size = scale ? (size_t) dw * dh * 2 : src->data_size;
+        // A new descriptor each time, so LVGL never mistakes it for the
+        // previous picture (its image cache is keyed on the pointer)
+        auto *nd = (lv_image_dsc_t *) heap_caps_malloc(sizeof(lv_image_dsc_t), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+        auto *buf = (uint8_t *) heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+        if (nd == nullptr || buf == nullptr) {
+          if (nd != nullptr) heap_caps_free(nd);
+          if (buf != nullptr) heap_caps_free(buf);
+          return false;
+        }
+        *nd = *src;
+        if (!scale) {
+          memcpy(buf, src->data, size);
+        } else {
+          // Box filter: each new pixel is the average of the pixels it covers
+          const uint32_t stride = src->header.stride ? src->header.stride : (uint32_t) sw * 2;
+          auto *out = (uint16_t *) buf;
+          for (int y = 0; y < dh; y++) {
+            const int y0 = y * sh / dh, y1 = std::max(y0 + 1, (y + 1) * sh / dh);
+            for (int x = 0; x < dw; x++) {
+              const int x0 = x * sw / dw, x1 = std::max(x0 + 1, (x + 1) * sw / dw);
+              uint32_t r = 0, g = 0, b = 0, n = 0;
+              for (int yy = y0; yy < y1; yy++) {
+                const auto *row = (const uint16_t *) (src->data + yy * stride);
+                for (int xx = x0; xx < x1; xx++) {
+                  const uint16_t p = row[xx];
+                  r += p >> 11;
+                  g += (p >> 5) & 0x3F;
+                  b += p & 0x1F;
+                  n++;
+                }
+              }
+              out[y * dw + x] = (uint16_t) (((r / n) << 11) | ((g / n) << 5) | (b / n));
+            }
+          }
+          nd->header.w = dw;
+          nd->header.h = dh;
+          nd->header.stride = dw * 2;
+        }
+        nd->data = buf;
+        nd->data_size = size;
+        ::lv_image_set_src(img, (const void *) nd);
+        lv_image_dsc_t *old = *slot;
+        *slot = nd;
+        if (old != nullptr) {
+          heap_caps_free((void *) old->data);
+          heap_caps_free(old);
+        }
+        return true;
+      }
+
+image:
+  - platform: online_image
+    id: art_loader
+    url: "https://www.home-assistant.io/images/favicon-192x192.png"
+    format: AUTO
+    type: RGB565
+    resize: "${(180*px)|int}x${(180*px)|int}"
+    on_download_finished:
+      - lambda: |-
+          id(img_busy) = false;
+          auto cb = id(art_cb);
+          id(art_cb) = nullptr;
+          if (cb) cb(true);
+    on_error:
+      - lambda: |-
+          id(img_busy) = false;
+          auto cb = id(art_cb);
+          id(art_cb) = nullptr;
+          if (cb) cb(false);
+  - platform: online_image
+    id: cam_loader
+    url: "https://www.home-assistant.io/images/favicon-192x192.png"
+    format: JPEG
+    type: RGB565
+    resize: "${(448*px)|int}x${(252*px)|int}"
+    on_download_finished:
+      - lambda: |-
+          id(img_busy) = false;
+          auto cb = id(cam_cb);
+          id(cam_cb) = nullptr;
+          if (cb) cb(true);
+    on_error:
+      - lambda: |-
+          id(img_busy) = false;
+          auto cb = id(cam_cb);
+          id(cam_cb) = nullptr;
+          if (cb) cb(false);

@@ -6,8 +6,16 @@
   `ha/panel_ma_favorites.yaml` package): your Music Assistant favorites
   (playlists, radio, albums, artists) as a live artwork grid with category
   chips, Shuffle and refresh. Change favorites in Music Assistant; no
-  reinstall. Up to 36; for the Waveshare P4 (artwork is kept in PSRAM). The
-  hand-picked `tabs/favorites.yaml` is unchanged.
+  reinstall. Up to 36, on any board (artwork is kept in PSRAM; the tab needs
+  little internal RAM). The hand-picked `tabs/favorites.yaml` is unchanged.
+  **Update `ha/panel_ma_favorites.yaml` in Home Assistant together with the
+  panels**: the list now uses short codes to save panel memory.
+- **More free memory, especially on 480×480 panels:** album art, TV art,
+  favorites artwork and camera pop-ups now share two image loaders
+  (`core/images.yaml`) instead of one each. Every loader keeps an ~18 KB
+  decoder in internal RAM once used; a typical 480 panel had four, so about
+  35 KB is freed. HTTPS artwork (Spotify, Apple Music) now uses PSRAM for its
+  TLS buffers on the Guition boards.
 - **Powder day** (snow report): after at least `powder_inches` (default 3)
   of new snow in 24 hours, the sleeping panel shows the clock with the total
   under the date ("14″ new snow · Breckenridge"), even when Sleep screen is

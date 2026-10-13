@@ -13,7 +13,8 @@
 # after camera_popup_seconds; the snapshot refreshes every
 # camera_refresh_seconds (each refresh briefly blocks touch while it downloads,
 # so don't go much lower than 5 s). Snapshots come through HA's camera proxy
-# (uses ha_url), which scales them to the frame first.
+# (uses ha_url), which scales them to the frame first. All pop-ups share one
+# image loader (cam_loader, core/images.yaml); each keeps its own copy.
 
 substitutions:
   camera_popup_seconds: "60"
@@ -23,13 +24,19 @@ globals:
   - id: popup_until_${popup_id}
     type: uint32_t
     initial_value: "0"
+  # The snapshot shown: a PSRAM copy of the shared camera loader's picture
+  - id: popup_dsc_${popup_id}
+    type: lv_image_dsc_t *
+    initial_value: "nullptr"
 
 esphome:
   on_boot:
     - priority: -150
       then:
         # Move the sheet onto the main screen (built on a holding page)
-        - lambda: "lv_obj_set_parent(id(popup_${popup_id}), id(ui_root));"
+        - lambda: |-
+            lv_obj_set_parent(id(popup_${popup_id}), id(ui_root));
+            ::lv_image_set_src(id(popup_img_${popup_id}), (const void *) nullptr);
 
 binary_sensor:
   - platform: homeassistant
@@ -44,25 +51,6 @@ text_sensor:
     id: popup_picture_${popup_id}
     entity_id: ${camera_entity}
     attribute: entity_picture
-
-image:
-  - platform: online_image
-    id: popup_image_${popup_id}
-    url: "https://www.home-assistant.io/images/favicon-192x192.png"
-    format: JPEG
-    type: RGB565
-    resize: "${(448*px)|int}x${(252*px)|int}"
-    on_download_finished:
-      - lambda: "id(img_busy) = false;"
-      - lvgl.image.update:
-          id: popup_img_${popup_id}
-          src: popup_image_${popup_id}
-      - lambda: |-
-          lv_obj_clear_flag(id(popup_img_${popup_id}), LV_OBJ_FLAG_HIDDEN);
-          lv_obj_add_flag(id(lbl_popup_loading_${popup_id}), LV_OBJ_FLAG_HIDDEN);
-    on_error:
-      - lambda: "id(img_busy) = false;"
-      - logger.log: "Camera pop-up (${popup_id}) snapshot failed"
 
 script:
   - id: popup_show_${popup_id}
@@ -105,17 +93,24 @@ script:
                       condition:
                         lambda: "return !id(img_busy) || millis() - id(img_busy_ms) > 15000;"
                       timeout: 15s
-                  - lambda: "id(img_busy) = true; id(img_busy_ms) = millis();"
-                  - online_image.set_url:
-                      id: popup_image_${popup_id}
-                      url: !lambda |-
-                        std::string p = id(popup_picture_${popup_id}).state;
-                        if (p.rfind("http", 0) != 0) p = std::string("${ha_url}") + p;
-                        // Ask HA to scale the snapshot to the frame (a full-resolution
-                        // camera image takes seconds to download and decode, enough
-                        // to exhaust memory or trip the watchdog); the time stamp
-                        // makes every refresh fetch a new frame.
-                        return p + "&width=${(448*px)|int}&height=${(252*px)|int}&t=" + std::to_string(millis());
+                  - lambda: |-
+                      id(img_busy) = true;
+                      id(img_busy_ms) = millis();
+                      id(cam_cb) = [](bool ok) {
+                        if (!ok) { ESP_LOGW("popup", "Camera pop-up (${popup_id}) snapshot failed"); return; }
+                        if (id(img_show)(id(popup_img_${popup_id}), &id(popup_dsc_${popup_id}), id(cam_loader)->get_lv_image_dsc(), 0)) {
+                          lv_obj_clear_flag(id(popup_img_${popup_id}), LV_OBJ_FLAG_HIDDEN);
+                          lv_obj_add_flag(id(lbl_popup_loading_${popup_id}), LV_OBJ_FLAG_HIDDEN);
+                        }
+                      };
+                      std::string p = id(popup_picture_${popup_id}).state;
+                      if (p.rfind("http", 0) != 0) p = std::string("${ha_url}") + p;
+                      // Ask HA to scale the snapshot to the frame (a full-resolution
+                      // camera image takes seconds to download and decode, enough
+                      // to exhaust memory or trip the watchdog); the time stamp
+                      // makes every refresh fetch a new frame.
+                      id(cam_loader)->set_url(p + "&width=${(448*px)|int}&height=${(252*px)|int}&t=" + std::to_string(millis()));
+                      id(cam_loader)->update();
             - delay: ${camera_refresh_seconds}s
       - lvgl.widget.hide: popup_${popup_id}
 
@@ -166,7 +161,7 @@ lvgl:
                   widgets:
                     - image:
                         id: popup_img_${popup_id}
-                        src: popup_image_${popup_id}
+                        src: cam_loader   # replaced by a copy of each snapshot
                         align: CENTER
                     # Shown until the first snapshot of this visit arrives
                     - label:

@@ -239,9 +239,16 @@ play it on the room's player, replacing what's queued.
   PNG artwork are shown; anything else keeps the music-note placeholder.
 
 Needs the `panel_ma_favorites.yaml` package in Home Assistant (see
-[Home Assistant side](home-assistant.md#packages-to-install)). It keeps every
-picture in PSRAM (about 90 KB each), so use it on the Waveshare P4; the
-480×480 panels should keep `tabs/favorites.yaml`.
+[Home Assistant side](home-assistant.md#packages-to-install)); update it
+together with the panels, since the two share a compact list format. Works on
+every board: each picture is kept in PSRAM (about 40 KB on 480×480, 90 KB on
+720×720), and the tab itself needs little internal RAM. The hand-picked
+`tabs/favorites.yaml` is still there if you prefer a few fixed tiles.
+
+**Images and memory:** every picture the panel downloads (album art, TV art,
+favorites, camera snapshots) goes through one of two shared image loaders,
+because each loader keeps an ~18 KB decoder in the board's internal RAM once
+it has been used. Each screen keeps its own copy of its picture in PSRAM.
 
 ## Timer tab
 

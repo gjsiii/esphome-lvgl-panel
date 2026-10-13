@@ -6,9 +6,16 @@
 # HA starts, and when a panel's refresh button is tapped.
 #
 #   state:  number of favorites listed (at most 36)
-#   items:  "cat|name|uri|art;…"  cat = playlist / radio / album / artist,
-#           art = the artwork URL (Apple Music and Spotify URLs are asked for
-#           a ~300 px version), a Music Assistant image id, or empty
+#   items:  "cat|name|uri|art;…", kept short because the panels hold it in
+#           their scarcest memory:
+#             cat  p playlist, r radio, a album, t artist
+#             uri  the item id for Music Assistant library items
+#                  ("library://playlist/62" → "62"), else the full URI
+#             art  the artwork URL with a common prefix replaced by a code
+#                  (~p ~s ~m ~c Spotify, ~a Apple Music, ~x SiriusXM; Apple
+#                  and Spotify are asked for a ~300 px version), a Music
+#                  Assistant image id, or empty
+#           Update the panels (tabs/ma_favorites.yaml) together with this.
 #
 # Install: copy this file into HA's /config/packages/ and set `ma_entry` below
 # to your Music Assistant config entry id (Settings → Devices & services →
@@ -83,6 +90,14 @@ template:
                   ('radio', radios if radios is defined else {}),
                   ('album', albums if albums is defined else {}),
                   ('artist', artists if artists is defined else {})] -%}
+            {%- set codes = {'playlist': 'p', 'radio': 'r', 'album': 'a', 'artist': 't'} -%}
+            {%- set prefixes = [
+                  ('https://pickasso.spotifycdn.com/image/ab67c0de0000deef/dt/v1/img/', '~p'),
+                  ('https://i.scdn.co/image/', '~s'),
+                  ('https://mosaic.scdn.co/300/', '~m'),
+                  ('https://image-cdn-', '~c'),
+                  ('https://is1-ssl.mzstatic.com/image/thumb/', '~a'),
+                  ('http://pri.art.prod.streaming.siriusxm.com/images/chan/', '~x')] -%}
             {%- for cat, resp in groups -%}
               {%- set items = resp['items'] if resp is mapping and 'items' in resp else [] -%}
               {%- for i in items if i.uri is defined and ns.out | count < 36 -%}
@@ -96,7 +111,13 @@ template:
                                   | replace('mosaic.scdn.co/640/', 'mosaic.scdn.co/300/') -%}
                 {%- set art = img.split('/imageproxy/')[1].split('?')[0] if '/imageproxy/' in img
                               else img | replace('|', '%7C') | replace(';', '%3B') -%}
-                {%- set ns.out = ns.out + [cat ~ '|' ~ name ~ '|' ~ i.uri ~ '|' ~ art] -%}
+                {%- set ap = namespace(v=art) -%}
+                {%- for full, code in prefixes if ap.v.startswith(full) -%}
+                  {%- set ap.v = code ~ ap.v[full | length:] -%}
+                {%- endfor -%}
+                {%- set lib = 'library://' ~ cat ~ '/' -%}
+                {%- set uri = i.uri[lib | length:] if i.uri.startswith(lib) else i.uri -%}
+                {%- set ns.out = ns.out + [codes[cat] ~ '|' ~ name ~ '|' ~ uri ~ '|' ~ ap.v] -%}
               {%- endfor -%}
             {%- endfor -%}
             {{ ns.out | join(';') }}

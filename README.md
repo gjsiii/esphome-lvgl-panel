@@ -29,7 +29,7 @@ each panel keeps its own rooms, lights, speakers and TV.
   progress, play/pause, volume, shuffle, repeat, and **Play on** to group other
   speakers.
 - **Favorites** — a grid of playlists and stations, one tap to play: a few
-  hand-picked tiles, or (on the Waveshare P4) your Music Assistant favorites,
+  hand-picked tiles, or your Music Assistant favorites,
   live, with Playlists / Radio / Albums / Artists chips.
 - **Timer** — on the Waveshare P4 panel: preset and custom timers, and timers
   set by voice, with a chime when time's up.

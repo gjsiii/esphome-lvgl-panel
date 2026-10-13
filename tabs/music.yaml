@@ -23,6 +23,10 @@ globals:
   - id: last_album_art_url
     type: std::string
     initial_value: '""'
+  # The album art shown: a PSRAM copy of the shared art loader's picture
+  - id: album_art_dsc
+    type: lv_image_dsc_t *
+    initial_value: "nullptr"
 
 esphome:
   on_boot:
@@ -30,6 +34,7 @@ esphome:
       then:
         - lambda: |-
             lv_obj_t *tab = lv_tabview_add_tab(id(main_tabview), "Music");
+            ::lv_image_set_src(id(lvgl_album_art), (const void *) nullptr);   // empty until the first art
             lv_obj_set_style_pad_all(tab, 0, 0);
             lv_obj_set_scrollbar_mode(tab, LV_SCROLLBAR_MODE_OFF);
             lv_obj_set_parent(id(content_music), tab);
@@ -64,10 +69,16 @@ script:
                 condition:
                   lambda: "return !id(img_busy) || millis() - id(img_busy_ms) > 15000;"
                 timeout: 15s
-            - lambda: "id(img_busy) = true; id(img_busy_ms) = millis();"
-            - online_image.set_url:
-                id: album_art_image
-                url: !lambda "return url;"
+            - lambda: |-
+                id(img_busy) = true;
+                id(img_busy_ms) = millis();
+                // Shared loader (core/images.yaml); keep a copy of the picture
+                id(art_cb) = [](bool ok) {
+                  if (!ok) { ESP_LOGW("music", "Album art download failed"); return; }
+                  id(img_show)(id(lvgl_album_art), &id(album_art_dsc), id(art_loader)->get_lv_image_dsc(), ${(180*px)|int});
+                };
+                id(art_loader)->set_url(url);
+                id(art_loader)->update();
 
 sensor:
   - platform: homeassistant
@@ -219,23 +230,6 @@ text_sensor:
                   }
                   return u;
 
-image:
-  - platform: online_image
-    id: album_art_image
-    url: "https://www.home-assistant.io/images/favicon-192x192.png"
-    format: JPEG
-    type: RGB565
-    resize: "${(180*px)|int}x${(180*px)|int}"
-    on_download_finished:
-      - lambda: "id(img_busy) = false;"
-      - logger.log: "Album art downloaded, updating LVGL widget"
-      - lvgl.image.update:
-          id: lvgl_album_art
-          src: album_art_image
-    on_error:
-      - lambda: "id(img_busy) = false;"
-      - logger.log: "Album art download failed"
-
 lvgl:
   pages:
     # Holding page (never shown): content_music is moved into the Music tab at boot
@@ -284,7 +278,7 @@ lvgl:
                   widgets:
                     - image:
                         id: lvgl_album_art
-                        src: album_art_image
+                        src: art_loader   # replaced by a copy (load_album_art)
                         align: CENTER
 
               # ── Track Name ────────────────────────────
