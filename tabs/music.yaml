@@ -220,6 +220,9 @@ text_sensor:
                 id: load_album_art
                 url: !lambda |-
                   std::string u = x.rfind("http", 0) == 0 ? x : std::string("${ha_url}") + x;
+                  // SiriusXM channel logos: its https certificate isn't in the
+                  // panel's certificate bundle, but the same file is on http
+                  if (u.rfind("https://pri.art.prod.streaming.siriusxm.com/", 0) == 0) u.erase(4, 1);
                   // Music Assistant artwork comes as a 512 px PNG; ask its
                   // image proxy for a 256 px JPEG, which the panel decodes
                   if (u.find("/imageproxy") != std::string::npos) {

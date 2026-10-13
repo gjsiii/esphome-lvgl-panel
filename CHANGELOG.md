@@ -30,7 +30,8 @@
   a panel built with ESPHome 2026.9 or later installs normally over Wi-Fi.
   For a panel last built with an older ESPHome, first install v0.4.0 with a
   current ESPHome (or update over USB).
-- Music tab: Music Assistant album art now shows. Its image server sends PNG
+- Music tab: Music Assistant album art now shows, including SiriusXM channel
+  logos. Its image server sends PNG
   by default; the panel now asks it for a 256 px JPEG.
 - Fixed on 720×720: the lower part of Settings (Restart, About this project)
   sat too high and overlapped the rows above.
