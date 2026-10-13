@@ -102,6 +102,11 @@ On the panel's device page in HA, turn off **Settings PIN Lock** or clear
   `dsi_pclk` to `28MHz`.
 - **The picture is sideways or upside down:** set `lvgl_rotation` to `"90"`,
   `"180"` or `"270"` to match the mounting. Touch follows automatically.
+- **Restarted (Fault) when woken from the night clock, sometimes after a
+  flash of solid colour:** fixed in v0.5.0. Redrawing the whole screen needed
+  just over the main loop's 8 KB stack; the hardware package now gives it
+  16 KB (`loop_task_stack_size`). The **Loop Stack Free** diagnostic sensor
+  shows the least headroom since boot; it should stay well above 1000 B.
 - **The screen goes dark during an update:** on purpose; it avoids flicker
   while the new firmware is written.
 - **Restarts in a loop with "vApplicationGetTimerTaskMemory" in the USB

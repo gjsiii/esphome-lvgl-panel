@@ -218,7 +218,9 @@ The Favorites tab can instead show your **Music Assistant favorites**, live:
 favorite a playlist, station, album or artist in Music Assistant and it
 appears on the panel, with no reinstall. Chips filter the grid (All,
 Playlists, Radio, Albums, Artists; empty categories are hidden). Tap a tile to
-play it on the room's player, replacing what's queued.
+play it on the room's player, replacing what's queued. The tile shows
+"Starting…" for a few seconds while Music Assistant gets going; other taps
+wait until then, so a second tap can't queue a second reload.
 
 ```yaml
 - path: tabs/ma_favorites.yaml

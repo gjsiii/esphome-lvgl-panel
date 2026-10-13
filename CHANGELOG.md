@@ -36,10 +36,11 @@
 - Favorites: a tapped tile shows "Starting…" for a few seconds and further
   taps wait, so impatient taps no longer queue several reloads in Music
   Assistant (which then played through them one after another).
-- ESP32-P4 board: the main loop (which also draws the screen) gets a 16 KB
-  stack instead of 8 KB, and a new **Loop Stack Free** diagnostic sensor
-  shows the least headroom it has had. Investigating rare restarts when the
-  panel is woken from the night clock.
+- Fixed on the ESP32-P4 board: an occasional restart (Fault, sometimes after
+  a flash of solid colour) when the panel was tapped awake from the night
+  clock. Redrawing the whole screen needed about 8.2 KB of the main loop's
+  8 KB stack; it now has 16 KB. A new **Loop Stack Free** diagnostic sensor
+  shows the least headroom since boot.
 - Fixed on 720×720: the lower part of Settings (Restart, About this project)
   sat too high and overlapped the rows above.
 - Fixed a compiler format warning in Settings → About (uptime).
