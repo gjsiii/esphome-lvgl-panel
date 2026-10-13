@@ -17,6 +17,10 @@ each panel keeps its own rooms, lights, speakers and TV.
 |:---:|:---:|:---:|:---:|
 | ![Snow report](docs/images/snow.svg) | ![Timer tab](docs/images/timer.svg) | ![Favorites from Music Assistant](docs/images/ma-favorites.svg) | ![Voice](docs/images/voice.svg) |
 
+| Play on | Holiday themes | Camera pop-up | Messages |
+|:---:|:---:|:---:|:---:|
+| ![Play on with per-speaker volume](docs/images/play-on.svg) | ![Halloween on the night clock](docs/images/holiday.svg) | ![Camera pop-up](docs/images/camera-popup.svg) | ![Message banner](docs/images/message.svg) |
+
 *Illustrations drawn to the panel's real layout and colors; photos welcome.*
 
 ## What it does

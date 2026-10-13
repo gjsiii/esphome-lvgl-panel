@@ -122,10 +122,13 @@ ACT=0; { head; status "8:42pm" "" "#8E8E93"
  echo '<defs><linearGradient id="cam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5B7083"/><stop offset="1" stop-color="#2E3B2E"/></linearGradient></defs><rect x="16" y="66" width="448" height="252" rx="14" fill="url(#cam)"/><text x="240" y="198" fill="#FFF" font-size="14" text-anchor="middle" opacity=".7">live camera snapshot</text>'
  echo '<text x="240" y="342" fill="#8E8E93" font-size="13" text-anchor="middle">Live · updates every 5 s</text><rect x="130" y="368" width="220" height="56" rx="28" fill="#2C2C2E"/><text x="240" y="403" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">Dismiss</text>'; foot; } > $O/camera-popup.svg
 
-# ── Play on ─────────────────────────────────────────────────────────────────
+# ── Play on (Kitchen grouped, with its own volume) ─────────────────────────
 { head; hdr "Play on"; echo '<text x="20" y="82" fill="#8E8E93" font-size="13">Tap a speaker to add it to this music, or tap again to remove it.</text>'
  r() { echo "<rect x=\"20\" y=\"$1\" width=\"440\" height=\"56\" rx=\"14\" fill=\"#1C1C1E\"/><text x=\"74\" y=\"$(( $1 + 34 ))\" fill=\"#FFF\" font-size=\"16\">$2</text><g transform=\"translate(44 $(( $1 + 28 )))\" fill=\"#8E8E93\"><rect x=\"-7\" y=\"-11\" width=\"14\" height=\"22\" rx=\"3\"/></g>"; [ "$3" = 1 ] && echo "<path d=\"M424 $(( $1 + 28 ))l6 6 12-12\" fill=\"none\" stroke=\"#F2F2F7\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"; }
- r 100 Kitchen 1; r 166 "Dining Room" 0; foot; } > $O/play-on.svg
+ v() { # y pct: the grouped speaker's volume row
+  echo "<g transform=\"translate(44 $(( $1 + 20 )))\" fill=\"#8E8E93\"><path d=\"M-9 -4h5l6 -6v20l-6 -6h-5z\"/><path d=\"M5 -5a7 7 0 0 1 0 10\" fill=\"none\" stroke=\"#8E8E93\" stroke-width=\"2\" stroke-linecap=\"round\"/></g>"
+  echo "<rect x=\"74\" y=\"$(( $1 + 8 ))\" width=\"366\" height=\"24\" rx=\"12\" fill=\"#2C2C2E\"/><rect x=\"74\" y=\"$(( $1 + 8 ))\" width=\"$(( 366 * $2 / 100 ))\" height=\"24\" rx=\"12\" fill=\"#F2F2F7\"/>"; }
+ r 100 Kitchen 1; v 160 60; r 210 "Dining Room" 0; foot; } > $O/play-on.svg
 
 # ── PIN keypad ──────────────────────────────────────────────────────────────
 { head; echo '<text x="240" y="54" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">Enter PIN</text>'
@@ -220,6 +223,19 @@ ACT=3; { head; status "5:48pm" "" "#8E8E93"
 # ── Powder day on the sleep screen (Sleep screen = Blank, 14" overnight) ───
 { head; echo '<text x="240" y="230" fill="#FFF" font-size="120" font-weight="200" text-anchor="middle">6:48</text><text x="240" y="280" fill="#FFF" fill-opacity=".7" font-size="20" font-weight="600" text-anchor="middle">Thursday, January 15</text>'
  flake 104 323 22 "#FFF"; echo '<text x="123" y="330" fill="#FFF" font-size="20" font-weight="600">14″ new snow · Breckenridge</text>'; foot; } > $O/powder-day.svg
+
+# ── Holiday theme: Halloween on the night clock ────────────────────────────
+bat() { # cx cy scale color
+  echo "<path transform=\"translate($1 $2) scale($3)\" fill=\"$4\" fill-opacity=\".5\" d=\"M0 -3c2 0 3 -3 3 -3l1 3c3 -4 9 -5 12 -1c-3 0 -5 2 -5 5c-2 -2 -5 -1 -6 1c-1 -2 -3 -2 -5 -1c-2 -1 -4 -1 -5 1c-1 -2 -4 -3 -6 -1c0 -3 -2 -5 -5 -5c3 -4 9 -3 12 1l1 -3s1 3 3 3z\"/>"; }
+ghost() { # cx cy scale color
+  echo "<g transform=\"translate($1 $2) scale($3)\" fill-opacity=\".5\"><path fill=\"$4\" d=\"M-9 12V-1a9 9 0 0 1 18 0V12l-3 -3l-3 3l-3 -3l-3 3l-3 -3z\"/><circle cx=\"-3.5\" cy=\"-1\" r=\"1.8\" fill=\"#000\"/><circle cx=\"3.5\" cy=\"-1\" r=\"1.8\" fill=\"#000\"/></g>"; }
+pumpkin() { # cx cy color
+  echo "<g transform=\"translate($1 $2)\"><ellipse cx=\"-4\" cy=\"2\" rx=\"6\" ry=\"8\" fill=\"$3\"/><ellipse cx=\"4\" cy=\"2\" rx=\"6\" ry=\"8\" fill=\"$3\"/><ellipse cx=\"0\" cy=\"2\" rx=\"5\" ry=\"8.5\" fill=\"$3\"/><path d=\"M0 -6l1 -4\" stroke=\"#2EAD4B\" stroke-width=\"2.5\" stroke-linecap=\"round\"/></g>"; }
+{ head
+ bat 70 90 1.6 "#8E44AD"; ghost 410 120 1.5 "#E8E8F0"; bat 380 390 1.3 "#8E44AD"; ghost 90 400 1.4 "#E8E8F0"
+ bat 250 70 1.1 "#8E44AD"; ghost 40 250 1.2 "#E8E8F0"; bat 445 280 1.2 "#8E44AD"; ghost 300 440 1.1 "#E8E8F0"
+ echo '<text x="240" y="230" fill="#FFF" font-size="120" font-weight="200" text-anchor="middle">9:41</text><text x="240" y="280" fill="#FFF" fill-opacity=".7" font-size="20" font-weight="600" text-anchor="middle">Tuesday, October 13</text>'
+ pumpkin 119 323 "#FF7518"; echo '<text x="138" y="330" fill="#FFF" font-size="20" font-weight="600">18 days until Halloween</text>'; foot; } > $O/holiday.svg
 
 # ── Settings → Voice (panels with voice) ────────────────────────────────────
 { head; hdr Settings

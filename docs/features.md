@@ -438,14 +438,18 @@ image downloads, which is why the default is every 5 seconds
 
 ## Holiday themes
 
+![Halloween on the night clock](images/holiday.svg)
+
 While a holiday is near, the panel takes on its colours:
 
 - the **slider color** changes to the holiday's (your own color comes back
   afterwards);
 - a small icon sits left of the status-bar clock;
 - the [night clock](#screen-dimming-sleep-and-the-night-clock) shows a
-  countdown under the date ("12 days until Halloween", then "Happy
-  Halloween!") and a few icons drift slowly across it.
+  countdown under the date ("18 days until Halloween", "Halloween is
+  tomorrow!", then "Happy Halloween!") and a few icons drift slowly across
+  it. On a [powder day](#snow-report) the new-snow note takes the countdown's
+  place.
 
 | Holiday | When | Look |
 |---|---|---|
@@ -462,7 +466,8 @@ While a holiday is near, the panel takes on its colours:
 Each panel has a **Holiday Theme** switch in Home Assistant (with its other
 configuration entities); themes stay off until you turn it on, so you can
 choose which rooms get them. **Holiday Preview** (disabled in HA until you
-enable it) shows one holiday's theme now, whatever the date. At night, and
+enable it) shows one holiday's theme now, whatever the date, with its
+greeting on the night clock; set it back to **By date** afterwards. At night, and
 with the Red clock, the drifting icons turn dim red like the clock.
 
 The icons come from the icon font, so a theme costs a few KB of flash and

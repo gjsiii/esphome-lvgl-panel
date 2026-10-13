@@ -55,6 +55,8 @@ On the panel's device page:
 | Settings PIN Lock | switch | |
 | Settings PIN | text (hidden) | Clear it to remove the PIN. |
 | Antiburn | switch | Runs the anti-burn "snow" now. |
+| Holiday Theme | switch | Panels with `features/holidays.yaml`: holiday colours and night clock decorations by date. Off by default. |
+| Holiday Preview | select | Disabled until you enable it: shows one holiday's theme now (By date / Halloween / Christmas / Valentine's Day / St. Patrick's Day). |
 | Restart | button | |
 
 **Controls / Diagnostic**

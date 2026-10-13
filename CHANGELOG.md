@@ -12,6 +12,8 @@
   panel's **Holiday Theme** switch in Home Assistant, so each room can
   differ; **Holiday Preview** (disabled in HA by default) shows a theme
   early.
+- Docs: new Holiday themes and Play on illustrations; both features listed
+  with their entities in [Home Assistant side](docs/home-assistant.md).
 
 ## v0.5.0 — 2026-10-13
 
