@@ -138,7 +138,7 @@ Each feature is included at most once, except camera pop-ups and status chips.
 | `features/weather.yaml` | `weather_entity`, `forecast_entity`, optional `outdoor_temp_entity` | Status-bar weather and the weather sheet. Needs `ha/panel_weather.yaml` for the forecast. |
 | `features/climate.yaml` | `climate_entity`, `climate_name` | Indoor temperature and the thermostat sheet. |
 | `features/status_chip.yaml` | `chip_id`, `slot`, `entity`, `icon`, `color`, `show_when`, `show_value` | One per status icon. See [Status icons](features.md#status-icons-chips). |
-| `features/marine.yaml` | `marine_entity`, `title`, `open_chip_1`, `open_chip_2` | Full-text forecast sheet opened from status chips. |
+| `features/marine.yaml` | `marine_entity` (`sensor.panel_marine`), `title`, `chip_slot` | Sailboat status chip (red / yellow / green for marine hazards) that opens the full-text forecast. Needs the [NOAA It All](https://github.com/dawg-io/noaa_it_all) integration and `ha/panel_marine.yaml`. See [Marine forecast](features.md#marine-forecast). |
 | `features/snow_report.yaml` | `title`, `chip_slot`, `chip_show`, `new_24h_entity`, `new_48h_entity`, `new_72h_entity`, `new_7d_entity`, `base_entity`, `summit_entity`, `season_entity`, `lifts_entity`, `runs_entity`, `opening_entity`; optional `powder_inches` (default `"3"`) | Snowflake chip (24 h new snow), the ski report sheet and the powder-day sleep note. See [Snow report](features.md#snow-report). |
 | `features/camera_popup.yaml` | `popup_id`, `title`, `trigger_entity`, `camera_entity` | One per trigger. |
 | `features/presence_wake.yaml` | `presence_entity` | Wake on presence. |

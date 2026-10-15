@@ -2,6 +2,18 @@
 
 ## v0.6.0 — unreleased
 
+- **Marine forecast from NOAA It All, with a three-colour sailboat.**
+  `features/marine.yaml` now draws its own status-bar sailboat: red while a
+  marine hazard is in effect, yellow when one is coming (or a watch is out,
+  or the forecast has a headline), green otherwise. The sheet shows hazards
+  in effect on a red card and upcoming ones on an amber card. Data comes from
+  the [NOAA It All](https://github.com/dawg-io/noaa_it_all) integration's
+  marine entry through the new `ha/panel_marine.yaml` package
+  (`sensor.panel_marine`). **Upgrading (breaking):** install
+  `ha/panel_marine.yaml` (set your zone), delete the two sailboat
+  `status_chip` lines from your display file, and change the `marine` vars to
+  `marine_entity: sensor.panel_marine`, `title`, `chip_slot` (`open_chip_1` /
+  `open_chip_2` are gone).
 - **Play on: a volume slider per speaker.** A speaker grouped with this
   room's music shows its own slider under its name in the Play on sheet; the
   main slider still sets this room's speaker. No display file changes.

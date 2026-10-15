@@ -1,39 +1,65 @@
-# Feature: marine forecast sheet with the full text forecast, opened by
-# tapping a status-bar chip (e.g. the small-craft-advisory sailboat).
+# Feature: marine forecast — a sailboat chip in the status bar coloured by
+# the NWS marine hazards, and tapping it opens a sheet with the full text
+# forecast.
 #
 #   marine: !include
 #     file: panel/features/marine.yaml
 #     vars:
-#       marine_entity: sensor.noaa_lmz741_marine_forecast   # attributes period_1..5, forecast_1..5, advisory_text
+#       marine_entity: sensor.panel_marine   # from ha/panel_marine.yaml
 #       title: "Marine Forecast"
-#       open_chip_1: noaa_red      # chip_id of a status chip that opens the sheet
-#       open_chip_2: noaa_green    # a second one (repeat the first if only one)
+#       chip_slot: 1                         # status-bar position, 1 = rightmost
 #
-# Expects the marine entity's attributes to be period_N / forecast_N text
-# (N = 1..5) and advisory_text (empty/None when there's no advisory).
+# The sailboat is red while an advisory or warning is in effect, yellow when
+# one is coming (or a watch is out, or the forecast has headlines) and green
+# otherwise. Data: the NOAA It All integration's marine entry
+# (https://github.com/dawg-io/noaa_it_all), turned into sensor.panel_marine
+# by ha/panel_marine.yaml. Any entity with that state (hazard / upcoming /
+# clear) and attributes hazard_text, upcoming_text, period_1..5,
+# forecast_1..5 works.
+
+font:
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
+    id: chip_font_marine
+    size: ${22*px}
+    bpp: 4
+    glyphs: ["\U000F0EC8"]   # mdi-sail-boat
 
 esphome:
   on_boot:
+    - priority: -20${chip_slot}
+      then:
+        - lambda: |-
+            lv_obj_set_parent(id(chip_marine), id(status_chips));
+            // Slot 1 is rightmost: insert each chip at the front of the row
+            lv_obj_move_to_index(id(chip_marine), 0);
     - priority: -310
       then:
         - lambda: |-
             lv_obj_set_parent(id(marine_panel), id(ui_root));
-            auto open = [](lv_event_t *e) {
+            lv_obj_add_flag(id(chip_marine), LV_OBJ_FLAG_CLICKABLE);
+            lv_obj_add_event_cb(id(chip_marine), [](lv_event_t *e) {
               lv_obj_clear_flag(id(marine_panel), LV_OBJ_FLAG_HIDDEN);
               lv_obj_move_foreground(id(marine_panel));
               lv_obj_scroll_to_y(id(marine_list), 0, LV_ANIM_OFF);
-            };
-            lv_obj_t *chips[2] = {id(chip_${open_chip_1}), id(chip_${open_chip_2})};
-            for (auto *c : chips) {
-              lv_obj_add_flag(c, LV_OBJ_FLAG_CLICKABLE);
-              lv_obj_add_event_cb(c, open, LV_EVENT_CLICKED, nullptr);
-            }
+            }, LV_EVENT_CLICKED, nullptr);
 
 text_sensor:
   - platform: homeassistant
-    id: marine_advisory
+    id: marine_level
     entity_id: ${marine_entity}
-    attribute: advisory_text
+    on_value:
+      - lambda: |-
+          uint32_t c;
+          if (x == "hazard") c = 0xFF453A;          // red: in effect now
+          else if (x == "upcoming") c = 0xFFD60A;   // yellow: coming / watch / headlines
+          else if (x == "clear") c = 0x30D158;      // green
+          else { lv_obj_add_flag(id(chip_marine), LV_OBJ_FLAG_HIDDEN); return; }
+          lv_obj_set_style_text_color(id(lbl_chip_marine), lv_color_hex(c), 0);
+          lv_obj_clear_flag(id(chip_marine), LV_OBJ_FLAG_HIDDEN);
+  - platform: homeassistant
+    id: marine_hazard_text
+    entity_id: ${marine_entity}
+    attribute: hazard_text
     on_value:
       - lambda: |-
           bool none = x.empty() || x == "None" || x == "none" || x == "null" || x == "unknown";
@@ -41,6 +67,18 @@ text_sensor:
           else {
             lv_label_set_text(id(lbl_marine_advisory), x.c_str());
             lv_obj_clear_flag(id(marine_advisory_card), LV_OBJ_FLAG_HIDDEN);
+          }
+  - platform: homeassistant
+    id: marine_upcoming_text
+    entity_id: ${marine_entity}
+    attribute: upcoming_text
+    on_value:
+      - lambda: |-
+          bool none = x.empty() || x == "None" || x == "none" || x == "null" || x == "unknown";
+          if (none) lv_obj_add_flag(id(marine_upcoming_card), LV_OBJ_FLAG_HIDDEN);
+          else {
+            lv_label_set_text(id(lbl_marine_upcoming), x.c_str());
+            lv_obj_clear_flag(id(marine_upcoming_card), LV_OBJ_FLAG_HIDDEN);
           }
   - platform: homeassistant
     id: marine_period_1
@@ -105,6 +143,29 @@ text_sensor:
 
 lvgl:
   pages:
+    - id: holding_chip_marine
+      skip: true
+      widgets:
+        - obj:
+            id: chip_marine
+            width: SIZE_CONTENT
+            height: ${30*px}
+            styles: transparent
+            clickable: false
+            scrollable: false
+            hidden: true
+            layout:
+              type: FLEX
+              flex_flow: ROW
+              flex_align_main: START
+              flex_align_cross: CENTER
+              flex_align_track: CENTER
+            widgets:
+              - label:
+                  id: lbl_chip_marine
+                  text: "\U000F0EC8"
+                  text_font: chip_font_marine
+                  text_color: 0x30D158
     # Holding page (never shown): the sheet is moved onto ui_root at boot
     - id: holding_marine
       skip: true
@@ -146,7 +207,7 @@ lvgl:
                   on_click:
                     - lvgl.widget.hide: marine_panel
 
-              # Scrolling list: advisory (if any), then each forecast period
+              # Scrolling list: hazard in effect (red), upcoming (amber), then each forecast period
               - obj:
                   id: marine_list
                   align: TOP_MID
@@ -184,6 +245,26 @@ lvgl:
                               id: lbl_marine_advisory
                               text: ""
                               text_color: 0xFF6961
+                              long_mode: WRAP
+                              width: ${414*px}
+                    - obj:
+                        id: marine_upcoming_card
+                        width: ${440*px}
+                        height: SIZE_CONTENT
+                        bg_color: 0x3A2F0A
+                        bg_opa: COVER
+                        border_color: 0xFFD60A
+                        border_width: 1
+                        radius: ${12*px}
+                        pad_all: ${12*px}
+                        clickable: false
+                        scrollable: false
+                        hidden: true
+                        widgets:
+                          - label:
+                              id: lbl_marine_upcoming
+                              text: ""
+                              text_color: 0xFFE066
                               long_mode: WRAP
                               width: ${414*px}
                     - label:

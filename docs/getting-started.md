@@ -28,6 +28,8 @@ them from this repo into Home Assistant:
 | [`ha/panel_weather.yaml`](../ha/panel_weather.yaml) | `/config/packages/panel_weather.yaml` | `sensor.panel_weather_forecast` (hourly and daily forecast for the weather sheet) |
 | [`ha/panel_messages.yaml`](../ha/panel_messages.yaml) | `/config/packages/panel_messages.yaml` | `script.panel_message` (send a banner to one or more panels) |
 
+Optional features have their own package; see [Home Assistant side](home-assistant.md) (for example `ha/panel_marine.yaml` for the marine forecast).
+
 If you don't use packages yet, add this to `configuration.yaml`:
 
 ```yaml

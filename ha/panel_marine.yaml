@@ -1,0 +1,83 @@
+# LVGL panel marine forecast
+#
+# Turns the marine sensors of the NOAA It All integration into the sensor the
+# panels' marine sheet and sailboat chip read (esphome/panel/features/marine.yaml).
+#
+# Get the data: install NOAA It All from HACS (https://github.com/dawg-io/noaa_it_all),
+# then Settings → Devices & services → Add integration → NOAA It All →
+# "Nearshore marine forecast" and pick your zone (e.g. LMZ741). It creates
+#   sensor.noaa_<zone>_marine_forecast   forecast periods + headlines
+#   sensor.noaa_<zone>_marine_hazard     NWS hazards in effect, upcoming, watches
+#
+# sensor.panel_marine
+#   state:          hazard   — an advisory or warning is in effect now     (red sailboat)
+#                   upcoming — one is issued for later, a watch is out, or
+#                              the forecast has headlines                  (yellow)
+#                   clear    — nothing                                     (green)
+#                   unknown  — no data yet (the chip hides)
+#   hazard_text:    headlines in effect now, "; "-joined ("" if none)
+#   upcoming_text:  headlines of upcoming hazards and watches, or the forecast
+#                   headlines when the alerts list nothing / can't be fetched
+#   advisory_text:  both of the above (older panel firmware reads this)
+#   period_1..5, forecast_1..5, zone_name, issued
+#
+# Install: copy this file into HA's /config/packages/ and replace lmz741 with
+# your zone (4 places: the two triggers and the two variables). If packages
+# aren't enabled yet, add to configuration.yaml
+#   homeassistant:
+#     packages: !include_dir_named packages
+# and restart Home Assistant.
+
+template:
+  - triggers:
+      - trigger: state
+        entity_id: sensor.noaa_lmz741_marine_forecast
+      - trigger: state
+        entity_id: sensor.noaa_lmz741_marine_hazard
+      - trigger: homeassistant
+        event: start
+      - trigger: event
+        event_type: event_template_reloaded
+    actions:
+      - variables:
+          forecast: sensor.noaa_lmz741_marine_forecast
+          hazard: sensor.noaa_lmz741_marine_hazard
+      - variables:
+          periods: "{{ state_attr(forecast, 'periods') or [] }}"
+          headlines: "{{ state_attr(forecast, 'headlines') or [] }}"
+          # The Hazard sensor is unavailable when NWS alerts can't be fetched. Then, and when
+          # the forecast has headlines the alerts don't list, the headlines go in upcoming_text.
+          alerts_ok: "{{ states(hazard) not in ['unknown', 'unavailable'] }}"
+          now_list: >-
+            {{ (state_attr(hazard, 'hazards') or []) | map(attribute='headline') | select | list
+               if alerts_ok else [] }}
+          later_list: >-
+            {% set later = ((state_attr(hazard, 'upcoming') or []) + (state_attr(hazard, 'watches') or []))
+                           | map(attribute='headline') | select | list if alerts_ok else [] %}
+            {{ later if later or now_list else headlines }}
+          level: >-
+            {% if not alerts_ok and states(forecast) in ['unknown', 'unavailable'] %}unknown
+            {% elif alerts_ok and states(hazard) not in ['None', 'none', ''] %}hazard
+            {% elif later_list | count > 0 or headlines | count > 0 %}upcoming
+            {% else %}clear{% endif %}
+    sensor:
+      - name: Panel Marine
+        unique_id: panel_marine
+        icon: mdi:sail-boat
+        state: "{{ level | trim }}"
+        attributes:
+          hazard_text: "{{ now_list | join('; ') }}"
+          upcoming_text: "{{ later_list | join('; ') }}"
+          advisory_text: "{{ (now_list + later_list) | join('; ') }}"
+          zone_name: "{{ state_attr(forecast, 'zone_name') or '' }}"
+          issued: "{{ state_attr(forecast, 'issued') or '' }}"
+          period_1: "{{ periods[0].name if periods | count > 0 else '' }}"
+          forecast_1: "{{ periods[0].detailed_forecast if periods | count > 0 else '' }}"
+          period_2: "{{ periods[1].name if periods | count > 1 else '' }}"
+          forecast_2: "{{ periods[1].detailed_forecast if periods | count > 1 else '' }}"
+          period_3: "{{ periods[2].name if periods | count > 2 else '' }}"
+          forecast_3: "{{ periods[2].detailed_forecast if periods | count > 2 else '' }}"
+          period_4: "{{ periods[3].name if periods | count > 3 else '' }}"
+          forecast_4: "{{ periods[3].detailed_forecast if periods | count > 3 else '' }}"
+          period_5: "{{ periods[4].name if periods | count > 4 else '' }}"
+          forecast_5: "{{ periods[4].detailed_forecast if periods | count > 4 else '' }}"

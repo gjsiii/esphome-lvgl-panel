@@ -331,8 +331,9 @@ one command.
 ## Status icons (chips)
 
 Small icons in the status bar that appear only when something needs
-attention — for example the garage door open, packages waiting (with a count),
-or a red/green sailboat for a marine advisory.
+attention — for example the garage door open, or packages waiting (with a
+count). The marine sailboat is its own chip, built into
+[`features/marine.yaml`](#marine-forecast).
 
 ```yaml
 - path: features/status_chip.yaml
@@ -360,21 +361,42 @@ or a red/green sailboat for a marine advisory.
 
 ![Marine forecast](images/marine.svg)
 
-A full-text marine forecast, opened by tapping a status chip (for example the
-advisory sailboat). A red banner shows any advisory; the periods scroll.
+A sailboat in the status bar shows the marine hazards for your stretch of
+coast, and tapping it opens the full-text nearshore forecast:
+
+- **Red** — a Small Craft Advisory, Gale Warning, Storm Warning or other
+  marine hazard is in effect now. A red card at the top of the sheet shows it.
+- **Yellow** — nothing in effect, but one is issued for later, a watch is out,
+  or the forecast carries a headline. An amber card shows what's coming.
+- **Green** — no hazards.
+
+The forecast periods scroll below the cards.
 
 ```yaml
 - path: features/marine.yaml
   vars:
-    marine_entity: sensor.marine_forecast   # attributes period_1..5, forecast_1..5, advisory_text
+    marine_entity: sensor.panel_marine      # from ha/panel_marine.yaml
     title: "Marine Forecast"
-    open_chip_1: noaa_red                   # chip_id(s) of the chips that open it
-    open_chip_2: noaa_green
+    chip_slot: 1                            # status-bar position, 1 = rightmost
 ```
 
-The entity needs `period_N` / `forecast_N` attributes (N = 1 to 5) and an
-`advisory_text` attribute (empty or `None` when there's no advisory). Any
-text source shaped like that works.
+**Getting the data.** The forecast and hazards come from the
+[NOAA It All](https://github.com/dawg-io/noaa_it_all) integration:
+
+1. Install NOAA It All from HACS.
+2. **Settings → Devices & services → Add integration → NOAA It All →
+   Nearshore marine forecast**, and enter your NWS marine zone (for example
+   `LMZ741`; zones are listed on the
+   [NWS marine forecast map](https://www.weather.gov/marine/)). It adds
+   `sensor.noaa_<zone>_marine_forecast` and `sensor.noaa_<zone>_marine_hazard`.
+3. Copy [`ha/panel_marine.yaml`](../ha/panel_marine.yaml) into
+   `/config/packages/`, replace `lmz741` with your zone (4 places) and restart
+   Home Assistant. It makes `sensor.panel_marine`: state `hazard`, `upcoming`
+   or `clear`, and the attributes the sheet reads.
+
+Any other source works if you make an entity shaped like `sensor.panel_marine`
+(state `hazard` / `upcoming` / `clear`; attributes `hazard_text`,
+`upcoming_text`, `period_1`..`period_5`, `forecast_1`..`forecast_5`).
 
 ## Snow report
 
