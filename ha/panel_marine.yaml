@@ -19,6 +19,9 @@
 #   upcoming_text:  headlines of upcoming hazards and watches, or the forecast
 #                   headlines when the alerts list nothing / can't be fetched
 #   advisory_text:  both of the above (older panel firmware reads this)
+#   event:          the hazard in effect (state hazard) or the next one (upcoming),
+#                   e.g. "Small Craft Advisory"; "" when clear
+#   short:          event shortened for small badges: SCA, Gale, Storm, Gale Watch ...
 #   period_1..5, forecast_1..5, zone_name, issued
 #
 # Install: copy this file into HA's /config/packages/ and replace lmz741 with
@@ -60,6 +63,23 @@ template:
             {% elif alerts_ok and states(hazard) not in ['None', 'none', ''] %}hazard
             {% elif later_list | count > 0 or headlines | count > 0 %}upcoming
             {% else %}clear{% endif %}
+          event: >-
+            {% set lv = level | trim %}
+            {% set later = ((state_attr(hazard, 'upcoming') or []) + (state_attr(hazard, 'watches') or []))
+                           | map(attribute='event') | select | list if alerts_ok else [] %}
+            {% if lv == 'hazard' %}{{ states(hazard) }}
+            {% elif lv == 'upcoming' %}{{ later[0] if later else 'Marine hazard' }}
+            {% endif %}
+          # Short names for small badges: SCA, Gale, Storm ...
+          short: >-
+            {% set e = event | trim %}
+            {% set abbr = {'Small Craft Advisory': 'SCA', 'Small Craft Advisory for Hazardous Seas': 'SCA',
+                           'Small Craft Advisory for Rough Bar': 'SCA', 'Small Craft Advisory for Winds': 'SCA',
+                           'Gale Warning': 'Gale', 'Storm Warning': 'Storm', 'Hurricane Force Wind Warning': 'HFW',
+                           'Special Marine Warning': 'SMW', 'Hazardous Seas Warning': 'Seas',
+                           'Low Water Advisory': 'Low Water', 'Brisk Wind Advisory': 'Brisk Wind',
+                           'Marine hazard': 'Hazard'} %}
+            {{ abbr.get(e, e | replace(' Warning', '') | replace(' Advisory', '')) }}
     sensor:
       - name: Panel Marine
         unique_id: panel_marine
@@ -69,6 +89,8 @@ template:
           hazard_text: "{{ now_list | join('; ') }}"
           upcoming_text: "{{ later_list | join('; ') }}"
           advisory_text: "{{ (now_list + later_list) | join('; ') }}"
+          event: "{{ event | trim }}"
+          short: "{{ short | trim }}"
           zone_name: "{{ state_attr(forecast, 'zone_name') or '' }}"
           issued: "{{ state_attr(forecast, 'issued') or '' }}"
           period_1: "{{ periods[0].name if periods | count > 0 else '' }}"
