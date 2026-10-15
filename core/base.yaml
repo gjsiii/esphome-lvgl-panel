@@ -113,6 +113,11 @@ esphome:
             text: !lambda 'return std::to_string((int) lroundf(id(user_brightness) * 100.0f)) + "%";'
 
 logger:
+  logs:
+    # Every image download warns "No header with name etag / last-modified"
+    # (HA and most image hosts don't send them); hundreds of lines a day in
+    # the HA log. Failed requests still show: they log at ERROR.
+    http_request: ERROR
 
 # HTTP fetches block the main loop (and touch) while waiting, so cap the wait
 http_request:
