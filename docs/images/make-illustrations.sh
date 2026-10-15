@@ -74,17 +74,25 @@ ACT=3; { head; status "8:42pm" "" "#8E8E93"
 
 # ── Weather sheet ───────────────────────────────────────────────────────────
 { head; hdr Weather
+ # next sunrise / sunset between the title and Done
+ sunev() { echo "<g transform=\"translate($1 34)\" fill=\"none\" stroke=\"$2\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M-6 4a6 6 0 0 1 12 0M-9 4h18\"/><path d=\"$3\"/></g>"; }
+ sunev 165 '#FFD60A' 'M-3 -6l3 -3l3 3'; echo '<text x="178" y="40" fill="#8E8E93" font-size="16">7:02am</text>'
+ sunev 256 '#FF9F0A' 'M-3 -9l3 3l3 -3'; echo '<text x="269" y="40" fill="#8E8E93" font-size="16">6:11pm</text>'
  echo '<g transform="translate(60 112)" stroke="#FFD60A" stroke-width="4" stroke-linecap="round"><circle r="15" fill="none"/><path d="M0 -30v7M0 23v7M-30 0h7M23 0h7M-21 -21l5 5M16 16l5 5M-21 21l5-5M16 -16l5-5"/></g>'
- echo '<text x="108" y="136" fill="#FFF" font-size="72" font-weight="300">70°</text><text x="252" y="96" fill="#FFF" font-size="20" font-weight="600">Sunny</text><text x="252" y="124" fill="#8E8E93" font-size="16">H 74°  ·  L 58°</text>'
+ echo '<text x="108" y="136" fill="#FFF" font-size="72" font-weight="300">70°</text><text x="252" y="86" fill="#FFF" font-size="20" font-weight="600">Sunny</text><text x="252" y="112" fill="#8E8E93" font-size="16">H 74°  ·  L 58°</text><text x="252" y="134" fill="#8E8E93" font-size="16">Feels like 68°</text>'
  echo '<text x="240" y="172" fill="#8E8E93" font-size="16" text-anchor="middle">Humidity 61%  ·  Wind 9 mph SW  ·  UV 3</text>'
  # icon colours follow wx_color in features/weather.yaml
  wc() { case $1 in ☀) echo '#FFD60A';; ☾) echo '#C9C3FF';; ⛅) echo '#FFE066';; ☁) echo '#AEAEB2';; 🌧) echo '#64D2FF';; *) echo '#FFF';; esac; }
  echo '<rect x="16" y="184" width="448" height="92" rx="14" fill="#1C1C1E"/>'
- t=(Now 6pm 9pm 12am 3am 6am); v=(70 68 63 60 58 59); ic=(☀ ☀ ☾ ☾ ☁ ⛅)
+ t=(Now 6pm 9pm 12am 3am 6am); v=(70 68 63 60 58 59); ic=(☀ ☀ ☾ ☾ ☁ ☾)
  for i in 0 1 2 3 4 5; do x=$((18 + i*74 + 37)); echo "<text x=\"$x\" y=\"204\" fill=\"#8E8E93\" font-size=\"16\" text-anchor=\"middle\">${t[$i]}</text><text x=\"$x\" y=\"240\" fill=\"$(wc ${ic[$i]})\" font-size=\"22\" text-anchor=\"middle\">${ic[$i]}</text><text x=\"$x\" y=\"266\" fill=\"#FFF\" font-size=\"16\" text-anchor=\"middle\">${v[$i]}°</text>"; done
  echo '<rect x="16" y="286" width="448" height="166" rx="14" fill="#1C1C1E"/>'
  d=(Today Thu Fri Sat Sun); lo=(58 55 57 61 60); hi=(74 70 72 77 75); di=(☀ ⛅ 🌧 ☀ ⛅); rn=("" "" "0.24 in" "" "")
- for i in 0 1 2 3 4; do y=$((286 + 4 + i*32 + 22)); echo "<text x=\"32\" y=\"$y\" fill=\"#FFF\" font-size=\"16\">${d[$i]}</text><text x=\"134\" y=\"$y\" fill=\"$(wc ${di[$i]})\" font-size=\"18\">${di[$i]}</text><text x=\"162\" y=\"$y\" fill=\"#64D2FF\" font-size=\"16\">${rn[$i]}</text><text x=\"372\" y=\"$y\" fill=\"#8E8E93\" font-size=\"16\" text-anchor=\"end\">${lo[$i]}°</text><text x=\"440\" y=\"$y\" fill=\"#FFF\" font-size=\"16\" text-anchor=\"end\">${hi[$i]}°</text>"; done
+ # range bars: x offset / width on a 100 px track scaled 55..77°, gradient low → high (wx_temp_color)
+ bx=(14 0 9 27 23); bw=(72 68 68 73 68); c0=('#3AD574' '#4ADC9D' '#3FD781' '#45D250' '#30D158'); c1=('#FFC00A' '#FFD60A' '#FFCB0A' '#FFB00A' '#FFBA0A')
+ echo '<defs>'; for i in 0 1 2 3 4; do echo "<linearGradient id=\"wxb$i\"><stop offset=\"0\" stop-color=\"${c0[$i]}\"/><stop offset=\"1\" stop-color=\"${c1[$i]}\"/></linearGradient>"; done; echo '</defs>'
+ for i in 0 1 2 3 4; do y=$((286 + 4 + i*32 + 22)); ty=$((286 + 10 + i*32 + 7)); echo "<text x=\"32\" y=\"$y\" fill=\"#FFF\" font-size=\"16\">${d[$i]}</text><text x=\"134\" y=\"$y\" fill=\"$(wc ${di[$i]})\" font-size=\"18\">${di[$i]}</text><text x=\"162\" y=\"$y\" fill=\"#64D2FF\" font-size=\"16\">${rn[$i]}</text><text x=\"284\" y=\"$y\" fill=\"#8E8E93\" font-size=\"16\" text-anchor=\"end\">${lo[$i]}°</text><rect x=\"292\" y=\"$ty\" width=\"100\" height=\"6\" rx=\"3\" fill=\"#38383A\"/><rect x=\"$((292 + ${bx[$i]}))\" y=\"$ty\" width=\"${bw[$i]}\" height=\"6\" rx=\"3\" fill=\"url(#wxb$i)\"/><text x=\"448\" y=\"$y\" fill=\"#FFF\" font-size=\"16\" text-anchor=\"end\">${hi[$i]}°</text>"; done
+ echo '<circle cx="360" cy="306" r="5" fill="#FFF" stroke="#1C1C1E" stroke-width="2"/>'
  echo '<text x="240" y="470" fill="#8E8E93" font-size="16" text-anchor="middle">Updated 8:30pm</text>'; foot; } > $O/weather.svg
 
 # ── Climate sheet ───────────────────────────────────────────────────────────

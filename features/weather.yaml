@@ -1,5 +1,7 @@
 # Feature: weather in the status bar + a weather sheet opened by tapping it.
-# Condition icons (status bar and sheet) are tinted by condition (wx_color).
+# Condition icons (status bar and sheet) are tinted by condition (wx_color)
+# and switch to moon icons after sunset; the 5-day rows show each day's
+# range on a bar scaled to the week (Apple Weather style).
 #
 #   weather: !include
 #     file: panel/features/weather.yaml
@@ -7,6 +9,7 @@
 #       weather_entity: weather.home                     # current conditions
 #       forecast_entity: sensor.panel_weather_forecast   # from HA packages/panel_weather.yaml
 #       outdoor_temp_entity: sensor.rooftop_temperature  # optional local thermometer
+#       feels_like_entity: sensor.rooftop_feels_like     # optional "Feels like"
 #
 # The forecast sensor must exist in HA (copy packages/panel_weather.yaml);
 # without it the sheet shows current conditions and dashes for the forecast.
@@ -15,15 +18,63 @@
 substitutions:
   wind_unit: mph   # unit of the weather entity's wind_speed
   rain_unit: in    # unit of the forecast precipitation
+  temp_unit: F     # F or C: picks the colours of the range bars
   # Optional local thermometer for the current temperature (e.g. a rooftop
   # weather station); when it reports, it replaces the forecast temperature.
   outdoor_temp_entity: "sensor.none"
+  # Optional apparent temperature, shown as "Feels like" under the high/low
+  feels_like_entity: "sensor.none"
+  # Sun above/below the horizon: night icons for the current conditions
+  sun_entity: sun.sun
 
 globals:
   # True once the local outdoor thermometer has reported
   - id: wx_have_outdoor
     type: bool
     initial_value: "false"
+  # Current HA condition, current temperature, and the 5-day lows/highs
+  # (NAN = no value) for the range bars
+  - id: wx_cond
+    type: std::string
+    initial_value: "std::string()"
+  - id: wx_now_temp
+    type: float
+    initial_value: "NAN"
+  - id: wx_lo
+    type: std::array<float, 5>
+    initial_value: "std::array<float, 5>{NAN, NAN, NAN, NAN, NAN}"
+  - id: wx_hi
+    type: std::array<float, 5>
+    initial_value: "std::array<float, 5>{NAN, NAN, NAN, NAN, NAN}"
+  # Night version of a condition (HA's sources often say sunny or
+  # partlycloudy after dark); partlycloudy-night is this file's own key
+  - id: wx_at_night
+    type: std::function<std::string(const std::string &)>
+    initial_value: |-
+      [](const std::string &c) -> std::string {
+        if (c == "sunny")        return "clear-night";
+        if (c == "partlycloudy") return "partlycloudy-night";
+        return c;
+      }
+  # Temperature -> range bar colour: violet (cold) to red (hot)
+  - id: wx_temp_color
+    type: std::function<uint32_t(float)>
+    initial_value: |-
+      [](float t) -> uint32_t {
+        if (strcmp("${temp_unit}", "C") == 0) t = t * 9.0f / 5.0f + 32.0f;
+        static const float T[7] = {10, 32, 50, 60, 70, 80, 95};   // °F
+        static const uint32_t C[7] = {0x5E5CE6, 0x64D2FF, 0x63E6E2, 0x30D158, 0xFFD60A, 0xFF9F0A, 0xFF453A};
+        if (t <= T[0]) return C[0];
+        if (t >= T[6]) return C[6];
+        int i = 0;
+        while (t > T[i + 1]) i++;
+        float f = (t - T[i]) / (T[i + 1] - T[i]);
+        auto ch = [&](int s) -> uint32_t {
+          int a = (C[i] >> s) & 0xFF, b = (C[i + 1] >> s) & 0xFF;
+          return ((uint32_t) lroundf(a + (b - a) * f)) << s;
+        };
+        return ch(16) | ch(8) | ch(0);
+      }
   # HA condition -> MDI weather glyph
   - id: wx_icon
     type: std::function<std::string(const std::string &)>
@@ -32,6 +83,7 @@ globals:
         if (c == "sunny")           return "\U000F0599";
         if (c == "clear-night")     return "\U000F0594";
         if (c == "partlycloudy")    return "\U000F0595";
+        if (c == "partlycloudy-night") return "\U000F0F31";
         if (c == "cloudy")          return "\U000F0590";
         if (c == "fog")             return "\U000F0591";
         if (c == "hail")            return "\U000F0592";
@@ -53,6 +105,7 @@ globals:
         if (c == "sunny")           return 0xFFD60A;  // yellow
         if (c == "clear-night")     return 0xC9C3FF;  // pale moon
         if (c == "partlycloudy")    return 0xFFE066;  // soft yellow
+        if (c == "partlycloudy-night") return 0xC9C3FF;
         if (c == "cloudy")          return 0xAEAEB2;  // grey
         if (c == "fog")             return 0x8E8E93;  // dark grey
         if (c == "hail")            return 0x99E6FF;  // icy
@@ -74,6 +127,7 @@ globals:
         if (c == "sunny")           return "Sunny";
         if (c == "clear-night")     return "Clear";
         if (c == "partlycloudy")    return "Partly Cloudy";
+        if (c == "partlycloudy-night") return "Partly Cloudy";
         if (c == "cloudy")          return "Cloudy";
         if (c == "fog")             return "Fog";
         if (c == "hail")            return "Hail";
@@ -122,6 +176,67 @@ script:
           if (!isnan(u)) { if (!s.empty()) s += "  ·  "; snprintf(buf, sizeof(buf), "UV %.0f", u); s += buf; }
           lv_label_set_text(id(lbl_wx_details), s.c_str());
 
+  # Current condition: status-bar icon, big icon and name (night version
+  # while the sun is down)
+  - id: update_wx_now
+    mode: restart
+    then:
+      - lambda: |-
+          std::string c = id(wx_cond);
+          if (c.empty()) return;
+          if (id(wx_sun).state == "below_horizon") c = id(wx_at_night)(c);
+          lv_color_t col = lv_color_hex(id(wx_color)(c));
+          lv_label_set_text(id(lbl_weather_icon), id(wx_icon)(c).c_str());
+          lv_obj_set_style_text_color(id(lbl_weather_icon), col, LV_PART_MAIN);
+          lv_label_set_text(id(lbl_wx_now_icon), id(wx_icon)(c).c_str());
+          lv_obj_set_style_text_color(id(lbl_wx_now_icon), col, LV_PART_MAIN);
+          lv_label_set_text(id(lbl_wx_now_cond), id(wx_name)(c).c_str());
+
+  # 5-day range bars: each day's low..high on a scale running from the
+  # week's lowest to highest; a dot marks the current temperature on Today
+  - id: update_wx_bars
+    mode: restart
+    then:
+      - lambda: |-
+          lv_obj_t *tr[5] = {id(wx_d0_track), id(wx_d1_track), id(wx_d2_track), id(wx_d3_track), id(wx_d4_track)};
+          lv_obj_t *fl[5] = {id(wx_d0_fill), id(wx_d1_fill), id(wx_d2_fill), id(wx_d3_fill), id(wx_d4_fill)};
+          const auto &lo = id(wx_lo);
+          const auto &hi = id(wx_hi);
+          const float now = id(wx_now_temp);
+          float mn = INFINITY, mx = -INFINITY;
+          for (int i = 0; i < 5; i++) {
+            if (isnan(hi[i])) continue;
+            mn = std::min(mn, isnan(lo[i]) ? hi[i] : lo[i]);
+            mx = std::max(mx, hi[i]);
+          }
+          const bool dot = !isnan(now) && !isnan(hi[0]);
+          if (dot) { mn = std::min(mn, now); mx = std::max(mx, now); }
+          const int W = ${(100*px)|int}, MIN_W = ${(6*px)|int}, DOT = ${(10*px)|int};
+          const float span = std::max(1.0f, mx - mn);
+          auto pos = [&](float t) { return (int) lroundf((t - mn) / span * W); };
+          for (int i = 0; i < 5; i++) {
+            if (isnan(hi[i])) { lv_obj_add_flag(tr[i], LV_OBJ_FLAG_HIDDEN); continue; }
+            lv_obj_clear_flag(tr[i], LV_OBJ_FLAG_HIDDEN);
+            const float l = isnan(lo[i]) ? hi[i] : lo[i];
+            int x0 = pos(l), x1 = pos(hi[i]);
+            if (x1 - x0 < MIN_W) {
+              x0 = std::max(0, std::min((x0 + x1 - MIN_W) / 2, W - MIN_W));
+              x1 = x0 + MIN_W;
+            }
+            lv_obj_set_x(fl[i], x0);
+            lv_obj_set_width(fl[i], x1 - x0);
+            lv_obj_set_style_bg_color(fl[i], lv_color_hex(id(wx_temp_color)(l)), LV_PART_MAIN);
+            lv_obj_set_style_bg_grad_color(fl[i], lv_color_hex(id(wx_temp_color)(hi[i])), LV_PART_MAIN);
+          }
+          if (dot) {
+            // The dot sits on the card (a child of the thin track would be clipped)
+            int dx = std::max(0, std::min(pos(now) - DOT / 2, W - DOT));
+            lv_obj_set_x(id(wx_now_dot), ${(276*px)|int} + dx);
+            lv_obj_clear_flag(id(wx_now_dot), LV_OBJ_FLAG_HIDDEN);
+          } else {
+            lv_obj_add_flag(id(wx_now_dot), LV_OBJ_FLAG_HIDDEN);
+          }
+
 sensor:
   - platform: homeassistant
     id: weather_temperature
@@ -136,6 +251,8 @@ sensor:
           else snprintf(buf, sizeof(buf), "%.0f°", x);
           lv_label_set_text(id(lbl_weather_temp), buf);
           lv_label_set_text(id(lbl_wx_now_temp), buf);
+          id(wx_now_temp) = x;
+          id(update_wx_bars).execute();
       - lvgl.widget.show: btn_weather_open
 
   # Local outdoor thermometer (outdoor_temp_entity, optional)
@@ -150,7 +267,21 @@ sensor:
           snprintf(buf, sizeof(buf), "%.0f°", x);
           lv_label_set_text(id(lbl_weather_temp), buf);
           lv_label_set_text(id(lbl_wx_now_temp), buf);
+          id(wx_now_temp) = x;
+          id(update_wx_bars).execute();
       - lvgl.widget.show: btn_weather_open
+
+  # Apparent temperature (feels_like_entity, optional)
+  - platform: homeassistant
+    id: wx_feels_like
+    entity_id: ${feels_like_entity}
+    on_value:
+      - lambda: |-
+          if (isnan(x)) { lv_obj_add_flag(id(lbl_wx_feels), LV_OBJ_FLAG_HIDDEN); return; }
+          char buf[24];
+          snprintf(buf, sizeof(buf), "Feels like %.0f°", x);
+          lv_label_set_text(id(lbl_wx_feels), buf);
+          lv_obj_clear_flag(id(lbl_wx_feels), LV_OBJ_FLAG_HIDDEN);
 
   - platform: homeassistant
     id: wx_humidity
@@ -185,16 +316,35 @@ text_sensor:
     id: weather_condition
     entity_id: ${weather_entity}
     on_value:
-      - lambda: |-
-          lv_color_t c = lv_color_hex(id(wx_color)(x));
-          lv_label_set_text(id(lbl_weather_icon), id(wx_icon)(x).c_str());
-          lv_obj_set_style_text_color(id(lbl_weather_icon), c, LV_PART_MAIN);
-          lv_label_set_text(id(lbl_wx_now_icon), id(wx_icon)(x).c_str());
-          lv_obj_set_style_text_color(id(lbl_wx_now_icon), c, LV_PART_MAIN);
-          lv_label_set_text(id(lbl_wx_now_cond), id(wx_name)(x).c_str());
+      - lambda: "id(wx_cond) = x;"
+      - script.execute: update_wx_now
       - lvgl.widget.show: btn_weather_open
 
-  # Forecast (packed by HA): "Now,58,partlycloudy;10am,62,sunny;..."
+  # Sun above/below the horizon (night icons for the current condition)
+  - platform: homeassistant
+    id: wx_sun
+    entity_id: ${sun_entity}
+    on_value:
+      - script.execute: update_wx_now
+
+  # Next sunrise and sunset (packed by HA): "7:02am,6:11pm"
+  - platform: homeassistant
+    id: wx_sun_times
+    entity_id: ${forecast_entity}
+    attribute: sun
+    on_value:
+      - lambda: |-
+          size_t k = x.find(',');
+          if (x.empty() || k == std::string::npos) {
+            lv_obj_add_flag(id(wx_sun_row), LV_OBJ_FLAG_HIDDEN);
+            return;
+          }
+          lv_label_set_text(id(lbl_wx_sunrise), x.substr(0, k).c_str());
+          lv_label_set_text(id(lbl_wx_sunset), x.substr(k + 1).c_str());
+          lv_obj_clear_flag(id(wx_sun_row), LV_OBJ_FLAG_HIDDEN);
+
+  # Forecast (packed by HA): "Now,58,partlycloudy;10am,62,sunny,n;..."
+  # (a 4th field "n" marks hours after dark)
   - platform: homeassistant
     id: wx_forecast_hourly
     entity_id: ${forecast_entity}
@@ -216,9 +366,10 @@ text_sensor:
             std::vector<std::string> f;
             if (!x.empty() && i < (int) rows.size()) f = split(rows[i], ',');
             if (f.size() >= 3) {
+              std::string c = (f.size() >= 4 && f[3] == "n") ? id(wx_at_night)(f[2]) : f[2];
               lv_label_set_text(t[i], f[0].c_str());
-              lv_label_set_text(ic[i], id(wx_icon)(f[2]).c_str());
-              lv_obj_set_style_text_color(ic[i], lv_color_hex(id(wx_color)(f[2])), LV_PART_MAIN);
+              lv_label_set_text(ic[i], id(wx_icon)(c).c_str());
+              lv_obj_set_style_text_color(ic[i], lv_color_hex(id(wx_color)(c)), LV_PART_MAIN);
               lv_label_set_text(tp[i], (f[1] + "°").c_str());
             } else {
               lv_label_set_text(t[i], "--");
@@ -250,6 +401,8 @@ text_sensor:
           for (int i = 0; i < 5; i++) {
             std::vector<std::string> f;
             if (!x.empty() && i < (int) rows.size()) f = split(rows[i], ',');
+            id(wx_lo)[i] = (f.size() >= 5 && !f[1].empty()) ? atof(f[1].c_str()) : NAN;
+            id(wx_hi)[i] = (f.size() >= 5 && !f[2].empty()) ? atof(f[2].c_str()) : NAN;
             if (f.size() >= 5) {
               lv_label_set_text(dy[i], f[0].c_str());
               lv_label_set_text(ic[i], id(wx_icon)(f[3]).c_str());
@@ -273,6 +426,7 @@ text_sensor:
               lv_label_set_text(hi[i], "");
             }
           }
+      - script.execute: update_wx_bars
 
   # Forecast sensor state = time HA last fetched it
   - platform: homeassistant
@@ -285,6 +439,28 @@ text_sensor:
           lv_label_set_text(id(lbl_wx_updated), s.c_str());
 
 lvgl:
+  style_definitions:
+    # 5-day range bar: grey track; the fill's x, width and colours are set
+    # by update_wx_bars
+    - id: wx_track
+      align: TOP_LEFT
+      x: ${276*px}
+      width: ${100*px}
+      height: ${6*px}
+      bg_color: ${c_separator}
+      bg_opa: COVER
+      border_width: 0
+      radius: 999
+      pad_all: 0
+    - id: wx_fill
+      align: LEFT_MID
+      width: ${6*px}
+      height: 100%
+      bg_opa: COVER
+      bg_grad_dir: HOR
+      border_width: 0
+      radius: 999
+      pad_all: 0
   pages:
     # Holding page (never shown): weather_panel is moved onto ui_root at boot
     - id: holding_weather
@@ -326,6 +502,45 @@ lvgl:
                         align: CENTER
                   on_click:
                     - lvgl.widget.hide: weather_panel
+              # Next sunrise / sunset, between the title and Done
+              - obj:
+                  id: wx_sun_row
+                  align: TOP_MID
+                  y: ${22*px}
+                  width: SIZE_CONTENT
+                  height: ${24*px}
+                  styles: transparent
+                  clickable: false
+                  scrollable: false
+                  hidden: true
+                  layout:
+                    type: FLEX
+                    flex_flow: ROW
+                    flex_align_main: CENTER
+                    flex_align_cross: CENTER
+                    flex_align_track: CENTER
+                    pad_column: ${4*px}
+                  widgets:
+                    - label:
+                        text: "\U000F059C" # mdi-weather-sunset-up
+                        text_font: icons_sm
+                        text_color: 0xFFD60A
+                    - label:
+                        id: lbl_wx_sunrise
+                        text: ""
+                        text_color: ${c_text_2}
+                    - obj:   # gap between the pairs
+                        width: ${12*px}
+                        height: 1
+                        styles: transparent
+                    - label:
+                        text: "\U000F059B" # mdi-weather-sunset-down
+                        text_font: icons_sm
+                        text_color: 0xFF9F0A
+                    - label:
+                        id: lbl_wx_sunset
+                        text: ""
+                        text_color: ${c_text_2}
 
               # ── Now: icon, temperature, condition, high/low ───────
               - label:
@@ -350,14 +565,22 @@ lvgl:
                   width: ${210*px}
                   align: TOP_LEFT
                   x: ${252*px}
-                  y: ${76*px}
+                  y: ${66*px}
               - label:
                   id: lbl_wx_hilo
                   text: ""
                   text_color: ${c_text_2}
                   align: TOP_LEFT
                   x: ${252*px}
-                  y: ${106*px}
+                  y: ${96*px}
+              - label:
+                  id: lbl_wx_feels
+                  text: ""
+                  text_color: ${c_text_2}
+                  align: TOP_LEFT
+                  x: ${252*px}
+                  y: ${118*px}
+                  hidden: true
 
               # ── Details: humidity · wind · UV ─────────────────────
               - label:
@@ -580,15 +803,23 @@ lvgl:
                         text: ""
                         text_color: ${c_text_2}
                         text_align: RIGHT
-                        width: ${56*px}
+                        width: ${48*px}
                         align: TOP_RIGHT
-                        x: -${84*px}
+                        x: -${180*px}
                         y: ${10*px}
+                    - obj:
+                        id: wx_d0_track
+                        styles: wx_track
+                        y: ${17*px//1}
+                        widgets:
+                          - obj:
+                              id: wx_d0_fill
+                              styles: wx_fill
                     - label:
                         id: wx_d0_hi
                         text: ""
                         text_align: RIGHT
-                        width: ${56*px}
+                        width: ${48*px}
                         align: TOP_RIGHT
                         x: -${16*px}
                         y: ${10*px}
@@ -618,15 +849,23 @@ lvgl:
                         text: ""
                         text_color: ${c_text_2}
                         text_align: RIGHT
-                        width: ${56*px}
+                        width: ${48*px}
                         align: TOP_RIGHT
-                        x: -${84*px}
+                        x: -${180*px}
                         y: ${42*px}
+                    - obj:
+                        id: wx_d1_track
+                        styles: wx_track
+                        y: ${49*px//1}
+                        widgets:
+                          - obj:
+                              id: wx_d1_fill
+                              styles: wx_fill
                     - label:
                         id: wx_d1_hi
                         text: ""
                         text_align: RIGHT
-                        width: ${56*px}
+                        width: ${48*px}
                         align: TOP_RIGHT
                         x: -${16*px}
                         y: ${42*px}
@@ -656,15 +895,23 @@ lvgl:
                         text: ""
                         text_color: ${c_text_2}
                         text_align: RIGHT
-                        width: ${56*px}
+                        width: ${48*px}
                         align: TOP_RIGHT
-                        x: -${84*px}
+                        x: -${180*px}
                         y: ${74*px}
+                    - obj:
+                        id: wx_d2_track
+                        styles: wx_track
+                        y: ${81*px//1}
+                        widgets:
+                          - obj:
+                              id: wx_d2_fill
+                              styles: wx_fill
                     - label:
                         id: wx_d2_hi
                         text: ""
                         text_align: RIGHT
-                        width: ${56*px}
+                        width: ${48*px}
                         align: TOP_RIGHT
                         x: -${16*px}
                         y: ${74*px}
@@ -694,15 +941,23 @@ lvgl:
                         text: ""
                         text_color: ${c_text_2}
                         text_align: RIGHT
-                        width: ${56*px}
+                        width: ${48*px}
                         align: TOP_RIGHT
-                        x: -${84*px}
+                        x: -${180*px}
                         y: ${106*px}
+                    - obj:
+                        id: wx_d3_track
+                        styles: wx_track
+                        y: ${113*px//1}
+                        widgets:
+                          - obj:
+                              id: wx_d3_fill
+                              styles: wx_fill
                     - label:
                         id: wx_d3_hi
                         text: ""
                         text_align: RIGHT
-                        width: ${56*px}
+                        width: ${48*px}
                         align: TOP_RIGHT
                         x: -${16*px}
                         y: ${106*px}
@@ -732,18 +987,43 @@ lvgl:
                         text: ""
                         text_color: ${c_text_2}
                         text_align: RIGHT
-                        width: ${56*px}
+                        width: ${48*px}
                         align: TOP_RIGHT
-                        x: -${84*px}
+                        x: -${180*px}
                         y: ${138*px}
+                    - obj:
+                        id: wx_d4_track
+                        styles: wx_track
+                        y: ${145*px//1}
+                        widgets:
+                          - obj:
+                              id: wx_d4_fill
+                              styles: wx_fill
                     - label:
                         id: wx_d4_hi
                         text: ""
                         text_align: RIGHT
-                        width: ${56*px}
+                        width: ${48*px}
                         align: TOP_RIGHT
                         x: -${16*px}
                         y: ${138*px}
+                    # Current temperature on Today's bar (x set by update_wx_bars)
+                    - obj:
+                        id: wx_now_dot
+                        align: TOP_LEFT
+                        x: ${276*px}
+                        y: ${15*px//1}
+                        width: ${10*px}
+                        height: ${10*px}
+                        bg_color: 0xFFFFFF
+                        bg_opa: COVER
+                        border_width: ${2*px}
+                        border_color: ${c_surface}
+                        radius: 999
+                        pad_all: 0
+                        clickable: false
+                        scrollable: false
+                        hidden: true
 
               # ── Last forecast update ──────────────────────────────
               - label:

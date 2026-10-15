@@ -39,8 +39,14 @@
   time block starts.
 - **Weather in colour:** condition icons in the status bar and on the
   weather sheet are tinted by condition (yellow sun, blue rain, orange
-  storms…). Rain amounts (now light blue) and the humidity · wind · UV line
-  are larger. No display file changes.
+  storms…) and switch to moons after sunset. Rain amounts (now light blue)
+  and the humidity · wind · UV line are larger. The 5-day rows get
+  Apple-Weather-style range bars (scaled to the week, cool-to-warm colours,
+  a dot for the current temperature on Today), the header shows the next
+  sunrise and sunset, and a new optional `feels_like_entity` adds "Feels
+  like" under the high/low. **Upgrading:** copy the new
+  `ha/panel_weather.yaml` into HA (adds night flags and sun times; older
+  panels ignore them) and reload template entities.
 - **Larger small print:** captions, section headers and help text go from
   13 to 16 px (`font_caption`; 24 px on the P4) so they read from across the
   room. Layouts that got tight were adjusted (update notice, About card,

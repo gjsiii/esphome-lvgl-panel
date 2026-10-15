@@ -95,6 +95,9 @@ font:
         "\U000F059D", # mdi-weather-windy            windy
         "\U000F059E", # mdi-weather-windy-variant    windy-variant
         "\U000F05D6", # mdi-alert-circle-outline     exceptional
+        "\U000F0F31", # mdi-weather-night-partly-cloudy  partlycloudy after dark
+        "\U000F059C", # mdi-weather-sunset-up (weather sheet: sunrise)
+        "\U000F059B", # mdi-weather-sunset-down (weather sheet: sunset)
       ]
 
   - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
@@ -143,6 +146,7 @@ font:
         "\U000F0599", "\U000F0594", "\U000F0595", "\U000F0590", "\U000F0591",
         "\U000F0592", "\U000F0593", "\U000F067E", "\U000F0596", "\U000F0597",
         "\U000F0598", "\U000F067F", "\U000F059D", "\U000F059E", "\U000F05D6",
+        "\U000F0F31",
       ]
 
   # Weather sheet: big current condition icon
@@ -155,6 +159,7 @@ font:
         "\U000F0599", "\U000F0594", "\U000F0595", "\U000F0590", "\U000F0591",
         "\U000F0592", "\U000F0593", "\U000F067E", "\U000F0596", "\U000F0597",
         "\U000F0598", "\U000F067F", "\U000F059D", "\U000F059E", "\U000F05D6",
+        "\U000F0F31",
       ]
 
   - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf

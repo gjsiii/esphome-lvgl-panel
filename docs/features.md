@@ -293,7 +293,10 @@ The status bar shows the current condition and temperature; **tap it** for
 the weather sheet: current conditions, today's high/low, humidity, wind and UV,
 the next 15 hours (every 3 hours) and the next 5 days with any rain.
 Condition icons are coloured by condition (yellow sun, blue rain, orange
-storms, icy blue snow, red for anything unusual).
+storms, icy blue snow, red for anything unusual) and turn into moons after
+sunset. Each day's low–high sits on a bar scaled to the week, coloured from
+cool to warm, with a dot for the current temperature on Today. The header
+shows the next sunrise and sunset.
 
 ```yaml
 - path: features/weather.yaml
@@ -301,6 +304,7 @@ storms, icy blue snow, red for anything unusual).
     weather_entity: weather.home
     forecast_entity: sensor.panel_weather_forecast          # from ha/panel_weather.yaml
     outdoor_temp_entity: sensor.backyard_temperature        # optional: your own thermometer
+    feels_like_entity: sensor.backyard_feels_like           # optional: "Feels like" line
 ```
 
 - The forecast needs [`ha/panel_weather.yaml`](../ha/panel_weather.yaml) in Home
@@ -308,6 +312,11 @@ storms, icy blue snow, red for anything unusual).
   them every 30 minutes). Without it the sheet shows current conditions only.
 - `outdoor_temp_entity` (optional) replaces the forecast's temperature with a
   local sensor such as a rooftop weather station.
+- `feels_like_entity` (optional) adds "Feels like 64°" under the high/low:
+  any apparent-temperature sensor (a weather station's feels-like, or a
+  weather integration's). Most weather entities don't carry one.
+- Substitutions: `temp_unit` (`F` or `C`, for the bar colours), `wind_unit`,
+  `rain_unit`, `sun_entity` (default `sun.sun`, for night icons).
 
 ## Climate
 

@@ -6,9 +6,12 @@
 # panels subscribe to (see esphome/panel/features/weather.yaml).
 #
 #   state:  last update time, e.g. "7:30am"
-#   hourly: 6 entries, now and every 3 hours:  "Now,58,partlycloudy;10am,62,sunny;..."
+#   hourly: 6 entries, now and every 3 hours:  "Now,58,partlycloudy;10am,62,sunny;9pm,55,clear-night,n;..."
+#           (time, temperature, condition, and "n" for hours after dark, so
+#           the panel shows a moon where the source still says sunny/partlycloudy)
 #   daily:  5 entries:  "Today,48,65,partlycloudy,0.00;Thu,47,63,rainy,0.21;..."
 #           (day, low, high, condition, rain in the weather entity's unit)
+#   sun:    next sunrise and sunset, e.g. "7:02am,6:11pm" (empty without sun.sun)
 #
 # Install: copy this file into HA's /config/packages/ and change `source` to
 # your weather entity. If packages aren't enabled yet, add to configuration.yaml
@@ -24,6 +27,10 @@ template:
         event: start
       - trigger: event
         event_type: event_template_reloaded
+      # Sunrise / sunset (to: null = state changes only, not attribute updates)
+      - trigger: state
+        entity_id: sun.sun
+        to: null
     actions:
       - variables:
           source: weather.home
@@ -47,11 +54,21 @@ template:
         attributes:
           hourly: >-
             {%- set f = hourly[source].forecast if hourly is defined and source in hourly else [] -%}
+            {%- set r = state_attr('sun.sun', 'next_rising') -%}
+            {%- set s = state_attr('sun.sun', 'next_setting') -%}
+            {%- set rise = as_datetime(r) if r else none -%}
+            {%- set set_ = as_datetime(s) if s else none -%}
             {%- set ns = namespace(out=[]) -%}
             {%- for i in [0, 3, 6, 9, 12, 15] if i < f | count -%}
               {%- set e = f[i] -%}
-              {%- set t = 'Now' if i == 0 else (as_local(as_datetime(e.datetime)).strftime('%-I%p') | lower) -%}
-              {%- set ns.out = ns.out + [t ~ ',' ~ (e.temperature | float(0) | round(0) | int) ~ ',' ~ e.condition] -%}
+              {%- set dt = as_datetime(e.datetime) -%}
+              {%- set t = 'Now' if i == 0 else (as_local(dt).strftime('%-I%p') | lower) -%}
+              {#- Night: between the next sunset and the next sunrise while the
+                  sun is up; before the next sunrise or after the next sunset
+                  while it is down -#}
+              {%- set night = rise is not none and set_ is not none and
+                    ((set_ <= dt and dt < rise) if set_ < rise else (dt < rise or dt >= set_)) -%}
+              {%- set ns.out = ns.out + [t ~ ',' ~ (e.temperature | float(0) | round(0) | int) ~ ',' ~ e.condition ~ (',n' if night else '')] -%}
             {%- endfor -%}
             {{ ns.out | join(';') }}
           daily: >-
@@ -64,3 +81,9 @@ template:
               {%- set ns.out = ns.out + [d ~ ',' ~ lo ~ ',' ~ hi ~ ',' ~ e.condition ~ ',' ~ ('%.2f' | format(e.precipitation | float(0)))] -%}
             {%- endfor -%}
             {{ ns.out | join(';') }}
+          sun: >-
+            {%- set r = state_attr('sun.sun', 'next_rising') -%}
+            {%- set s = state_attr('sun.sun', 'next_setting') -%}
+            {%- if r and s -%}
+              {{ as_local(as_datetime(r)).strftime('%-I:%M%p') | lower }},{{ as_local(as_datetime(s)).strftime('%-I:%M%p') | lower }}
+            {%- endif -%}
