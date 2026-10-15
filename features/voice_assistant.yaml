@@ -326,6 +326,7 @@ lvgl:
             id: voice_settings_header
             text: "VOICE"
             styles: section_header
+            translate_y: -${4*px}   # as the other Settings headers
             align: TOP_LEFT
             x: ${32*px}
         - obj:

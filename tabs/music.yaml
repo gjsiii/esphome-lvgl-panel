@@ -550,7 +550,7 @@ lvgl:
                   on_click:
                     - lvgl.widget.hide: music_playon_panel
               - label:
-                  text: "Tap a speaker to add it to this music, or tap again to remove it."
+                  text: "Tap a speaker to add it to this music or remove it."
                   text_font: font_caption
                   text_color: ${c_text_2}
                   long_mode: WRAP

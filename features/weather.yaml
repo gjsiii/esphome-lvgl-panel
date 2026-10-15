@@ -389,7 +389,7 @@ lvgl:
                         width: ${74*px}
                         align: TOP_LEFT
                         x: ${2*px}
-                        y: ${8*px}
+                        y: ${6*px}
                     - label:
                         id: wx_h0_icon
                         text: ""
@@ -416,7 +416,7 @@ lvgl:
                         width: ${74*px}
                         align: TOP_LEFT
                         x: ${76*px}
-                        y: ${8*px}
+                        y: ${6*px}
                     - label:
                         id: wx_h1_icon
                         text: ""
@@ -443,7 +443,7 @@ lvgl:
                         width: ${74*px}
                         align: TOP_LEFT
                         x: ${150*px}
-                        y: ${8*px}
+                        y: ${6*px}
                     - label:
                         id: wx_h2_icon
                         text: ""
@@ -470,7 +470,7 @@ lvgl:
                         width: ${74*px}
                         align: TOP_LEFT
                         x: ${224*px}
-                        y: ${8*px}
+                        y: ${6*px}
                     - label:
                         id: wx_h3_icon
                         text: ""
@@ -497,7 +497,7 @@ lvgl:
                         width: ${74*px}
                         align: TOP_LEFT
                         x: ${298*px}
-                        y: ${8*px}
+                        y: ${6*px}
                     - label:
                         id: wx_h4_icon
                         text: ""
@@ -524,7 +524,7 @@ lvgl:
                         width: ${74*px}
                         align: TOP_LEFT
                         x: ${372*px}
-                        y: ${8*px}
+                        y: ${6*px}
                     - label:
                         id: wx_h5_icon
                         text: ""
@@ -752,4 +752,4 @@ lvgl:
                   text_font: font_caption
                   text_color: ${c_text_2}
                   align: TOP_MID
-                  y: ${458*px}
+                  y: ${456*px}

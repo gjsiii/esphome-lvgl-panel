@@ -30,7 +30,7 @@ slider() { # y name pct fillcolor textoncolor
   local nc="#8E8E93"; [ $fw -gt 150 ] && nc="$5"; local pc="#8E8E93"; [ $fw -gt 420 ] && pc="$5"
   echo "<text x=\"38\" y=\"$(( $1 + 34 ))\" fill=\"$nc\" font-size=\"16\" font-weight=\"500\">$2</text><text x=\"442\" y=\"$(( $1 + 34 ))\" fill=\"$pc\" font-size=\"16\" font-weight=\"500\" text-anchor=\"end\">$3%</text>"; }
 hdr() { echo "<text x=\"20\" y=\"42\" fill=\"#FFF\" font-size=\"20\" font-weight=\"600\">$1</text><text x=\"415\" y=\"42\" fill=\"#F2F2F7\" font-size=\"20\" font-weight=\"600\" text-anchor=\"middle\">Done</text>"; }
-sec() { echo "<text x=\"$1\" y=\"$2\" fill=\"#8E8E93\" font-size=\"13\" font-weight=\"500\" letter-spacing=\"1\">$3</text>"; }
+sec() { echo "<text x=\"$1\" y=\"$2\" fill=\"#8E8E93\" font-size=\"16\" font-weight=\"500\" letter-spacing=\"1\">$3</text>"; }
 round() { echo "<circle cx=\"$1\" cy=\"$2\" r=\"$3\" fill=\"${5:-#1C1C1E}\"/><text x=\"$1\" y=\"$(( $2 + 7 ))\" fill=\"${6:-#FFF}\" font-size=\"${7:-20}\" text-anchor=\"middle\">$4</text>"; }
 
 # ── Lights ──────────────────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ ACT=0; { head; status "8:42pm" "$(boat 368 18 '#30D158')" "#8E8E93"
 # ── TV ──────────────────────────────────────────────────────────────────────
 ACT=1; { head; status "8:42pm" "" "#0A84FF"
  echo '<rect x="12" y="48" width="104" height="104" rx="12" fill="#2C3E50"/><text x="64" y="106" fill="#FFF" font-size="13" text-anchor="middle">artwork</text>'
- echo '<text x="12" y="172" fill="#FFF" font-size="13">Friends</text><text x="12" y="190" fill="#8E8E93" font-size="13">HBO Max</text>'
+ echo '<text x="12" y="172" fill="#FFF" font-size="16">Friends</text><text x="12" y="194" fill="#8E8E93" font-size="16">HBO Max</text>'
  echo '<circle cx="240" cy="154" r="110" fill="#1C1C1E"/><circle cx="240" cy="154" r="42" fill="#2C2C2E"/>'
  echo '<g fill="none" stroke="#FFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M230 76l10-10 10 10"/><path d="M230 232l10 10 10-10"/><path d="M162 144l-10 10 10 10"/><path d="M318 144l10 10-10 10"/></g>'
  for i in 0 1 2 3; do y=$((70 + i*56)); echo "<circle cx=\"415\" cy=\"$((y+23))\" r=\"23\" fill=\"#1C1C1E\"/>"; done
@@ -59,7 +59,7 @@ ACT=2; { head; status "8:42pm" "" "#8E8E93"
  echo '<circle cx="444" cy="68" r="0"/><g transform="translate(444 68)" fill="#8E8E93"><rect x="-11" y="-9" width="9" height="18" rx="2"/><rect x="2" y="-9" width="9" height="18" rx="2"/></g>'
  echo '<text x="240" y="251" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">The Gold Ring</text><text x="240" y="276" fill="#8E8E93" font-size="16" text-anchor="middle">Liam O’Flynn</text>'
  echo '<rect x="40" y="286" width="400" height="4" rx="2" fill="#38383A"/><rect x="40" y="286" width="150" height="4" rx="2" fill="#F2F2F7"/>'
- echo '<text x="40" y="309" fill="#8E8E93" font-size="13">1:27</text><text x="440" y="309" fill="#8E8E93" font-size="13" text-anchor="end">3:51</text>'
+ echo '<text x="40" y="309" fill="#8E8E93" font-size="16">1:27</text><text x="440" y="309" fill="#8E8E93" font-size="16" text-anchor="end">3:51</text>'
  echo '<text x="46" y="356" fill="#FFF" font-size="20" text-anchor="middle">⇄</text><text x="128" y="358" fill="#FFF" font-size="26" text-anchor="middle">⏮</text>'
  echo '<circle cx="240" cy="348" r="32" fill="#F2F2F7"/><g fill="#000"><rect x="228" y="334" width="8" height="28" rx="2"/><rect x="244" y="334" width="8" height="28" rx="2"/></g>'
  echo '<text x="352" y="358" fill="#FFF" font-size="26" text-anchor="middle">⏭</text><text x="434" y="356" fill="#8E8E93" font-size="20" text-anchor="middle">↻</text>'
@@ -81,17 +81,17 @@ ACT=3; { head; status "8:42pm" "" "#8E8E93"
  wc() { case $1 in ☀) echo '#FFD60A';; ☾) echo '#C9C3FF';; ⛅) echo '#FFE066';; ☁) echo '#AEAEB2';; 🌧) echo '#64D2FF';; *) echo '#FFF';; esac; }
  echo '<rect x="16" y="184" width="448" height="92" rx="14" fill="#1C1C1E"/>'
  t=(Now 6pm 9pm 12am 3am 6am); v=(70 68 63 60 58 59); ic=(☀ ☀ ☾ ☾ ☁ ⛅)
- for i in 0 1 2 3 4 5; do x=$((18 + i*74 + 37)); echo "<text x=\"$x\" y=\"206\" fill=\"#8E8E93\" font-size=\"13\" text-anchor=\"middle\">${t[$i]}</text><text x=\"$x\" y=\"240\" fill=\"$(wc ${ic[$i]})\" font-size=\"22\" text-anchor=\"middle\">${ic[$i]}</text><text x=\"$x\" y=\"266\" fill=\"#FFF\" font-size=\"16\" text-anchor=\"middle\">${v[$i]}°</text>"; done
+ for i in 0 1 2 3 4 5; do x=$((18 + i*74 + 37)); echo "<text x=\"$x\" y=\"204\" fill=\"#8E8E93\" font-size=\"16\" text-anchor=\"middle\">${t[$i]}</text><text x=\"$x\" y=\"240\" fill=\"$(wc ${ic[$i]})\" font-size=\"22\" text-anchor=\"middle\">${ic[$i]}</text><text x=\"$x\" y=\"266\" fill=\"#FFF\" font-size=\"16\" text-anchor=\"middle\">${v[$i]}°</text>"; done
  echo '<rect x="16" y="286" width="448" height="166" rx="14" fill="#1C1C1E"/>'
  d=(Today Thu Fri Sat Sun); lo=(58 55 57 61 60); hi=(74 70 72 77 75); di=(☀ ⛅ 🌧 ☀ ⛅); rn=("" "" "0.24 in" "" "")
  for i in 0 1 2 3 4; do y=$((286 + 4 + i*32 + 22)); echo "<text x=\"32\" y=\"$y\" fill=\"#FFF\" font-size=\"16\">${d[$i]}</text><text x=\"134\" y=\"$y\" fill=\"$(wc ${di[$i]})\" font-size=\"18\">${di[$i]}</text><text x=\"162\" y=\"$y\" fill=\"#64D2FF\" font-size=\"16\">${rn[$i]}</text><text x=\"372\" y=\"$y\" fill=\"#8E8E93\" font-size=\"16\" text-anchor=\"end\">${lo[$i]}°</text><text x=\"440\" y=\"$y\" fill=\"#FFF\" font-size=\"16\" text-anchor=\"end\">${hi[$i]}°</text>"; done
- echo '<text x="240" y="472" fill="#8E8E93" font-size="13" text-anchor="middle">Updated 8:30pm</text>'; foot; } > $O/weather.svg
+ echo '<text x="240" y="470" fill="#8E8E93" font-size="16" text-anchor="middle">Updated 8:30pm</text>'; foot; } > $O/weather.svg
 
 # ── Climate sheet ───────────────────────────────────────────────────────────
 { head; hdr "First Floor"
  echo '<path d="M151.6 279.4 A125 125 0 1 1 328.4 279.4" fill="none" stroke="#1C1C1E" stroke-width="18" stroke-linecap="round"/>'
  echo '<path d="M151.6 279.4 A125 125 0 0 1 252 66.6" fill="none" stroke="#0A84FF" stroke-width="18" stroke-linecap="round"/><circle cx="252" cy="66.6" r="13" fill="#FFF"/>'
- echo '<text x="240" y="212" fill="#FFF" font-size="72" font-weight="300" text-anchor="middle">72°</text><text x="240" y="246" fill="#8E8E93" font-size="13" text-anchor="middle">Now 74°  ·  Cooling</text>'
+ echo '<text x="240" y="212" fill="#FFF" font-size="72" font-weight="300" text-anchor="middle">72°</text><text x="240" y="246" fill="#8E8E93" font-size="16" text-anchor="middle">Now 74°  ·  Cooling</text>'
  round 64 288 28 "−" "#1C1C1E" "#FFF" 26; round 416 288 28 "+" "#1C1C1E" "#FFF" 26
  echo '<rect x="16" y="392" width="448" height="50" rx="12" fill="#1C1C1E"/><rect x="224" y="396" width="110" height="42" rx="9" fill="#636366"/>'
  m=(Off Heat Cool Auto); for i in 0 1 2 3; do echo "<text x=\"$((20 + i*110 + 55))\" y=\"423\" fill=\"#FFF\" font-size=\"16\" text-anchor=\"middle\">${m[$i]}</text>"; done; foot; } > $O/climate.svg
@@ -122,10 +122,10 @@ ACT=0; { head; status "8:42pm" "" "#8E8E93"
 # ── Camera pop-up ───────────────────────────────────────────────────────────
 { head; echo '<text x="20" y="42" fill="#FFF" font-size="20" font-weight="600">Front Gate</text><text x="460" y="42" fill="#8E8E93" font-size="16" text-anchor="end">6:12pm</text>'
  echo '<defs><linearGradient id="cam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5B7083"/><stop offset="1" stop-color="#2E3B2E"/></linearGradient></defs><rect x="16" y="66" width="448" height="252" rx="14" fill="url(#cam)"/><text x="240" y="198" fill="#FFF" font-size="14" text-anchor="middle" opacity=".7">live camera snapshot</text>'
- echo '<text x="240" y="342" fill="#8E8E93" font-size="13" text-anchor="middle">Live · updates every 5 s</text><rect x="130" y="368" width="220" height="56" rx="28" fill="#2C2C2E"/><text x="240" y="403" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">Dismiss</text>'; foot; } > $O/camera-popup.svg
+ echo '<text x="240" y="342" fill="#8E8E93" font-size="16" text-anchor="middle">Live · updates every 5 s</text><rect x="130" y="368" width="220" height="56" rx="28" fill="#2C2C2E"/><text x="240" y="403" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">Dismiss</text>'; foot; } > $O/camera-popup.svg
 
 # ── Play on (Kitchen grouped, with its own volume) ─────────────────────────
-{ head; hdr "Play on"; echo '<text x="20" y="82" fill="#8E8E93" font-size="13">Tap a speaker to add it to this music, or tap again to remove it.</text>'
+{ head; hdr "Play on"; echo '<text x="20" y="82" fill="#8E8E93" font-size="16">Tap a speaker to add it to this music or remove it.</text>'
  r() { echo "<rect x=\"20\" y=\"$1\" width=\"440\" height=\"56\" rx=\"14\" fill=\"#1C1C1E\"/><text x=\"74\" y=\"$(( $1 + 34 ))\" fill=\"#FFF\" font-size=\"16\">$2</text><g transform=\"translate(44 $(( $1 + 28 )))\" fill=\"#8E8E93\"><rect x=\"-7\" y=\"-11\" width=\"14\" height=\"22\" rx=\"3\"/></g>"; [ "$3" = 1 ] && echo "<path d=\"M424 $(( $1 + 28 ))l6 6 12-12\" fill=\"none\" stroke=\"#F2F2F7\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"; }
  v() { # y pct: the grouped speaker's volume row
   echo "<g transform=\"translate(44 $(( $1 + 20 )))\" fill=\"#8E8E93\"><path d=\"M-9 -4h5l6 -6v20l-6 -6h-5z\"/><path d=\"M5 -5a7 7 0 0 1 0 10\" fill=\"none\" stroke=\"#8E8E93\" stroke-width=\"2\" stroke-linecap=\"round\"/></g>"
@@ -163,22 +163,22 @@ flake() { # cx cy size color opacity — six arms with side barbs
  flake 34 35 24 "#9FD3FF"; echo '<text x="54" y="42" fill="#FFF" font-size="20" font-weight="600">Breckenridge</text><text x="415" y="42" fill="#9FD3FF" font-size="20" font-weight="600" text-anchor="middle">Done</text>'
  card() { echo "<rect x=\"$1\" y=\"$2\" width=\"$3\" height=\"$4\" rx=\"$5\" fill=\"#10274A\" stroke=\"#2E5487\"/>"; }
  card 20 68 440 136 18
- echo '<text x="38" y="96" fill="#9FD3FF" font-size="13" font-weight="500" letter-spacing="1">NEW SNOW  ·  24 HOURS</text><text x="34" y="182" fill="#FFF" font-size="72" font-weight="300">14"</text>'
+ echo '<text x="38" y="96" fill="#9FD3FF" font-size="16" font-weight="500" letter-spacing="1">NEW SNOW  ·  24 HOURS</text><text x="34" y="182" fill="#FFF" font-size="72" font-weight="300">14"</text>'
  echo '<rect x="270" y="86" width="1" height="100" fill="#2E5487"/>'
  r=("48 hours|19\"" "72 hours|22\"" "7 days|31\""); for i in 0 1 2; do IFS='|' read a b <<< "${r[$i]}"; y=$((106 + i*36)); echo "<text x=\"288\" y=\"$y\" fill=\"#9FB6D6\" font-size=\"16\">$a</text><text x=\"442\" y=\"$y\" fill=\"#FFF\" font-size=\"20\" font-weight=\"600\" text-anchor=\"end\">$b</text>"; done
- c=("BASE|58\"" "SUMMIT|72\"" "SEASON|187\""); for i in 0 1 2; do IFS='|' read a b <<< "${c[$i]}"; x=$((20 + i*150)); card $x 216 140 92 16; echo "<text x=\"$((x+14))\" y=\"$((216+28))\" fill=\"#9FD3FF\" font-size=\"13\" font-weight=\"500\" letter-spacing=\"1\">$a</text><text x=\"$((x+14))\" y=\"$((216+72))\" fill=\"#FFF\" font-size=\"20\" font-weight=\"600\">$b</text>"; done
+ c=("BASE|58\"" "SUMMIT|72\"" "SEASON|187\""); for i in 0 1 2; do IFS='|' read a b <<< "${c[$i]}"; x=$((20 + i*150)); card $x 216 140 92 16; echo "<text x=\"$((x+14))\" y=\"$((216+28))\" fill=\"#9FD3FF\" font-size=\"16\" font-weight=\"500\" letter-spacing=\"1\">$a</text><text x=\"$((x+14))\" y=\"$((216+72))\" fill=\"#FFF\" font-size=\"20\" font-weight=\"600\">$b</text>"; done
  card 20 320 440 104 16
  bar() { echo "<text x=\"38\" y=\"$1\" fill=\"#FFF\" font-size=\"16\">$2</text><text x=\"442\" y=\"$1\" fill=\"#9FB6D6\" font-size=\"16\" text-anchor=\"end\">$3 of $4</text><rect x=\"38\" y=\"$(( $1 + 12 ))\" width=\"404\" height=\"6\" rx=\"3\" fill=\"#0A1830\"/><rect x=\"38\" y=\"$(( $1 + 12 ))\" width=\"$(( 404 * $3 / $4 ))\" height=\"6\" rx=\"3\" fill=\"#9FD3FF\"/>"; }
  bar 348 "Lifts open" 33 35; bar 392 "Runs open" 168 187
- echo '<text x="240" y="456" fill="#9FD3FF" font-size="13" font-weight="500" text-anchor="middle">Open for the season</text>'; foot; } > $O/snow.svg
+ echo '<text x="240" y="456" fill="#9FD3FF" font-size="16" font-weight="500" text-anchor="middle">Open for the season</text>'; foot; } > $O/snow.svg
 
 # ── Light color sheet ───────────────────────────────────────────────────────
 { head; echo '<text x="20" y="42" fill="#FFF" font-size="20" font-weight="600">Chandelier</text>'
  echo '<circle cx="354" cy="34" r="22" fill="#1C1C1E"/><g transform="translate(354 34)" fill="none" stroke="#FFD60A" stroke-width="2.6" stroke-linecap="round"><path d="M-6.5 -7.5a10 10 0 1 0 13 0"/><path d="M0 -11v9"/></g>'
  echo '<rect x="380" y="12" width="90" height="44" rx="22" fill="#1C1C1E"/><text x="425" y="42" fill="#F2F2F7" font-size="20" font-weight="600" text-anchor="middle">Done</text>'
- sec 24 80 BRIGHTNESS; echo '<text x="456" y="80" fill="#8E8E93" font-size="13" text-anchor="end">75%</text>'
+ sec 24 80 BRIGHTNESS; echo '<text x="456" y="80" fill="#8E8E93" font-size="16" text-anchor="end">75%</text>'
  echo '<rect x="20" y="88" width="440" height="56" rx="16" fill="#1C1C1E"/><rect x="20" y="88" width="330" height="56" rx="16" fill="#F2F2F7"/>'
- sec 24 174 WARMTH; echo '<text x="456" y="174" fill="#8E8E93" font-size="13" text-anchor="end">2700K</text>'
+ sec 24 174 WARMTH; echo '<text x="456" y="174" fill="#8E8E93" font-size="16" text-anchor="end">2700K</text>'
  echo '<defs><linearGradient id="ct"><stop offset="0" stop-color="#FF9A3C"/><stop offset="1" stop-color="#D6E6FF"/></linearGradient></defs><rect x="42" y="188" width="396" height="40" rx="20" fill="url(#ct)"/><circle cx="128" cy="208" r="18" fill="#FFF" stroke="#0006"/>'
  sec 24 262 COLOR; echo '<rect x="42" y="276" width="396" height="40" rx="20" fill="url(#hue)"/><circle cx="96" cy="296" r="18" fill="#FFF" stroke="#0006"/>'
  echo '<defs><linearGradient id="hue"><stop offset="0" stop-color="#F00"/><stop offset=".17" stop-color="#FF0"/><stop offset=".33" stop-color="#0F0"/><stop offset=".5" stop-color="#0FF"/><stop offset=".67" stop-color="#00F"/><stop offset=".83" stop-color="#F0F"/><stop offset="1" stop-color="#F00"/></linearGradient><linearGradient id="sat2"><stop offset="0" stop-color="#FFF"/><stop offset="1" stop-color="#FF9A00"/></linearGradient></defs>'
@@ -254,19 +254,19 @@ cake() { # cx cy color
  echo '<rect x="32" y="156" width="432" height="1" fill="#38383A"/><text x="32" y="189" fill="#FFF" font-size="16">Mute wake word</text><rect x="396" y="168" width="52" height="30" rx="15" fill="#39393D"/><circle cx="411" cy="183" r="12" fill="#FFF"/>'
  echo '<rect x="32" y="210" width="432" height="1" fill="#38383A"/><text x="32" y="243" fill="#FFF" font-size="16">Reply volume</text><text x="448" y="243" fill="#8E8E93" font-size="16" text-anchor="end">60%</text>'
  echo '<rect x="32" y="260" width="416" height="44" rx="14" fill="#2C2C2E"/><rect x="32" y="260" width="250" height="44" rx="14" fill="#F2F2F7"/>'
- sec 32 356 "ABOUT THIS PROJECT"; echo '<rect x="16" y="366" width="448" height="114" fill="#1C1C1E"/><rect x="16" y="366" width="448" height="30" rx="14" fill="#1C1C1E"/><text x="32" y="406" fill="#FFF" font-size="20" font-weight="600">esphome-lvgl-panel</text><text x="32" y="430" fill="#8E8E93" font-size="13">https://github.com/gjsiii/esphome-lvgl-panel</text>'
+ sec 32 356 "ABOUT THIS PROJECT"; echo '<rect x="16" y="366" width="448" height="114" fill="#1C1C1E"/><rect x="16" y="366" width="448" height="30" rx="14" fill="#1C1C1E"/><text x="32" y="406" fill="#FFF" font-size="20" font-weight="600">esphome-lvgl-panel</text><text x="32" y="430" fill="#8E8E93" font-size="16">https://github.com/gjsiii/esphome-lvgl-panel</text>'
  foot; } > $O/voice-settings.svg
 
 # ── About (bottom of Settings) ──────────────────────────────────────────────
 { head; hdr Settings
  echo '<rect x="16" y="70" width="448" height="96" rx="14" fill="#1C1C1E"/><text x="32" y="102" fill="#FFF" font-size="16">Uptime</text><text x="448" y="102" fill="#8E8E93" font-size="16" text-anchor="end">3d 4h 12m</text><rect x="32" y="118" width="416" height="1" fill="#38383A"/><text x="32" y="146" fill="#FFF" font-size="16">Last restart</text><text x="448" y="146" fill="#8E8E93" font-size="16" text-anchor="end">Software</text>'
  echo '<rect x="16" y="180" width="448" height="50" rx="14" fill="#1C1C1E"/><text x="240" y="211" fill="#FF453A" font-size="16" text-anchor="middle">Hold to restart</text>'
- sec 32 268 "ABOUT THIS PROJECT"; echo '<rect x="16" y="282" width="448" height="176" rx="14" fill="#1C1C1E"/><rect x="32" y="298" width="144" height="144" rx="8" fill="#FFF"/>'
+ sec 32 268 "ABOUT THIS PROJECT"; echo '<rect x="16" y="282" width="448" height="188" rx="14" fill="#1C1C1E"/><rect x="32" y="298" width="144" height="144" rx="8" fill="#FFF"/>'
  RANDOM=7; q=""; for r in $(seq 0 24); do for c in $(seq 0 24); do
    inf=0; for o in "0 0" "0 18" "18 0"; do set -- $o; [ $r -ge $1 ] && [ $r -lt $(( $1 + 7 )) ] && [ $c -ge $2 ] && [ $c -lt $(( $2 + 7 )) ] && inf=1; done
    [ $inf = 1 ] && continue; [ $((RANDOM % 2)) -eq 1 ] && q="$q<rect x=\"$((42 + c*5))\" y=\"$((308 + r*5))\" width=\"5\" height=\"5\"/>"; done; done
  fp() { echo "<rect x=\"$1\" y=\"$2\" width=\"35\" height=\"35\" fill=\"#000\"/><rect x=\"$(( $1 + 5 ))\" y=\"$(( $2 + 5 ))\" width=\"25\" height=\"25\" fill=\"#FFF\"/><rect x=\"$(( $1 + 10 ))\" y=\"$(( $2 + 10 ))\" width=\"15\" height=\"15\" fill=\"#000\"/>"; }
  echo "<g fill=\"#000\">$q</g>"; fp 42 308; fp 132 308; fp 42 398
- echo '<text x="192" y="320" fill="#FFF" font-size="20" font-weight="600">esphome-lvgl-panel</text><text x="192" y="342" fill="#8E8E93" font-size="13">https://github.com/gjsiii/</text><text x="192" y="358" fill="#8E8E93" font-size="13">esphome-lvgl-panel</text>'
- echo '<text x="192" y="386" fill="#8E8E93" font-size="13">Scan for the code, setup guides</text><text x="192" y="402" fill="#8E8E93" font-size="13">and updates.</text><text x="192" y="434" fill="#30D158" font-size="13" font-weight="500">Version 0.4.0  ·  v0.5.0 available</text>'
+ echo '<text x="192" y="320" fill="#FFF" font-size="20" font-weight="600">esphome-lvgl-panel</text><text x="192" y="348" fill="#8E8E93" font-size="16">https://github.com/gjsiii/</text><text x="192" y="367" fill="#8E8E93" font-size="16">esphome-lvgl-panel</text>'
+ echo '<text x="192" y="391" fill="#8E8E93" font-size="16">Scan for the code, setup guides</text><text x="192" y="410" fill="#8E8E93" font-size="16">and updates.</text><text x="192" y="437" fill="#30D158" font-size="16" font-weight="500">Version 0.4.0  ·  v0.5.0 available</text>'
  foot; } > $O/about.svg

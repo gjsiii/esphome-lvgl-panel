@@ -43,7 +43,7 @@ script:
                 // Show/hide the card, moving everything below it to match
                 static bool shown = false;
                 if (newer != shown) {
-                  const int32_t shift = ${(86*px)|int};   // card height + gap
+                  const int32_t shift = ${(96*px)|int};   // card height + gap
                   uint32_t n = lv_obj_get_child_cnt(id(settings_panel));
                   for (uint32_t k = 0; k < n; k++) {
                     lv_obj_t *c = lv_obj_get_child(id(settings_panel), k);

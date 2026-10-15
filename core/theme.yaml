@@ -19,8 +19,17 @@ substitutions:
 
 font:
   # ── Text (Inter: closest open font to SF Pro / Roboto) ─────────────────────
+  # Captions, section headers, help text. Same size as body text so it stays
+  # readable across the room; the grey colour sets it apart.
   - file: "gfonts://Inter@500"
     id: font_caption
+    size: ${16*px}
+    bpp: 4
+    glyphsets: [GF_Latin_Core]
+
+  # Small print where space is tight (favorite tile names)
+  - file: "gfonts://Inter@500"
+    id: font_small
     size: ${13*px//1}
     bpp: 4
     glyphsets: [GF_Latin_Core]

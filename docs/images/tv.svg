@@ -8,7 +8,7 @@
 <g transform="translate(412 19)" fill="none" stroke="#8E8E93" stroke-width="2.2" stroke-linecap="round"><path d="M-9 -3a13 13 0 0 1 18 0"/><path d="M-5.5 1a8 8 0 0 1 11 0"/><circle cx="0" cy="5" r="1.6" fill="#8E8E93" stroke="none"/></g>
 <g transform="translate(456 18)"><circle r="7.5" fill="none" stroke="#8E8E93" stroke-width="3.5" stroke-dasharray="3.4 2.5"/><circle r="4.2" fill="none" stroke="#8E8E93" stroke-width="2"/></g>
 <rect x="12" y="48" width="104" height="104" rx="12" fill="#2C3E50"/><text x="64" y="106" fill="#FFF" font-size="13" text-anchor="middle">artwork</text>
-<text x="12" y="172" fill="#FFF" font-size="13">Friends</text><text x="12" y="190" fill="#8E8E93" font-size="13">HBO Max</text>
+<text x="12" y="172" fill="#FFF" font-size="16">Friends</text><text x="12" y="194" fill="#8E8E93" font-size="16">HBO Max</text>
 <circle cx="240" cy="154" r="110" fill="#1C1C1E"/><circle cx="240" cy="154" r="42" fill="#2C2C2E"/>
 <g fill="none" stroke="#FFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M230 76l10-10 10 10"/><path d="M230 232l10 10 10-10"/><path d="M162 144l-10 10 10 10"/><path d="M318 144l10 10-10 10"/></g>
 <circle cx="415" cy="93" r="23" fill="#1C1C1E"/>

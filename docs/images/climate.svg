@@ -3,7 +3,7 @@
 <text x="20" y="42" fill="#FFF" font-size="20" font-weight="600">First Floor</text><text x="415" y="42" fill="#F2F2F7" font-size="20" font-weight="600" text-anchor="middle">Done</text>
 <path d="M151.6 279.4 A125 125 0 1 1 328.4 279.4" fill="none" stroke="#1C1C1E" stroke-width="18" stroke-linecap="round"/>
 <path d="M151.6 279.4 A125 125 0 0 1 252 66.6" fill="none" stroke="#0A84FF" stroke-width="18" stroke-linecap="round"/><circle cx="252" cy="66.6" r="13" fill="#FFF"/>
-<text x="240" y="212" fill="#FFF" font-size="72" font-weight="300" text-anchor="middle">72°</text><text x="240" y="246" fill="#8E8E93" font-size="13" text-anchor="middle">Now 74°  ·  Cooling</text>
+<text x="240" y="212" fill="#FFF" font-size="72" font-weight="300" text-anchor="middle">72°</text><text x="240" y="246" fill="#8E8E93" font-size="16" text-anchor="middle">Now 74°  ·  Cooling</text>
 <circle cx="64" cy="288" r="28" fill="#1C1C1E"/><text x="64" y="295" fill="#FFF" font-size="26" text-anchor="middle">−</text>
 <circle cx="416" cy="288" r="28" fill="#1C1C1E"/><text x="416" y="295" fill="#FFF" font-size="26" text-anchor="middle">+</text>
 <rect x="16" y="392" width="448" height="50" rx="12" fill="#1C1C1E"/><rect x="224" y="396" width="110" height="42" rx="9" fill="#636366"/>

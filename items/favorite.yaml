@@ -55,7 +55,7 @@ lvgl:
                         align: CENTER
               - label:
                   text: "${name}"
-                  text_font: font_caption
+                  text_font: font_small
                   text_align: CENTER
                   long_mode: DOT
                   width: ${136*px}

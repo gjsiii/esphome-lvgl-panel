@@ -23,9 +23,13 @@ The slider color itself is a user setting (Settings → Slider color, or the
 
 ## Fonts and icons
 
-- Text uses **Inter** from Google Fonts at four sizes (`font_caption` 13,
-  `font_body` 16, `font_title` 20, `font_time` 22) plus large digit-only fonts
-  for the clock, the weather and the thermostat.
+- Text uses **Inter** from Google Fonts: `font_caption` and `font_body` 16
+  (captions are told apart by their grey colour), `font_title` 20,
+  `font_time` 22, `font_small` 13 (favorite tile names only), plus large
+  digit-only fonts for the clock, the weather and the thermostat. Sizes are
+  in 480-design pixels and scale by `px` on larger screens.
+- A display file that uses only `core/theme.yaml` (no hardware package) must
+  set `px: 1` in its `substitutions:`.
 - Icons come from **Material Design Icons v7.4.47**. Fonts only contain the
   glyphs listed in `core/theme.yaml`; to use another icon in a shared file,
   add its code point there. (Status chips compile their own icon, so any MDI

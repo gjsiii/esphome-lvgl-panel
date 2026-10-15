@@ -41,6 +41,12 @@
   weather sheet are tinted by condition (yellow sun, blue rain, orange
   storms…). Rain amounts (now light blue) and the humidity · wind · UV line
   are larger. No display file changes.
+- **Larger small print:** captions, section headers and help text go from
+  13 to 16 px (`font_caption`; 24 px on the P4) so they read from across the
+  room. Layouts that got tight were adjusted (update notice, About card,
+  Night help, Play on help, Apple TV labels). Favorite tile names stay at
+  13 px (new `font_small`). A display file that includes only
+  `core/theme.yaml` (no hardware package) needs `px: 1` in its substitutions.
 - Docs: new Holiday themes and Play on illustrations; both features listed
   with their entities in [Home Assistant side](docs/home-assistant.md).
 

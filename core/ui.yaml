@@ -194,7 +194,7 @@ lvgl:
                                   styles: section_header
                                   align: TOP_LEFT
                                   x: ${24*px}
-                                  y: ${12*px}
+                                  y: ${8*px}
 
                               # Scene chips (filled by panel/items/scene.yaml).
                               # Chips grow to fill each row: 3 per row.
@@ -215,7 +215,7 @@ lvgl:
                                   styles: section_header
                                   align: TOP_LEFT
                                   x: ${24*px}
-                                  y: ${154*px}
+                                  y: ${150*px}
 
                               # Light sliders (filled by panel/items/light.yaml).
                               # Three fit; more scroll. Flex layout set at boot.
@@ -297,7 +297,7 @@ lvgl:
                         align: TOP_MID
                         y: ${80*px}
                         width: ${448*px}
-                        height: ${74*px}
+                        height: ${84*px}
                         styles: card
                         border_color: 0x30D158
                         border_width: 1
@@ -327,12 +327,13 @@ lvgl:
                               width: ${374*px}
                               align: TOP_LEFT
                               x: ${58*px}
-                              y: ${36*px}
+                              y: ${34*px}
 
                     # ── Display: brightness ─────────────────────────
                     - label:
                         text: "DISPLAY"
                         styles: section_header
+                        translate_y: -${4*px}   # 16 px header: keep a gap above the card
                         align: TOP_LEFT
                         x: ${32*px}
                         y: ${80*px}
@@ -404,6 +405,7 @@ lvgl:
                     - label:
                         text: "SLIDER COLOR"
                         styles: section_header
+                        translate_y: -${4*px}   # 16 px header: keep a gap above the card
                         align: TOP_LEFT
                         x: ${32*px}
                         y: ${236*px}
@@ -712,6 +714,7 @@ lvgl:
                     - label:
                         text: "SCREEN"
                         styles: section_header
+                        translate_y: -${4*px}   # 16 px header: keep a gap above the card
                         align: TOP_LEFT
                         x: ${32*px}
                         y: ${498*px}
@@ -1052,6 +1055,7 @@ lvgl:
                     - label:
                         text: "NIGHT"
                         styles: section_header
+                        translate_y: -${4*px}   # 16 px header: keep a gap above the card
                         align: TOP_LEFT
                         x: ${32*px}
                         y: ${808*px}
@@ -1420,12 +1424,13 @@ lvgl:
                               width: ${416*px}
                               align: TOP_LEFT
                               x: ${16*px}
-                              y: ${302*px}
+                              y: ${298*px}
 
                     # ── Options ─────────────────────────────────────
                     - label:
                         text: "OPTIONS"
                         styles: section_header
+                        translate_y: -${4*px}   # 16 px header: keep a gap above the card
                         align: TOP_LEFT
                         x: ${32*px}
                         y: ${1190*px}
@@ -1545,6 +1550,7 @@ lvgl:
                     - label:
                         text: "ABOUT"
                         styles: section_header
+                        translate_y: -${4*px}   # 16 px header: keep a gap above the card
                         align: TOP_LEFT
                         x: ${32*px}
                         y: ${1444*px}
@@ -1701,6 +1707,7 @@ lvgl:
                     - label:
                         text: "ABOUT THIS PROJECT"
                         styles: section_header
+                        translate_y: -${4*px}   # 16 px header: keep a gap above the card
                         align: TOP_LEFT
                         x: ${32*px}
                         y: ${1888*px}
@@ -1708,7 +1715,7 @@ lvgl:
                         align: TOP_MID
                         y: ${1910*px}
                         width: ${448*px}
-                        height: ${176*px}
+                        height: ${188*px}
                         styles: card
                         clickable: false
                         scrollable: false
@@ -1751,7 +1758,7 @@ lvgl:
                               width: ${260*px}
                               align: TOP_LEFT
                               x: ${176*px}
-                              y: ${54*px}
+                              y: ${50*px}
                           - label:
                               text: "Scan for the code, setup guides and updates."
                               text_font: font_caption
@@ -1760,7 +1767,7 @@ lvgl:
                               width: ${260*px}
                               align: TOP_LEFT
                               x: ${176*px}
-                              y: ${98*px}
+                              y: ${94*px}
                           # Version + update status (core/settings.yaml: update_notice)
                           - label:
                               id: lbl_project_status
@@ -1770,7 +1777,7 @@ lvgl:
                               width: ${260*px}
                               align: TOP_LEFT
                               x: ${176*px}
-                              y: ${138*px}
+                              y: ${140*px}
 
               # ── PIN keypad (Settings lock; core/settings.yaml) ──────
               - obj:
