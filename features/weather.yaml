@@ -1,4 +1,5 @@
 # Feature: weather in the status bar + a weather sheet opened by tapping it.
+# Condition icons (status bar and sheet) are tinted by condition (wx_color).
 #
 #   weather: !include
 #     file: panel/features/weather.yaml
@@ -43,6 +44,27 @@ globals:
         if (c == "windy")           return "\U000F059D";
         if (c == "windy-variant")   return "\U000F059E";
         return "\U000F05D6";  // exceptional / unknown
+      }
+  # HA condition -> icon colour (iOS system colours)
+  - id: wx_color
+    type: std::function<uint32_t(const std::string &)>
+    initial_value: |-
+      [](const std::string &c) -> uint32_t {
+        if (c == "sunny")           return 0xFFD60A;  // yellow
+        if (c == "clear-night")     return 0xC9C3FF;  // pale moon
+        if (c == "partlycloudy")    return 0xFFE066;  // soft yellow
+        if (c == "cloudy")          return 0xAEAEB2;  // grey
+        if (c == "fog")             return 0x8E8E93;  // dark grey
+        if (c == "hail")            return 0x99E6FF;  // icy
+        if (c == "lightning")       return 0xFF9F0A;  // orange
+        if (c == "lightning-rainy") return 0xFF9F0A;
+        if (c == "pouring")         return 0x0A84FF;  // deep blue
+        if (c == "rainy")           return 0x64D2FF;  // light blue
+        if (c == "snowy")           return 0xD6F1FF;  // icy white
+        if (c == "snowy-rainy")     return 0x8FD3FF;
+        if (c == "windy")           return 0x63E6E2;  // teal
+        if (c == "windy-variant")   return 0x63E6E2;
+        return 0xFF453A;  // exceptional / unknown: red
       }
   # HA condition -> display name
   - id: wx_name
@@ -164,8 +186,11 @@ text_sensor:
     entity_id: ${weather_entity}
     on_value:
       - lambda: |-
+          lv_color_t c = lv_color_hex(id(wx_color)(x));
           lv_label_set_text(id(lbl_weather_icon), id(wx_icon)(x).c_str());
+          lv_obj_set_style_text_color(id(lbl_weather_icon), c, LV_PART_MAIN);
           lv_label_set_text(id(lbl_wx_now_icon), id(wx_icon)(x).c_str());
+          lv_obj_set_style_text_color(id(lbl_wx_now_icon), c, LV_PART_MAIN);
           lv_label_set_text(id(lbl_wx_now_cond), id(wx_name)(x).c_str());
       - lvgl.widget.show: btn_weather_open
 
@@ -193,6 +218,7 @@ text_sensor:
             if (f.size() >= 3) {
               lv_label_set_text(t[i], f[0].c_str());
               lv_label_set_text(ic[i], id(wx_icon)(f[2]).c_str());
+              lv_obj_set_style_text_color(ic[i], lv_color_hex(id(wx_color)(f[2])), LV_PART_MAIN);
               lv_label_set_text(tp[i], (f[1] + "°").c_str());
             } else {
               lv_label_set_text(t[i], "--");
@@ -227,6 +253,7 @@ text_sensor:
             if (f.size() >= 5) {
               lv_label_set_text(dy[i], f[0].c_str());
               lv_label_set_text(ic[i], id(wx_icon)(f[3]).c_str());
+              lv_obj_set_style_text_color(ic[i], lv_color_hex(id(wx_color)(f[3])), LV_PART_MAIN);
               float r = atof(f[4].c_str());
               char buf[16] = "";
               if (r >= 0.01f) snprintf(buf, sizeof(buf), "%.2f ${rain_unit}", r);
@@ -336,12 +363,11 @@ lvgl:
               - label:
                   id: lbl_wx_details
                   text: ""
-                  text_font: font_caption
                   text_color: ${c_text_2}
                   text_align: CENTER
                   width: ${440*px}
                   align: TOP_MID
-                  y: ${160*px}
+                  y: ${156*px}
 
               # ── Next 15 hours (now + every 3 h) ───────────────────
               - obj:
@@ -545,11 +571,10 @@ lvgl:
                     - label:
                         id: wx_d0_rain
                         text: ""
-                        text_font: font_caption
-                        text_color: ${c_text_2}
+                        text_color: 0x64D2FF
                         align: TOP_LEFT
                         x: ${146*px}
-                        y: ${13*px//1}
+                        y: ${10*px}
                     - label:
                         id: wx_d0_lo
                         text: ""
@@ -584,11 +609,10 @@ lvgl:
                     - label:
                         id: wx_d1_rain
                         text: ""
-                        text_font: font_caption
-                        text_color: ${c_text_2}
+                        text_color: 0x64D2FF
                         align: TOP_LEFT
                         x: ${146*px}
-                        y: ${45*px//1}
+                        y: ${42*px}
                     - label:
                         id: wx_d1_lo
                         text: ""
@@ -623,11 +647,10 @@ lvgl:
                     - label:
                         id: wx_d2_rain
                         text: ""
-                        text_font: font_caption
-                        text_color: ${c_text_2}
+                        text_color: 0x64D2FF
                         align: TOP_LEFT
                         x: ${146*px}
-                        y: ${77*px//1}
+                        y: ${74*px}
                     - label:
                         id: wx_d2_lo
                         text: ""
@@ -662,11 +685,10 @@ lvgl:
                     - label:
                         id: wx_d3_rain
                         text: ""
-                        text_font: font_caption
-                        text_color: ${c_text_2}
+                        text_color: 0x64D2FF
                         align: TOP_LEFT
                         x: ${146*px}
-                        y: ${109*px//1}
+                        y: ${106*px}
                     - label:
                         id: wx_d3_lo
                         text: ""
@@ -701,11 +723,10 @@ lvgl:
                     - label:
                         id: wx_d4_rain
                         text: ""
-                        text_font: font_caption
-                        text_color: ${c_text_2}
+                        text_color: 0x64D2FF
                         align: TOP_LEFT
                         x: ${146*px}
-                        y: ${141*px//1}
+                        y: ${138*px}
                     - label:
                         id: wx_d4_lo
                         text: ""

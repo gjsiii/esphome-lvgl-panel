@@ -37,6 +37,10 @@
 - **Reminders from Schedule helpers** (`ha/panel_notes.yaml`): a Schedule
   helper named `Reminder: …` puts a banner on the listed panels when each
   time block starts.
+- **Weather in colour:** condition icons in the status bar and on the
+  weather sheet are tinted by condition (yellow sun, blue rain, orange
+  storms…). Rain amounts (now light blue) and the humidity · wind · UV line
+  are larger. No display file changes.
 - Docs: new Holiday themes and Play on illustrations; both features listed
   with their entities in [Home Assistant side](docs/home-assistant.md).
 

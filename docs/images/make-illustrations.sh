@@ -7,7 +7,7 @@ head() { echo "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"480\" height=\"
 foot() { echo '</svg>'; }
 wifi() { echo "<g transform=\"translate($1 $2)\" fill=\"none\" stroke=\"#8E8E93\" stroke-width=\"2.2\" stroke-linecap=\"round\"><path d=\"M-9 -3a13 13 0 0 1 18 0\"/><path d=\"M-5.5 1a8 8 0 0 1 11 0\"/><circle cx=\"0\" cy=\"5\" r=\"1.6\" fill=\"#8E8E93\" stroke=\"none\"/></g>"; }
 gear() { echo "<g transform=\"translate($1 $2)\"><circle r=\"7.5\" fill=\"none\" stroke=\"#8E8E93\" stroke-width=\"3.5\" stroke-dasharray=\"3.4 2.5\"/><circle r=\"4.2\" fill=\"none\" stroke=\"#8E8E93\" stroke-width=\"2\"/></g>"; }
-sun() { echo "<g transform=\"translate($1 $2)\" stroke=\"#FFF\" stroke-width=\"2\" stroke-linecap=\"round\"><circle r=\"4.5\" fill=\"none\"/><path d=\"M0 -9v2.5M0 6.5V9M-9 0h2.5M6.5 0H9M-6.4 -6.4l1.8 1.8M4.6 4.6l1.8 1.8M-6.4 6.4l1.8-1.8M4.6 -4.6l1.8-1.8\"/></g>"; }
+sun() { echo "<g transform=\"translate($1 $2)\" stroke=\"#FFD60A\" stroke-width=\"2\" stroke-linecap=\"round\"><circle r=\"4.5\" fill=\"none\"/><path d=\"M0 -9v2.5M0 6.5V9M-9 0h2.5M6.5 0H9M-6.4 -6.4l1.8 1.8M4.6 4.6l1.8 1.8M-6.4 6.4l1.8-1.8M4.6 -4.6l1.8-1.8\"/></g>"; }
 house() { echo "<g transform=\"translate($1 $2)\" fill=\"none\" stroke=\"$3\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M-8 0L0 -7L8 0V8H-8Z\"/><path d=\"M0 1v4\" stroke-linecap=\"round\"/></g>"; }
 boat() { echo "<g transform=\"translate($1 $2)\" fill=\"$3\"><path d=\"M-1 -9L-1 4L-8 4Z\"/><path d=\"M1 -7L7 4L1 4Z\"/><path d=\"M-9 6H9L6 9H-6Z\"/></g>"; }
 status() { # time [chips]
@@ -74,15 +74,17 @@ ACT=3; { head; status "8:42pm" "" "#8E8E93"
 
 # ── Weather sheet ───────────────────────────────────────────────────────────
 { head; hdr Weather
- echo '<g transform="translate(60 112)" stroke="#FFF" stroke-width="4" stroke-linecap="round"><circle r="15" fill="none"/><path d="M0 -30v7M0 23v7M-30 0h7M23 0h7M-21 -21l5 5M16 16l5 5M-21 21l5-5M16 -16l5-5"/></g>'
+ echo '<g transform="translate(60 112)" stroke="#FFD60A" stroke-width="4" stroke-linecap="round"><circle r="15" fill="none"/><path d="M0 -30v7M0 23v7M-30 0h7M23 0h7M-21 -21l5 5M16 16l5 5M-21 21l5-5M16 -16l5-5"/></g>'
  echo '<text x="108" y="136" fill="#FFF" font-size="72" font-weight="300">70°</text><text x="252" y="96" fill="#FFF" font-size="20" font-weight="600">Sunny</text><text x="252" y="124" fill="#8E8E93" font-size="16">H 74°  ·  L 58°</text>'
- echo '<text x="240" y="174" fill="#8E8E93" font-size="13" text-anchor="middle">Humidity 61%  ·  Wind 9 mph SW  ·  UV 3</text>'
+ echo '<text x="240" y="172" fill="#8E8E93" font-size="16" text-anchor="middle">Humidity 61%  ·  Wind 9 mph SW  ·  UV 3</text>'
+ # icon colours follow wx_color in features/weather.yaml
+ wc() { case $1 in ☀) echo '#FFD60A';; ☾) echo '#C9C3FF';; ⛅) echo '#FFE066';; ☁) echo '#AEAEB2';; 🌧) echo '#64D2FF';; *) echo '#FFF';; esac; }
  echo '<rect x="16" y="184" width="448" height="92" rx="14" fill="#1C1C1E"/>'
  t=(Now 6pm 9pm 12am 3am 6am); v=(70 68 63 60 58 59); ic=(☀ ☀ ☾ ☾ ☁ ⛅)
- for i in 0 1 2 3 4 5; do x=$((18 + i*74 + 37)); echo "<text x=\"$x\" y=\"206\" fill=\"#8E8E93\" font-size=\"13\" text-anchor=\"middle\">${t[$i]}</text><text x=\"$x\" y=\"240\" fill=\"#FFF\" font-size=\"22\" text-anchor=\"middle\">${ic[$i]}</text><text x=\"$x\" y=\"266\" fill=\"#FFF\" font-size=\"16\" text-anchor=\"middle\">${v[$i]}°</text>"; done
+ for i in 0 1 2 3 4 5; do x=$((18 + i*74 + 37)); echo "<text x=\"$x\" y=\"206\" fill=\"#8E8E93\" font-size=\"13\" text-anchor=\"middle\">${t[$i]}</text><text x=\"$x\" y=\"240\" fill=\"$(wc ${ic[$i]})\" font-size=\"22\" text-anchor=\"middle\">${ic[$i]}</text><text x=\"$x\" y=\"266\" fill=\"#FFF\" font-size=\"16\" text-anchor=\"middle\">${v[$i]}°</text>"; done
  echo '<rect x="16" y="286" width="448" height="166" rx="14" fill="#1C1C1E"/>'
  d=(Today Thu Fri Sat Sun); lo=(58 55 57 61 60); hi=(74 70 72 77 75); di=(☀ ⛅ 🌧 ☀ ⛅); rn=("" "" "0.24 in" "" "")
- for i in 0 1 2 3 4; do y=$((286 + 4 + i*32 + 22)); echo "<text x=\"32\" y=\"$y\" fill=\"#FFF\" font-size=\"16\">${d[$i]}</text><text x=\"134\" y=\"$y\" fill=\"#FFF\" font-size=\"18\">${di[$i]}</text><text x=\"162\" y=\"$y\" fill=\"#8E8E93\" font-size=\"13\">${rn[$i]}</text><text x=\"372\" y=\"$y\" fill=\"#8E8E93\" font-size=\"16\" text-anchor=\"end\">${lo[$i]}°</text><text x=\"440\" y=\"$y\" fill=\"#FFF\" font-size=\"16\" text-anchor=\"end\">${hi[$i]}°</text>"; done
+ for i in 0 1 2 3 4; do y=$((286 + 4 + i*32 + 22)); echo "<text x=\"32\" y=\"$y\" fill=\"#FFF\" font-size=\"16\">${d[$i]}</text><text x=\"134\" y=\"$y\" fill=\"$(wc ${di[$i]})\" font-size=\"18\">${di[$i]}</text><text x=\"162\" y=\"$y\" fill=\"#64D2FF\" font-size=\"16\">${rn[$i]}</text><text x=\"372\" y=\"$y\" fill=\"#8E8E93\" font-size=\"16\" text-anchor=\"end\">${lo[$i]}°</text><text x=\"440\" y=\"$y\" fill=\"#FFF\" font-size=\"16\" text-anchor=\"end\">${hi[$i]}°</text>"; done
  echo '<text x="240" y="472" fill="#8E8E93" font-size="13" text-anchor="middle">Updated 8:30pm</text>'; foot; } > $O/weather.svg
 
 # ── Climate sheet ───────────────────────────────────────────────────────────

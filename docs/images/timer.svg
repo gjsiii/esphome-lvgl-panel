@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="480" height="480" viewBox="0 0 480 480" font-family="Inter, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
 <rect width="480" height="480" rx="18" fill="#000"/>
 <g transform="translate(190 18)" fill="none" stroke="#FFF" stroke-width="2"><circle r="7"/><path d="M0 -4v4l3 2M-2 -10h4" stroke-linecap="round"/></g><text x="202" y="25" fill="#FFF" font-size="20" font-weight="600">4:12</text>
-<g transform="translate(24 18)" stroke="#FFF" stroke-width="2" stroke-linecap="round"><circle r="4.5" fill="none"/><path d="M0 -9v2.5M0 6.5V9M-9 0h2.5M6.5 0H9M-6.4 -6.4l1.8 1.8M4.6 4.6l1.8 1.8M-6.4 6.4l1.8-1.8M4.6 -4.6l1.8-1.8"/></g>
+<g transform="translate(24 18)" stroke="#FFD60A" stroke-width="2" stroke-linecap="round"><circle r="4.5" fill="none"/><path d="M0 -9v2.5M0 6.5V9M-9 0h2.5M6.5 0H9M-6.4 -6.4l1.8 1.8M4.6 4.6l1.8 1.8M-6.4 6.4l1.8-1.8M4.6 -4.6l1.8-1.8"/></g>
 <text x="38" y="25" fill="#FFF" font-size="20" font-weight="600">70°</text>
 <g transform="translate(106 18)" fill="none" stroke="#8E8E93" stroke-width="2" stroke-linejoin="round"><path d="M-8 0L0 -7L8 0V8H-8Z"/><path d="M0 1v4" stroke-linecap="round"/></g>
 <text x="124" y="25" fill="#FFF" font-size="20" font-weight="600">72°</text>

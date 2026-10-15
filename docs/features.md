@@ -292,6 +292,8 @@ Needs `features/voice_assistant.yaml`.
 The status bar shows the current condition and temperature; **tap it** for
 the weather sheet: current conditions, today's high/low, humidity, wind and UV,
 the next 15 hours (every 3 hours) and the next 5 days with any rain.
+Condition icons are coloured by condition (yellow sun, blue rain, orange
+storms, icy blue snow, red for anything unusual).
 
 ```yaml
 - path: features/weather.yaml
