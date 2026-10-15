@@ -148,8 +148,10 @@ ACT=0; { head; status "8:42pm" "" "#8E8E93"
 
 # ── Marine forecast ─────────────────────────────────────────────────────────
 { head; hdr "Marine Forecast"
- echo '<rect x="20" y="70" width="440" height="46" rx="12" fill="#3A1513" stroke="#FF453A"/><text x="34" y="99" fill="#FF6961" font-size="16">Small Craft Advisory in effect</text>'
- y=146; for p in "Tonight|West winds 10 to 20 kt. Mostly clear.|Waves 1 to 3 ft." "Thursday|Northwest winds 10 to 15 kt. Mostly sunny.|Waves 1 to 3 ft." "Thursday Night|West winds around 10 kt becoming south|around 5 kt. Partly cloudy. Waves 1 to 2 ft."; do IFS='|' read a b c <<< "$p"; echo "<text x=\"20\" y=\"$y\" fill=\"#FFF\" font-size=\"20\" font-weight=\"600\">$a</text><text x=\"20\" y=\"$((y+26))\" fill=\"#8E8E93\" font-size=\"16\">$b</text><text x=\"20\" y=\"$((y+48))\" fill=\"#8E8E93\" font-size=\"16\">$c</text>"; y=$((y+96)); done; foot; } > $O/marine.svg
+ # hazard in effect (red card) and coming (amber card), as features/marine.yaml
+ echo '<rect x="20" y="70" width="440" height="46" rx="12" fill="#3A1513" stroke="#FF453A"/><text x="34" y="99" fill="#FF6961" font-size="16">Small Craft Advisory in effect until 1 PM Friday</text>'
+ echo '<rect x="20" y="122" width="440" height="68" rx="12" fill="#3A2F0A" stroke="#FFD60A"/><text x="34" y="150" fill="#FFE066" font-size="16">Gale Warning in effect from 1 PM Friday</text><text x="34" y="172" fill="#FFE066" font-size="16">to 1 AM Saturday</text>'
+ y=222; for p in "Tonight|South winds 15 to 25 kt becoming west to|30 kt. Showers in the evening. Waves 3 to 5 ft." "Friday|Northwest winds to 30 kt becoming northerly|gales to 40 kt. Waves 6 to 10 ft." "Friday Night|North gales to 40 kt easing to 25 kt.|Waves 8 to 12 ft subsiding."; do IFS='|' read a b c <<< "$p"; echo "<text x=\"20\" y=\"$y\" fill=\"#FFF\" font-size=\"20\" font-weight=\"600\">$a</text><text x=\"20\" y=\"$((y+26))\" fill=\"#8E8E93\" font-size=\"16\">$b</text><text x=\"20\" y=\"$((y+48))\" fill=\"#8E8E93\" font-size=\"16\">$c</text>"; y=$((y+96)); done; foot; } > $O/marine.svg
 
 # ── Voice ───────────────────────────────────────────────────────────────────
 { head
