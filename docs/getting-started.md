@@ -59,7 +59,7 @@ repository.
    - Your scenes, lights, TV, speakers and favorites (see
      [Using the panel](features.md) for each).
    - Delete any feature you don't want — every one is optional.
-4. Pin a release: `ref: v0.5.0` (see [Updating](#6-updating)).
+4. Pin a release: `ref: v0.6.0` (see [Updating](#6-updating)).
 
 ### Secrets
 

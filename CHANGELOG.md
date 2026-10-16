@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.6.0 — unreleased
+## v0.6.0 — 2026-10-16
 
 - **Marine forecast from NOAA It All, with a three-colour sailboat.**
   `features/marine.yaml` now draws its own status-bar sailboat: red while a
