@@ -62,6 +62,10 @@
   the app's logo and name on its brand colour (`items/tv_app.yaml` gains
   optional `color` and `name`). Power moves to the top-right corner as a
   small grey button (tap: on, hold: off), and the d-pad grows to 240 px.
+- **480 boards: 16 KB main-loop stack** (was ESPHome's 8 KB) and a **Loop
+  Stack Free** diagnostic sensor, as on the P4. Two family room crashes
+  faulted inside the FreeRTOS tick interrupt, the signature of a loop-stack
+  overflow corrupting kernel data. Costs 8 KB of internal RAM.
 - **Fewer resets on 480 boards:** Spotify (`i.scdn.co`, `mosaic`,
   `image-cdn-*`) and Apple Music (`*.mzstatic.com`) artwork now loads over
   plain http, like SiriusXM logos already did (`art_http` in

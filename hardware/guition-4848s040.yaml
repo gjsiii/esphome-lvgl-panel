@@ -21,6 +21,14 @@ esp32:
   flash_size: 16MB
   framework:
     type: esp-idf
+    advanced:
+      # The main loop also draws the screen, and a full-screen LVGL redraw
+      # runs deep. Two family room crashes (2026-10-14/15) faulted inside the
+      # FreeRTOS tick interrupt (xTaskIncrementTickOtherCores, null + 0x64),
+      # the signature of kernel data overwritten by a loop-stack overflow; the
+      # kitchen P4 had the same overflow and was fixed by 16 KB. Costs 8 KB of
+      # internal RAM. "Loop Stack Free" (below) shows the headroom.
+      loop_task_stack_size: 16384
     sdkconfig_options:
       # Keep internal RAM free: the 8 MB PSRAM is mostly idle, while the
       # internal heap's largest free block was dropping to ~13 KB. Put Wi-Fi /
@@ -36,6 +44,19 @@ esp32:
 psram:
   mode: octal
   speed: 80MHz
+
+sensor:
+  # Smallest free space the main loop's stack has had since boot. Should
+  # stay well above 1000 B; lower means the stack above needs to grow.
+  - platform: template
+    name: Loop Stack Free
+    id: loop_stack_free
+    unit_of_measurement: B
+    accuracy_decimals: 0
+    entity_category: diagnostic
+    icon: mdi:layers-outline
+    update_interval: 60s
+    lambda: "return (float) uxTaskGetStackHighWaterMark(nullptr);"
 
 output:
   - platform: ledc
