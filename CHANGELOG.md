@@ -58,10 +58,10 @@
   move into the empty space beside the artwork. The full-width volume slider
   stays.
 - **TV tab: Apps sheet, power out of the way.** The thin column of small app
-  buttons becomes an **Apps** button that opens a sheet of large tiles, each
-  the app's logo and name on its brand colour (`items/tv_app.yaml` gains
-  optional `color` and `name`). Power moves to the top-right corner as a
-  small grey button (tap: on, hold: off), and the d-pad grows to 240 px.
+  buttons becomes an **Apps** button that opens a sheet of large round
+  app-logo buttons (104 px, four per row; twelve fit). Power moves to the
+  top-right corner as a small grey button (tap: on, hold: off), and the
+  d-pad grows to 240 px.
 - **480 boards: 16 KB main-loop stack** (was ESPHome's 8 KB) and a **Loop
   Stack Free** diagnostic sensor, as on the P4. Two family room crashes
   faulted inside the FreeRTOS tick interrupt, the signature of a loop-stack

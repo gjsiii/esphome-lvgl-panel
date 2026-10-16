@@ -57,10 +57,10 @@ ACT=1; { head; status "8:42pm" "" "#0A84FF"
 
 # ── TV: Apps sheet (logos are the house's own files; letters stand in here) ─
 { head; hdr Apps
- tile() { # col row colour mark mark-size name
-   local x=$((24 + $1*148)) y=$((72 + $2*128))
-   echo "<rect x=\"$x\" y=\"$y\" width=\"136\" height=\"112\" rx=\"18\" fill=\"$3\"/><text x=\"$((x+68))\" y=\"$((y+56))\" fill=\"#FFF\" font-size=\"$5\" font-weight=\"800\" text-anchor=\"middle\">$4</text><text x=\"$((x+68))\" y=\"$((y+96))\" fill=\"#FFF\" font-size=\"16\" font-weight=\"500\" text-anchor=\"middle\">$6</text>"; }
- tile 0 0 '#2638C4' PBS 24 PBS; tile 1 0 '#E50914' N 40 Netflix; tile 2 0 '#113CCF' 'D+' 30 'Disney+'; tile 0 1 '#E5A00D' '›' 48 Plex
+ app() { # index mark size
+   local x=$(( 17 + ($1 % 4) * 114 + 52 )) y=$(( 72 + ($1 / 4) * 124 + 52 ))
+   echo "<circle cx=\"$x\" cy=\"$y\" r=\"52\" fill=\"#1C1C1E\"/><text x=\"$x\" y=\"$((y + $3 * 36 / 100))\" fill=\"#FFF\" font-size=\"$3\" font-weight=\"800\" text-anchor=\"middle\">$2</text>"; }
+ i=0; for m in PBS prime D+ N hulu HBO tv plex P+ P Out YT; do s=22; case $m in N) s=40;; D+|P+|P|tv) s=30;; esac; app $i "$m" $s; i=$((i+1)); done
  foot; } > $O/tv-apps.svg
 
 # ── Music ───────────────────────────────────────────────────────────────────

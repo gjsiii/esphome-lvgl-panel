@@ -130,9 +130,9 @@ Modeled on the iOS Remote app, for an Apple TV.
   (for example a Sonos soundbar), and mute can target yet another (the TV).
 - **Now playing** (top left, only while playing or paused) — the show's
   artwork, name and app.
-- **Apps** (optional) — opens a sheet of app tiles, three per row, each the
-  app's logo and name on its brand colour. Tap one to open the app on the
-  Apple TV; the sheet closes. Without app items the Apps button is hidden.
+- **Apps** (optional) — opens a sheet of large round app-logo buttons, four
+  per row (twelve fit; more scroll). Tap one to open the app on the Apple TV;
+  the sheet closes. Without app items the Apps button is hidden.
 
 ![Apps sheet](images/tv-apps.svg)
 
@@ -150,9 +150,10 @@ Modeled on the iOS Remote app, for an Apple TV.
     icon: ../www/tv_app_icons/netflix.svg   # your own image, next to the display file
     source: "Netflix"                       # exactly as in the Apple TV's source list
     entity: media_player.living_room_apple_tv
-    color: "0xE50914"                       # optional tile colour (default dark grey)
-    name: "Netflix"                         # optional label (default: source)
 ```
+
+White app logos for most streaming services are in the Custom Brand Icons
+set (Iconify prefix `cbi`, also a HACS icon pack).
 
 **App icons.** Logos are trademarks, so this repository doesn't ship them. Put
 a square image per app (PNG, JPG or SVG; a white logo on a transparent

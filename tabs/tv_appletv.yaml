@@ -11,7 +11,7 @@
 #
 # The tab selects itself when the Apple TV starts playing after a real stop
 # (see media_autoswitch_gap_ms). Power sits in the top-right corner (tap:
-# on, hold: off); the Apps button opens a sheet of app tiles
+# on, hold: off); the Apps button opens a sheet of round app-logo buttons
 # (items/tv_app.yaml) and is hidden when there are none.
 
 globals:
@@ -44,13 +44,13 @@ esphome:
             lv_obj_set_scrollbar_mode(tab, LV_SCROLLBAR_MODE_OFF);
             lv_obj_set_parent(id(content_tv), tab);
             id(tab_index_tv) = lv_obj_get_index(tab);
-            // Apps sheet: onto the main screen; tiles (items/tv_app.yaml)
-            // three per row, 12px apart, 16px between rows
+            // Apps sheet: onto the main screen; round logo buttons
+            // (items/tv_app.yaml) four per row, 10px apart, 20px between rows
             lv_obj_set_parent(id(tv_apps_panel), id(ui_root));
             lv_obj_set_flex_flow(id(tv_apps), LV_FLEX_FLOW_ROW_WRAP);
             lv_obj_set_flex_align(id(tv_apps), LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
-            lv_obj_set_style_pad_column(id(tv_apps), ${(12*px)|int}, 0);
-            lv_obj_set_style_pad_row(id(tv_apps), ${(16*px)|int}, 0);
+            lv_obj_set_style_pad_column(id(tv_apps), ${(10*px)|int}, 0);
+            lv_obj_set_style_pad_row(id(tv_apps), ${(20*px)|int}, 0);
     # No app items: no Apps button
     - priority: -305
       then:
@@ -635,13 +635,13 @@ lvgl:
                         align: CENTER
                   on_click:
                     - lvgl.widget.hide: tv_apps_panel
-              # App tiles (items/tv_app.yaml), three per row; more scroll.
+              # App buttons (items/tv_app.yaml), four per row; more scroll.
               # Flex layout is set at boot (an empty container can't take it).
               - obj:
                   id: tv_apps
                   align: TOP_MID
                   y: ${72*px}
-                  width: ${432*px}   # exactly 3 tiles: 3 x 136 + 2 x 12
+                  width: ${446*px}   # exactly 4 buttons: 4 x 104 + 3 x 10
                   height: ${400*px}
                   styles: transparent
                   scrollbar_mode: "off"
