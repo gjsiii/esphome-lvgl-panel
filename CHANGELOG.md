@@ -57,6 +57,11 @@
   (5% per tap, `music_volume_step`); previous / next and shuffle / repeat
   move into the empty space beside the artwork. The full-width volume slider
   stays.
+- **TV tab: Apps sheet, power out of the way.** The thin column of small app
+  buttons becomes an **Apps** button that opens a sheet of large tiles, each
+  the app's logo and name on its brand colour (`items/tv_app.yaml` gains
+  optional `color` and `name`). Power moves to the top-right corner as a
+  small grey button (tap: on, hold: off), and the d-pad grows to 240 px.
 - **Fewer resets on 480 boards:** Spotify (`i.scdn.co`, `mosaic`,
   `image-cdn-*`) and Apple Music (`*.mzstatic.com`) artwork now loads over
   plain http, like SiriusXM logos already did (`art_http` in

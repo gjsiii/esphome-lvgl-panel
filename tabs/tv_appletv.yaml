@@ -10,7 +10,9 @@
 #       tv_mute_player: media_player.family_room          # device the mute key controls (often the same)
 #
 # The tab selects itself when the Apple TV starts playing after a real stop
-# (see media_autoswitch_gap_ms).
+# (see media_autoswitch_gap_ms). Power sits in the top-right corner (tap:
+# on, hold: off); the Apps button opens a sheet of app tiles
+# (items/tv_app.yaml) and is hidden when there are none.
 
 globals:
   - id: tab_index_tv
@@ -42,10 +44,19 @@ esphome:
             lv_obj_set_scrollbar_mode(tab, LV_SCROLLBAR_MODE_OFF);
             lv_obj_set_parent(id(content_tv), tab);
             id(tab_index_tv) = lv_obj_get_index(tab);
-            // App buttons (items/tv_app.yaml): one column, 10px apart
-            lv_obj_set_flex_flow(id(tv_apps), LV_FLEX_FLOW_COLUMN);
+            // Apps sheet: onto the main screen; tiles (items/tv_app.yaml)
+            // three per row, 12px apart, 16px between rows
+            lv_obj_set_parent(id(tv_apps_panel), id(ui_root));
+            lv_obj_set_flex_flow(id(tv_apps), LV_FLEX_FLOW_ROW_WRAP);
             lv_obj_set_flex_align(id(tv_apps), LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
-            lv_obj_set_style_pad_row(id(tv_apps), ${(10*px)|int}, 0);
+            lv_obj_set_style_pad_column(id(tv_apps), ${(12*px)|int}, 0);
+            lv_obj_set_style_pad_row(id(tv_apps), ${(16*px)|int}, 0);
+    # No app items: no Apps button
+    - priority: -305
+      then:
+        - lambda: |-
+            if (lv_obj_get_child_cnt(id(tv_apps)) == 0)
+              lv_obj_add_flag(id(tv_btn_apps), LV_OBJ_FLAG_HIDDEN);
 
 script:
   # Debounced Apple TV artwork fetch (downloads briefly block the UI)
@@ -224,13 +235,13 @@ lvgl:
               - obj:
                   id: tv_dpad
                   align: TOP_MID
-                  y: ${8*px}
-                  width: ${220*px}
-                  height: ${220*px}
+                  y: ${4*px}
+                  width: ${240*px}
+                  height: ${240*px}
                   bg_color: ${c_surface}
                   bg_opa: COVER
                   border_width: 0
-                  radius: ${110*px}
+                  radius: ${120*px}
                   pad_all: 0
                   clickable: false
                   scrollable: false
@@ -241,8 +252,8 @@ lvgl:
                         id: tv_btn_up
                         align: TOP_MID
                         y: ${4*px}
-                        width: ${76*px}
-                        height: ${64*px}
+                        width: ${80*px}
+                        height: ${68*px}
                         styles: icon_btn
                         widgets:
                           - label:
@@ -264,8 +275,8 @@ lvgl:
                         id: tv_btn_down
                         align: BOTTOM_MID
                         y: -${4*px}
-                        width: ${76*px}
-                        height: ${64*px}
+                        width: ${80*px}
+                        height: ${68*px}
                         styles: icon_btn
                         widgets:
                           - label:
@@ -287,8 +298,8 @@ lvgl:
                         id: tv_btn_left
                         align: LEFT_MID
                         x: ${4*px}
-                        width: ${64*px}
-                        height: ${76*px}
+                        width: ${68*px}
+                        height: ${80*px}
                         styles: icon_btn
                         widgets:
                           - label:
@@ -310,8 +321,8 @@ lvgl:
                         id: tv_btn_right
                         align: RIGHT_MID
                         x: -${4*px}
-                        width: ${64*px}
-                        height: ${76*px}
+                        width: ${68*px}
+                        height: ${80*px}
                         styles: icon_btn
                         widgets:
                           - label:
@@ -332,8 +343,8 @@ lvgl:
                     - button:
                         id: tv_btn_select
                         align: CENTER
-                        width: ${84*px}
-                        height: ${84*px}
+                        width: ${92*px}
+                        height: ${92*px}
                         styles: round_btn
                         bg_color: ${c_surface_2}
                         pressed:
@@ -349,19 +360,24 @@ lvgl:
                                 hold_secs: "0"
 
               # ── Power | Back | Home | Play/Pause ──────
-              #### Power (tap: wake, hold: sleep)
+              #### Power (tap: wake, hold: sleep): small, in the top-right
+              # corner, away from the buttons used while watching
               - button:
                   id: tv_btn_power
-                  align: TOP_MID
-                  x: -${114*px}
-                  y: ${244*px}
-                  width: ${60*px}
-                  height: ${60*px}
-                  styles: round_btn
+                  align: TOP_RIGHT
+                  x: -${8*px}
+                  y: ${8*px}
+                  width: ${52*px}
+                  height: ${52*px}
+                  styles: icon_btn
+                  pressed:
+                    bg_color: ${c_surface}
+                    bg_opa: COVER
                   widgets:
                     - label:
                         text: "\U000F0425" # mdi-power
                         text_font: icons_md
+                        text_color: ${c_text_2}
                         align: CENTER
                   on_short_click:
                     - homeassistant.action:
@@ -386,11 +402,30 @@ lvgl:
                           entity_id: ${tv_remote}
 
               #### Back (menu)
+              #### Apps: opens the Apps sheet (tiles from items/tv_app.yaml)
+              - button:
+                  id: tv_btn_apps
+                  align: TOP_MID
+                  x: -${114*px}
+                  y: ${256*px}
+                  width: ${60*px}
+                  height: ${60*px}
+                  styles: round_btn
+                  widgets:
+                    - label:
+                        text: "\U000F003B" # mdi-apps
+                        text_font: icons_md
+                        align: CENTER
+                  on_click:
+                    - lambda: |-
+                        lv_obj_clear_flag(id(tv_apps_panel), LV_OBJ_FLAG_HIDDEN);
+                        lv_obj_move_foreground(id(tv_apps_panel));
+
               - button:
                   id: tv_btn_back
                   align: TOP_MID
                   x: -${38*px}
-                  y: ${244*px}
+                  y: ${256*px}
                   width: ${60*px}
                   height: ${60*px}
                   styles: round_btn
@@ -414,7 +449,7 @@ lvgl:
                   id: tv_btn_home
                   align: TOP_MID
                   x: ${38*px}
-                  y: ${244*px}
+                  y: ${256*px}
                   width: ${60*px}
                   height: ${60*px}
                   styles: round_btn
@@ -438,7 +473,7 @@ lvgl:
                   id: tv_btn_playpause
                   align: TOP_MID
                   x: ${114*px}
-                  y: ${244*px}
+                  y: ${256*px}
                   width: ${60*px}
                   height: ${60*px}
                   styles: round_btn
@@ -456,7 +491,7 @@ lvgl:
               # ── Volume pill: − | Mute | + ─────────────
               - obj:
                   align: TOP_MID
-                  y: ${320*px}
+                  y: ${328*px}
                   width: ${240*px}
                   height: ${56*px}
                   bg_color: ${c_surface}
@@ -524,7 +559,7 @@ lvgl:
                   id: tv_btn_skip_back
                   align: TOP_MID
                   x: -${164*px}
-                  y: ${320*px}
+                  y: ${328*px}
                   width: ${56*px}
                   height: ${56*px}
                   styles: round_btn
@@ -544,7 +579,7 @@ lvgl:
                   id: tv_btn_skip_fwd
                   align: TOP_MID
                   x: ${164*px}
-                  y: ${320*px}
+                  y: ${328*px}
                   width: ${56*px}
                   height: ${56*px}
                   styles: round_btn
@@ -560,14 +595,53 @@ lvgl:
                           command: skip_forward
                           entity_id: ${tv_remote}
 
-              # ── Apps (right of the d-pad; filled by items/tv_app.yaml) ─
-              # One centered column of round buttons; omit the app items for none.
+    # Holding page (never shown): the Apps sheet is moved onto ui_root at boot
+    # (so it closes with the other sheets when the screen dims)
+    - id: holding_tv_apps
+      skip: true
+      widgets:
+        - obj:
+            id: tv_apps_panel
+            width: 100%
+            height: 100%
+            align: TOP_LEFT
+            styles: container
+            scrollbar_mode: "off"
+            hidden: true
+            widgets:
+              - label:
+                  text: "Apps"
+                  text_font: font_title
+                  align: TOP_LEFT
+                  x: ${20*px}
+                  y: ${22*px}
+              - button:
+                  align: TOP_RIGHT
+                  x: -${10*px}
+                  y: ${12*px}
+                  width: ${90*px}
+                  height: ${44*px}
+                  bg_opa: TRANSP
+                  radius: ${22*px}
+                  pad_all: 0
+                  pressed:
+                    bg_color: ${c_surface}
+                    bg_opa: COVER
+                  widgets:
+                    - label:
+                        text: "Done"
+                        text_font: font_title
+                        text_color: ${c_accent}
+                        align: CENTER
+                  on_click:
+                    - lvgl.widget.hide: tv_apps_panel
+              # App tiles (items/tv_app.yaml), three per row; more scroll.
+              # Flex layout is set at boot (an empty container can't take it).
               - obj:
                   id: tv_apps
-                  align: TOP_RIGHT
-                  x: -${42*px}
-                  y: ${11*px//1}
-                  width: ${46*px}
-                  height: ${214*px}
+                  align: TOP_MID
+                  y: ${72*px}
+                  width: ${432*px}   # exactly 3 tiles: 3 x 136 + 2 x 12
+                  height: ${400*px}
                   styles: transparent
                   scrollbar_mode: "off"

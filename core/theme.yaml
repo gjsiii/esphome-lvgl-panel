@@ -132,6 +132,7 @@ font:
         "\U000F0581", # mdi-volume-off
         "\U000F045F", # mdi-rewind
         "\U000F0211", # mdi-fast-forward
+        "\U000F003B", # mdi-apps (TV tab: Apps sheet)
         # Message banner icons (core/messages.yaml)
         "\U000F02FC", # mdi-information          info
         "\U000F0026", # mdi-alert                alert

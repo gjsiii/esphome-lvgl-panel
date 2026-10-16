@@ -42,15 +42,26 @@ ACT=0; { head; status "8:42pm" "$(boat 368 18 '#30D158')" "#8E8E93"
 # ── TV ──────────────────────────────────────────────────────────────────────
 ACT=1; { head; status "8:42pm" "" "#0A84FF"
  echo '<rect x="12" y="48" width="104" height="104" rx="12" fill="#2C3E50"/><text x="64" y="106" fill="#FFF" font-size="13" text-anchor="middle">artwork</text>'
- echo '<text x="12" y="172" fill="#FFF" font-size="16">Friends</text><text x="12" y="194" fill="#8E8E93" font-size="16">HBO Max</text>'
- echo '<circle cx="240" cy="154" r="110" fill="#1C1C1E"/><circle cx="240" cy="154" r="42" fill="#2C2C2E"/>'
- echo '<g fill="none" stroke="#FFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M230 76l10-10 10 10"/><path d="M230 232l10 10 10-10"/><path d="M162 144l-10 10 10 10"/><path d="M318 144l10 10-10 10"/></g>'
- for i in 0 1 2 3; do y=$((70 + i*56)); echo "<circle cx=\"415\" cy=\"$((y+23))\" r=\"23\" fill=\"#1C1C1E\"/>"; done
- echo '<text x="415" y="99" fill="#FFF" font-size="11" font-weight="700" text-anchor="middle">PBS</text><text x="415" y="155" fill="#FFF" font-size="16" font-weight="700" text-anchor="middle">N</text><text x="415" y="211" fill="#FFF" font-size="10" font-weight="700" text-anchor="middle">D+</text><text x="415" y="267" fill="#FFF" font-size="18" font-weight="700" text-anchor="middle">›</text>'
- round 126 316 30 "⏻"; round 202 316 30 "←"; round 278 316 30 "⌂"; round 354 316 30 "⏯" "#1C1C1E" "#FFF" 18
- round 76 384 28 "⏪" "#1C1C1E" "#FFF" 16; round 404 384 28 "⏩" "#1C1C1E" "#FFF" 16
- echo '<rect x="120" y="356" width="240" height="56" rx="28" fill="#1C1C1E"/><text x="160" y="391" fill="#FFF" font-size="22" text-anchor="middle">−</text><text x="240" y="390" fill="#FFF" font-size="16" text-anchor="middle">mute</text><text x="320" y="391" fill="#FFF" font-size="22" text-anchor="middle">+</text>'
+ echo '<text x="12" y="176" fill="#FFF" font-size="16">Friends</text><text x="12" y="198" fill="#8E8E93" font-size="16">HBO Max</text>'
+ # power: small and grey in the top-right corner (tap on, hold off)
+ echo '<g transform="translate(446 70)" fill="none" stroke="#8E8E93" stroke-width="2.4" stroke-linecap="round"><path d="M-6.5 -6.5a9.5 9.5 0 1 0 13 0"/><path d="M0 -11v10"/></g>'
+ # d-pad 240
+ echo '<circle cx="240" cy="160" r="120" fill="#1C1C1E"/><circle cx="240" cy="160" r="46" fill="#2C2C2E"/>'
+ echo '<g fill="none" stroke="#FFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M230 78l10-10 10 10"/><path d="M230 242l10 10 10-10"/><path d="M162 150l-10 10 10 10"/><path d="M318 150l10 10-10 10"/></g>'
+ # Apps | back | home | play-pause
+ echo '<circle cx="126" cy="322" r="30" fill="#1C1C1E"/><g fill="#FFF">'; for dx in -7 3; do for dy in -7 3; do echo "<rect x=\"$((126+dx-2))\" y=\"$((322+dy-2))\" width=\"8\" height=\"8\" rx=\"1.5\"/>"; done; done; echo '</g>'
+ round 202 322 30 "←"; round 278 322 30 "⌂"; round 354 322 30 "⏯" "#1C1C1E" "#FFF" 18
+ round 76 392 28 "⏪" "#1C1C1E" "#FFF" 16; round 404 392 28 "⏩" "#1C1C1E" "#FFF" 16
+ echo '<rect x="120" y="364" width="240" height="56" rx="28" fill="#1C1C1E"/><text x="160" y="399" fill="#FFF" font-size="22" text-anchor="middle">−</text><text x="240" y="398" fill="#FFF" font-size="16" text-anchor="middle">mute</text><text x="320" y="399" fill="#FFF" font-size="22" text-anchor="middle">+</text>'
  tabs Lights TV Music Favorites; foot; } > $O/tv.svg
+
+# ── TV: Apps sheet (logos are the house's own files; letters stand in here) ─
+{ head; hdr Apps
+ tile() { # col row colour mark mark-size name
+   local x=$((24 + $1*148)) y=$((72 + $2*128))
+   echo "<rect x=\"$x\" y=\"$y\" width=\"136\" height=\"112\" rx=\"18\" fill=\"$3\"/><text x=\"$((x+68))\" y=\"$((y+56))\" fill=\"#FFF\" font-size=\"$5\" font-weight=\"800\" text-anchor=\"middle\">$4</text><text x=\"$((x+68))\" y=\"$((y+96))\" fill=\"#FFF\" font-size=\"16\" font-weight=\"500\" text-anchor=\"middle\">$6</text>"; }
+ tile 0 0 '#2638C4' PBS 24 PBS; tile 1 0 '#E50914' N 40 Netflix; tile 2 0 '#113CCF' 'D+' 30 'Disney+'; tile 0 1 '#E5A00D' '›' 48 Plex
+ foot; } > $O/tv-apps.svg
 
 # ── Music ───────────────────────────────────────────────────────────────────
 ACT=2; { head; status "8:42pm" "" "#8E8E93"
