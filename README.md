@@ -21,6 +21,10 @@ each panel keeps its own rooms, lights, speakers and TV.
 |:---:|:---:|:---:|:---:|
 | ![Play on with per-speaker volume](docs/images/play-on.svg) | ![Halloween on the night clock](docs/images/holiday.svg) | ![Camera pop-up](docs/images/camera-popup.svg) | ![Message banner](docs/images/message.svg) |
 
+| TV apps | Marine forecast | Light sheet | Sleep note |
+|:---:|:---:|:---:|:---:|
+| ![Apps sheet](docs/images/tv-apps.svg) | ![Marine forecast](docs/images/marine.svg) | ![Light color sheet](docs/images/light-sheet.svg) | ![Sleep note](docs/images/sleep-note.svg) |
+
 *Illustrations drawn to the panel's real layout and colors; photos welcome.*
 
 ## What it does
@@ -28,10 +32,11 @@ each panel keeps its own rooms, lights, speakers and TV.
 - **Lights** — scene buttons and big iOS-style sliders for lights, fans and
   shades. Tap a name to toggle, drag to dim, hold for warmth and color.
 - **TV** — an Apple TV remote (d-pad, home, back, play/pause, skip, volume),
-  app buttons, and the artwork of whatever is playing.
+  an **Apps** sheet of large app-logo buttons, power tucked in a corner, and
+  the artwork of whatever is playing.
 - **Music** — Now Playing for a Music Assistant or Sonos speaker: artwork,
-  progress, play/pause, volume, shuffle, repeat, and **Play on** to group other
-  speakers.
+  progress, play/pause, shuffle, repeat, volume − / + buttons and a full-width
+  slider, and **Play on** to group other speakers.
 - **Favorites** — a grid of playlists and stations, one tap to play: a few
   hand-picked tiles, or your Music Assistant favorites,
   live, with Playlists / Radio / Albums / Artists chips.
@@ -39,7 +44,9 @@ each panel keeps its own rooms, lights, speakers and TV.
   set by voice, with a chime when time's up.
 - **Status bar** — time, outside weather, indoor temperature, small status
   icons (garage open, packages waiting, …) and the HA connection.
-- **Weather** — current conditions, the next 15 hours and 5 days.
+- **Weather** — current conditions in colour (moons after dark), feels-like,
+  sunrise and sunset, the next 15 hours, and 5 days with temperature-range
+  bars.
 - **Climate** — a thermostat dial with Off / Heat / Cool / Auto.
 - **Snow report** — new snow in the status bar and a winter-themed ski report
   (depths, season total, lifts and runs open).

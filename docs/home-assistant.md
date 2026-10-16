@@ -67,6 +67,7 @@ On the panel's device page:
 |---|---|
 | Backlight | The panel's backlight as a light. |
 | IP Address, Wi-Fi Signal, Uptime, Reset Reason | Diagnostics. *Reset Reason* tells you why the panel last restarted (power loss, brown-out, crash). |
+| Loop Stack Free | Diagnostic: the least free space the main loop's stack has had since boot (16 KB stack). Should stay well above 1000 B. |
 | Relay 1–3 | The board's three relays (Guition board, if wired). |
 
 ## Voice

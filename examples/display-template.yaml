@@ -52,6 +52,7 @@ packages:
           weather_entity: weather.home
           forecast_entity: sensor.panel_weather_forecast
           # outdoor_temp_entity: sensor.backyard_temperature   # optional local thermometer
+          # feels_like_entity: sensor.backyard_feels_like      # optional "Feels like" line
       - path: features/climate.yaml
         vars: { climate_entity: climate.living_room, climate_name: "Living Room" }   # ◀
       - path: features/status_chip.yaml               # one per status icon
@@ -96,7 +97,7 @@ packages:
           tv_player: media_player.living_room_apple_tv        # ◀
           tv_volume_player: media_player.living_room_speaker  # ◀ what − / + control
           tv_mute_player: media_player.living_room_speaker    # ◀ what mute controls
-      - path: items/tv_app.yaml                       # optional app buttons
+      - path: items/tv_app.yaml                       # optional: one per app on the Apps sheet
         vars:
           slot: 1
           icon: ../www/tv_app_icons/netflix.svg       # ◀ your own white logo

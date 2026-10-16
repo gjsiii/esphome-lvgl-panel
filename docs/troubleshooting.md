@@ -27,6 +27,28 @@ after an unexpected restart:
 | Panic, Exception, Watchdog | A software crash — please open an issue with the reason and the ESPHome log. |
 | Software | A normal restart or update. |
 
+**Crash details.** After a crash the panel logs `CRASH DETECTED ON PREVIOUS
+BOOT` with a reason, a PC address and a backtrace; the panels' warnings and
+errors also land in Home Assistant's log (**Settings → System → Logs**, or
+`ha core logs`). The same record is printed again every time Home Assistant
+reconnects, so several identical records are usually one crash. To turn the
+addresses into function names you need the **ELF file of the exact build that
+crashed** — in the ESPHome dashboard, **⋮ → Download ELF file** right after
+installing (a later compile replaces it) — then
+`addr2line -pfiaC -e firmware.elf <addresses>` with the ESP32 toolchain.
+
+Crashes fixed in v0.6.0:
+
+- **Task watchdog while favorites or album art loads (480 boards):** an
+  https download from Spotify could hold the panel for up to 8 s during the
+  encryption handshake. Artwork from hosts that also serve plain http
+  (Spotify, Apple Music, SiriusXM) now loads over http.
+- **Fault / LoadProhibited inside the FreeRTOS tick interrupt (480 boards,
+  now and then):** the main loop, which also draws the screen, overflowed
+  ESPHome's 8 KB stack and corrupted the system's task data. The Guition
+  package now gives it 16 KB like the P4, and adds the **Loop Stack Free**
+  sensor; it should stay well above 1000 B.
+
 After an over-the-air update, the panel keeps the previous firmware until the
 new one has run for about a minute. If it loses power or crashes in that
 minute, it **rolls back** to the previous version on the next start — so

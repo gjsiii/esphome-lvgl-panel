@@ -152,15 +152,16 @@ Modeled on the iOS Remote app, for an Apple TV.
     entity: media_player.living_room_apple_tv
 ```
 
-White app logos for most streaming services are in the Custom Brand Icons
-set (Iconify prefix `cbi`, also a HACS icon pack).
-
 **App icons.** Logos are trademarks, so this repository doesn't ship them. Put
 a square image per app (PNG, JPG or SVG; a white logo on a transparent
 background matches the remote) somewhere under `/config/www/` and point `icon`
-at it, relative to the display file. One source of single-color brand SVGs is
-the [custom-brand-icons](https://github.com/elax46/custom-brand-icons) HACS
-set. Leave out all `tv_app` items and the app column disappears.
+at it, relative to the display file. Single-colour brand SVGs for most
+streaming apps are in the [custom-brand-icons](https://github.com/elax46/custom-brand-icons)
+set (a HACS icon pack; also on [Iconify](https://icon-sets.iconify.design/cbi/)
+as `cbi:netflix`, `cbi:hbo-max`, …, where `?color=%23ffffff` downloads them
+white). A square PNG of an app icon works too: make its background
+transparent and the logo white. Leave out all `tv_app` items and the TV tab
+shows no Apps button.
 
 **Source names** must match the Apple TV's `source_list` exactly — check
 **Developer Tools → States → your Apple TV → source_list**.
@@ -476,8 +477,12 @@ panel wakes and shows that camera, refreshing every few seconds. It closes on
 ```
 
 Include it once per trigger. Snapshots come through Home Assistant's camera
-proxy (so `ha_url` must be right); a camera's low-resolution "fluent" or
-substream entity loads fastest. Each refresh briefly pauses touch while the
+proxy (so `ha_url` must be right). Pick the camera entity that answers
+fastest: with **Frigate**, its own camera entity (e.g. `camera.front_doorbell`)
+hands over the latest frame in about 10 ms, while a Reolink doorbell entity
+took 0.4–2 s per frame — enough to miss the panel's 2 s download limit right
+after a ring. Otherwise a low-resolution "fluent" or substream entity is the
+next best. Each refresh briefly pauses touch while the
 image downloads, which is why the default is every 5 seconds
 (`camera_refresh_seconds`).
 

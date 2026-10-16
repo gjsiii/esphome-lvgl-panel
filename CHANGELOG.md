@@ -75,6 +75,13 @@
   hidden; failures still log.
 - Docs: new Holiday themes and Play on illustrations; both features listed
   with their entities in [Home Assistant side](docs/home-assistant.md).
+- Docs: redrawn Weather, Music and TV illustrations, a new TV Apps sheet
+  illustration, and a fourth gallery row in the README (TV apps, marine,
+  light sheet, sleep note); every illustration follows the 16 px captions.
+  Troubleshooting explains reading a crash record (same record re-printed on
+  each reconnect; decode with the matching build's ELF) and lists the two
+  480-board crashes fixed here. Camera pop-ups: pick the fastest camera
+  entity (Frigate's own entity ~10 ms vs. 0.4–2 s for a Reolink doorbell).
 
 ## v0.5.0 — 2026-10-13
 
