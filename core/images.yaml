@@ -15,6 +15,24 @@
 # is free for the next picture.
 
 globals:
+  # art_http(url): artwork hosts that serve the same file over plain http get
+  # it from there. An https fetch costs a TLS handshake that can block the
+  # panel for seconds (long enough to trip the task watchdog on a 480 board),
+  # and SiriusXM's certificate isn't in the panel's bundle. Spotify's
+  # pickasso host redirects http to https, so it stays on https.
+  - id: art_http
+    type: std::function<std::string(const std::string &)>
+    initial_value: |-
+      [](const std::string &u) -> std::string {
+        if (u.rfind("https://", 0) != 0) return u;
+        size_t e = u.find('/', 8);
+        std::string h = u.substr(8, e == std::string::npos ? std::string::npos : e - 8);
+        auto ends = [&](const char *s) { size_t n = strlen(s); return h.size() >= n && h.compare(h.size() - n, n, s) == 0; };
+        bool plain = h == "i.scdn.co" || h == "mosaic.scdn.co" ||
+                     (h.rfind("image-cdn-", 0) == 0 && ends(".spotifycdn.com")) ||
+                     ends(".mzstatic.com") || h == "pri.art.prod.streaming.siriusxm.com";
+        return plain ? "http://" + u.substr(8) : u;
+      }
   # Who gets the picture art_loader / cam_loader is downloading
   - id: art_cb
     type: std::function<void(bool)>

@@ -293,6 +293,7 @@ script:
               u = std::string("${ma_url}/imageproxy/") + a + "?size=256&fmt=jpeg";
             }
             if (u.empty()) continue;
+            u = id(art_http)(u);   // plain http where the host allows (core/images.yaml)
             id(maf_loading) = n;
             id(img_busy) = true;
             id(img_busy_ms) = millis();

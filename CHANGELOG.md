@@ -53,6 +53,13 @@
   Night help, Play on help, Apple TV labels). Favorite tile names stay at
   13 px (new `font_small`). A display file that includes only
   `core/theme.yaml` (no hardware package) needs `px: 1` in its substitutions.
+- **Fewer resets on 480 boards:** Spotify (`i.scdn.co`, `mosaic`,
+  `image-cdn-*`) and Apple Music (`*.mzstatic.com`) artwork now loads over
+  plain http, like SiriusXM logos already did (`art_http` in
+  `core/images.yaml`). An https fetch could block the panel for up to 8 s
+  during the TLS handshake and trip the task watchdog while favorites art
+  loaded. The panels' `http_request` warnings (missing etag headers) are
+  hidden; failures still log.
 - Docs: new Holiday themes and Play on illustrations; both features listed
   with their entities in [Home Assistant side](docs/home-assistant.md).
 
