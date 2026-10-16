@@ -9,6 +9,9 @@
 # The tab selects itself when the player starts playing after a real stop
 # (see media_autoswitch_gap_ms).
 
+substitutions:
+  music_volume_step: "5"   # % per tap of the volume - / + buttons
+
 globals:
   - id: tab_index_music
     type: int
@@ -52,6 +55,25 @@ esphome:
               lv_obj_add_flag(id(music_btn_playon), LV_OBJ_FLAG_HIDDEN);
 
 script:
+  # Volume - / + buttons: move to the next multiple of the step. Works from
+  # the slider (updated at once), not the player's reported level, which
+  # lags, so quick repeated taps all count.
+  - id: music_volume_nudge
+    mode: queued
+    parameters:
+      up: bool
+    then:
+      - lambda: |-
+          const int s = ${music_volume_step};
+          int cur = lv_slider_get_value(id(music_volume));
+          int v = up ? (cur / s + 1) * s : ((cur + s - 1) / s - 1) * s;
+          lv_slider_set_value(id(music_volume), std::max(0, std::min(100, v)), LV_ANIM_OFF);
+      - homeassistant.action:
+          action: media_player.volume_set
+          data:
+            entity_id: ${music_player}
+            volume_level: !lambda "return lv_slider_get_value(id(music_volume)) / 100.0f;"
+
   # Night clock: "Title · Artist" on its own line while music plays
   - id: night_music_update
     mode: restart
@@ -357,11 +379,13 @@ lvgl:
                   y: ${260*px}
 
               # ── Transport: Prev | Play/Pause | Next ───
+              # Beside the album art (180 px wide, centred): prev + shuffle on the
+              # left, next + repeat on the right, centred in the side columns
               - button:
                   id: music_btn_prev
                   align: TOP_MID
-                  x: -${112*px}
-                  y: ${284*px}
+                  x: -${165*px//1}
+                  y: ${60*px}
                   width: ${64*px}
                   height: ${56*px}
                   styles: icon_btn
@@ -375,6 +399,48 @@ lvgl:
                         action: media_player.media_previous_track
                         data:
                           entity_id: ${music_player}
+
+              # Volume - / + either side of play/pause (step: music_volume_step)
+              - button:
+                  id: music_btn_vol_down
+                  align: TOP_MID
+                  x: -${112*px}
+                  y: ${284*px}
+                  width: ${64*px}
+                  height: ${56*px}
+                  styles: icon_btn
+                  pressed:
+                    bg_color: ${c_surface}
+                    bg_opa: COVER
+                  widgets:
+                    - label:
+                        text: "\U000F075E" # mdi-volume-minus
+                        text_font: icons_xl
+                        align: CENTER
+                  on_click:
+                    - script.execute:
+                        id: music_volume_nudge
+                        up: false
+              - button:
+                  id: music_btn_vol_up
+                  align: TOP_MID
+                  x: ${112*px}
+                  y: ${284*px}
+                  width: ${64*px}
+                  height: ${56*px}
+                  styles: icon_btn
+                  pressed:
+                    bg_color: ${c_surface}
+                    bg_opa: COVER
+                  widgets:
+                    - label:
+                        text: "\U000F075D" # mdi-volume-plus
+                        text_font: icons_xl
+                        align: CENTER
+                  on_click:
+                    - script.execute:
+                        id: music_volume_nudge
+                        up: true
 
               - button:
                   id: music_btn_playpause
@@ -402,8 +468,8 @@ lvgl:
               - button:
                   id: music_btn_next
                   align: TOP_MID
-                  x: ${112*px}
-                  y: ${284*px}
+                  x: ${165*px//1}
+                  y: ${60*px}
                   width: ${64*px}
                   height: ${56*px}
                   styles: icon_btn
@@ -423,8 +489,8 @@ lvgl:
               - button:
                   id: music_btn_shuffle
                   align: TOP_MID
-                  x: -${194*px}
-                  y: ${288*px}
+                  x: -${165*px//1}
+                  y: ${132*px}
                   width: ${48*px}
                   height: ${48*px}
                   styles: icon_btn
@@ -484,8 +550,8 @@ lvgl:
               - button:
                   id: music_btn_repeat
                   align: TOP_MID
-                  x: ${194*px}
-                  y: ${288*px}
+                  x: ${165*px//1}
+                  y: ${132*px}
                   width: ${48*px}
                   height: ${48*px}
                   styles: icon_btn

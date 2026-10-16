@@ -60,9 +60,15 @@ ACT=2; { head; status "8:42pm" "" "#8E8E93"
  echo '<text x="240" y="251" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">The Gold Ring</text><text x="240" y="276" fill="#8E8E93" font-size="16" text-anchor="middle">Liam O’Flynn</text>'
  echo '<rect x="40" y="286" width="400" height="4" rx="2" fill="#38383A"/><rect x="40" y="286" width="150" height="4" rx="2" fill="#F2F2F7"/>'
  echo '<text x="40" y="309" fill="#8E8E93" font-size="16">1:27</text><text x="440" y="309" fill="#8E8E93" font-size="16" text-anchor="end">3:51</text>'
- echo '<text x="46" y="356" fill="#FFF" font-size="20" text-anchor="middle">⇄</text><text x="128" y="358" fill="#FFF" font-size="26" text-anchor="middle">⏮</text>'
+ # beside the art (tabs/music.yaml): prev + shuffle left, next + repeat right
+ skip() { echo "<g transform=\"translate($1 $2) scale($3 1)\" fill=\"#FFF\"><rect x=\"-13\" y=\"-11\" width=\"4\" height=\"22\" rx=\"1\"/><path d=\"M11 -11L-7 0L11 11Z\"/></g>"; }
+ skip 75 124 1; skip 405 124 -1
+ echo '<g transform="translate(75 192)" fill="none" stroke="#FFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M-12 -6h5l12 12h7M-12 6h5l12-12h7M8 -10l4 4l-4 4M8 2l4 4l-4 4"/></g>'
+ echo '<g transform="translate(405 192)" fill="none" stroke="#8E8E93" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M-10 2v-4a4 4 0 0 1 4-4h14M4 -10l4 4l-4 4M10 -2v4a4 4 0 0 1-4 4h-14M-4 10l-4-4l4-4"/></g>'
+ # volume - / + either side of play/pause
+ vol() { echo "<g transform=\"translate($1 348)\" fill=\"#FFF\"><path d=\"M-15 -5h5l7-6v22l-7-6h-5z\"/><rect x=\"4\" y=\"-1.5\" width=\"12\" height=\"3\" rx=\"1\"/>$2</g>"; }
+ vol 128 ''; vol 352 '<rect x="8.5" y="-6" width="3" height="12" rx="1"/>'
  echo '<circle cx="240" cy="348" r="32" fill="#F2F2F7"/><g fill="#000"><rect x="228" y="334" width="8" height="28" rx="2"/><rect x="244" y="334" width="8" height="28" rx="2"/></g>'
- echo '<text x="352" y="358" fill="#FFF" font-size="26" text-anchor="middle">⏭</text><text x="434" y="356" fill="#8E8E93" font-size="20" text-anchor="middle">↻</text>'
  echo '<text x="36" y="410" fill="#8E8E93" font-size="18" text-anchor="middle">🔈</text><rect x="66" y="391" width="400" height="28" rx="14" fill="#1C1C1E"/><rect x="66" y="391" width="140" height="28" rx="14" fill="#F2F2F7"/>'
  tabs Lights TV Music Favorites; foot; } > $O/music.svg
 

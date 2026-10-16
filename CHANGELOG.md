@@ -53,6 +53,10 @@
   Night help, Play on help, Apple TV labels). Favorite tile names stay at
   13 px (new `font_small`). A display file that includes only
   `core/theme.yaml` (no hardware package) needs `px: 1` in its substitutions.
+- **Music tab: volume buttons.** Volume − / + either side of play/pause
+  (5% per tap, `music_volume_step`); previous / next and shuffle / repeat
+  move into the empty space beside the artwork. The full-width volume slider
+  stays.
 - **Fewer resets on 480 boards:** Spotify (`i.scdn.co`, `mosaic`,
   `image-cdn-*`) and Apple Music (`*.mzstatic.com`) artwork now loads over
   plain http, like SiriusXM logos already did (`art_http` in

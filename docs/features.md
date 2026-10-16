@@ -166,9 +166,12 @@ Now Playing for one speaker — a Music Assistant player works best (the
 artwork, shuffle/repeat and grouping are all reliable).
 
 - Artwork, title, artist, progress bar with elapsed / total time.
-- **Previous / Play-Pause / Next**; **shuffle** (left) and **repeat** (right,
-  cycles off → all → one) light up white when active.
-- **Mute** and a **volume slider** that follows the speaker.
+- **Previous** and **shuffle** beside the artwork on the left, **next** and
+  **repeat** (cycles off → all → one) on the right; shuffle and repeat light
+  up white when active.
+- **Volume − / +** either side of **Play-Pause**: each tap moves to the next
+  5% (`music_volume_step` substitution). Below them, **mute** and a
+  full-width **volume slider** that follows the speaker.
 - **Play on** (speaker icon, top right) — opens a list of other speakers.
 
 ![Play on](images/play-on.svg)

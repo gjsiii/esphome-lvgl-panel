@@ -176,6 +176,8 @@ font:
         "\U000F040A", # mdi-play
         "\U000F03E4", # mdi-pause
         "\U000F0AE0", # mdi-spray-bottle (cleaning mode)
+        "\U000F075E", # mdi-volume-minus (music volume -)
+        "\U000F075D", # mdi-volume-plus (music volume +)
       ]
 
 lvgl:
