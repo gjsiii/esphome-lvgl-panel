@@ -25,6 +25,12 @@
 defaults:
   voice_label: "Voice Assistant"
 
+globals:
+  # Home Assistant answered this request (listening started)
+  - id: vt_heard_back
+    type: bool
+    initial_value: "false"
+
 voice_assistant:
   id: va
   microphone: panel_microphone
@@ -33,6 +39,8 @@ voice_assistant:
   auto_gain: 31dBFS
   volume_multiplier: 2.0
   on_listening:
+    - lambda: "id(vt_heard_back) = true;"
+    - script.stop: vt_watchdog
     - script.execute:
         id: vt_state
         text: "Listening…"
@@ -119,7 +127,9 @@ script:
                   - lambda: |-
                       lv_obj_clear_flag(id(vt_overlay), LV_OBJ_FLAG_HIDDEN);
                       lv_obj_move_foreground(id(vt_overlay));
+                      id(vt_heard_back) = false;
                   - voice_assistant.start:
+                  - script.execute: vt_watchdog
                 else:
                   - script.execute:
                       id: msg_show
@@ -142,6 +152,28 @@ script:
           lv_obj_set_style_text_color(id(lbl_vt_mic), lv_color_hex(color), LV_PART_MAIN);
           lv_obj_set_style_bg_color(id(btn_vt), lv_color_hex(button), LV_PART_MAIN);
           lv_disp_trig_activity(NULL);   // keep the screen up while talking
+
+  # No answer from Home Assistant: say so instead of "Starting…" forever
+  - id: vt_watchdog
+    mode: restart
+    then:
+      - delay: 8s
+      - if:
+          condition:
+            lambda: "return !id(vt_heard_back) && !lv_obj_has_flag(id(vt_overlay), LV_OBJ_FLAG_HIDDEN);"
+          then:
+            - voice_assistant.stop:
+            - script.execute:
+                id: vt_state
+                text: "No answer from Home Assistant"
+                color: 0xFF453A
+                button: ${c_surface}
+            - lambda: |-
+                lv_label_set_text(id(lbl_vt_response),
+                  "Check the Assist pipeline on this device's page in Home Assistant. "
+                  "If it still won't start, reload the device there (ESPHome integration).");
+            - delay: 8s
+            - script.execute: vt_hide
 
   - id: vt_button_idle
     then:
