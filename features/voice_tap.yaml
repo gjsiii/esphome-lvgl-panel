@@ -52,18 +52,16 @@ voice_assistant:
         color: ${c_text_2}
         button: ${c_surface_2}
   on_stt_end:
-    - lvgl.label.update:
-        id: lbl_vt_request
-        text: !lambda 'return "“" + x + "”";'
+    - lambda: |-
+        std::string heard = "\u201C" + x + "\u201D";   // in curly quotes
+        lv_label_set_text(id(lbl_vt_request), heard.c_str());
     - script.execute:
         id: vt_state
         text: "Thinking…"
         color: ${c_text_2}
         button: ${c_surface_2}
   on_tts_start:
-    - lvgl.label.update:
-        id: lbl_vt_response
-        text: !lambda "return x;"
+    - lambda: "lv_label_set_text(id(lbl_vt_response), x.c_str());"
     - script.execute:
         id: vt_state
         text: "Replying"
@@ -89,9 +87,7 @@ voice_assistant:
         text: "Error"
         color: 0xFF453A
         button: ${c_surface}
-    - lvgl.label.update:
-        id: lbl_vt_response
-        text: !lambda "return message;"
+    - lambda: "lv_label_set_text(id(lbl_vt_response), message.c_str());"
     - delay: 4s
     - script.execute: vt_hide
   on_client_disconnected:
