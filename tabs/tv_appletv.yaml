@@ -13,6 +13,11 @@
 # (see media_autoswitch_gap_ms). Power sits in the top-right corner (tap:
 # on, hold: off); the Apps button opens a sheet of round app-logo buttons
 # (items/tv_app.yaml) and is hidden when there are none.
+#
+# Portrait screens (screen_h > 480, e.g. the handheld remote) get their own
+# layout: large artwork with show / episode / app beside it, a progress bar
+# between skip back and forward, the d-pad centred with Apps, Home, Back and
+# Play/Pause in the corners around it, and a wide volume pill below.
 
 globals:
   - id: tab_index_tv
@@ -32,6 +37,13 @@ globals:
   - id: tv_art_dsc
     type: lv_image_dsc_t *
     initial_value: "nullptr"
+  # Progress bar (portrait): last reported position and when it arrived
+  - id: tv_pos_s
+    type: float
+    initial_value: "NAN"
+  - id: tv_pos_ms
+    type: uint32_t
+    initial_value: "0"
 
 esphome:
   on_boot:
@@ -81,12 +93,13 @@ script:
                 // Shared loader (core/images.yaml); keep a smaller copy
                 id(art_cb) = [](bool ok) {
                   if (!ok) { ESP_LOGW("tv", "Apple TV art download failed"); return; }
-                  id(img_show)(id(img_tv_art), &id(tv_art_dsc), id(art_loader)->get_lv_image_dsc(), ${(104*px)|int});
+                  id(img_show)(id(img_tv_art), &id(tv_art_dsc), id(art_loader)->get_lv_image_dsc(), ${((168 if screen_h > 480 else 104)*px)|int});
                 };
                 id(art_loader)->set_url(url);
                 id(art_loader)->update();
 
-  # Now-playing captions: show name (or title) + app name
+  # Now-playing captions: show name (or title) + app name. Portrait also
+  # shows the episode title under the show name.
   - id: update_tv_now_playing
     mode: restart
     then:
@@ -97,8 +110,66 @@ script:
             if (s.empty()) s = id(tv_title_text).state;
             return s;
       - lvgl.label.update:
+          id: lbl_tv_subtitle
+          text: !lambda |-
+            if (id(tv_artist_text).state.empty()) return std::string("");
+            return id(tv_title_text).state;
+      - lvgl.label.update:
           id: lbl_tv_app
           text: !lambda "return id(tv_app_text).state;"
+
+  # Progress bar (portrait): advance the last reported position while playing
+  - id: update_tv_progress
+    then:
+      - lambda: |-
+          float dur = id(tv_duration).state;
+          float pos = id(tv_pos_s);
+          bool known = !isnan(dur) && dur > 0 && !isnan(pos);
+          if (!known) {
+            lv_obj_add_flag(id(tv_progress), LV_OBJ_FLAG_HIDDEN);
+            return;
+          }
+          lv_obj_clear_flag(id(tv_progress), LV_OBJ_FLAG_HIDDEN);
+          if (id(tv_playing)) pos += (millis() - id(tv_pos_ms)) / 1000.0f;
+          if (pos > dur) pos = dur;
+          lv_bar_set_value(id(bar_tv_progress), (int32_t) (pos * 1000.0f / dur), LV_ANIM_OFF);
+          auto fmt = [](int t, const char *sign) {
+            char buf[16];
+            if (t >= 3600) snprintf(buf, sizeof(buf), "%s%d:%02d:%02d", sign, t / 3600, (t / 60) % 60, t % 60);
+            else snprintf(buf, sizeof(buf), "%s%d:%02d", sign, t / 60, t % 60);
+            return std::string(buf);
+          };
+          lv_label_set_text(id(lbl_tv_elapsed), fmt((int) pos, "").c_str());
+          lv_label_set_text(id(lbl_tv_remaining), fmt((int) (dur - pos), "-").c_str());
+
+sensor:
+  # Progress bar (portrait only; the square layout has no room for it)
+  - platform: homeassistant
+    id: tv_position
+    entity_id: ${tv_player}
+    attribute: media_position
+    on_value:
+      - lambda: |-
+          id(tv_pos_s) = x;
+          id(tv_pos_ms) = millis();
+      - if:
+          condition:
+            lambda: "return ${ 'true' if screen_h > 480 else 'false' };"
+          then:
+            - script.execute: update_tv_progress
+  - platform: homeassistant
+    id: tv_duration
+    entity_id: ${tv_player}
+    attribute: media_duration
+
+interval:
+  - interval: 1s
+    then:
+      - if:
+          condition:
+            lambda: "return ${ 'true' if screen_h > 480 else 'false' } && id(tv_playing) && lv_tabview_get_tab_active(id(main_tabview)) == id(tab_index_tv);"
+          then:
+            - script.execute: update_tv_progress
 
 text_sensor:
   # State: auto-select the TV tab when playback starts; show/hide now-playing art
@@ -131,6 +202,7 @@ text_sensor:
                 id(tv_title_text).publish_state("");
                 id(tv_artist_text).publish_state("");
                 id(tv_app_text).publish_state("");
+                id(tv_pos_s) = NAN;
 
   - platform: homeassistant
     id: tv_entity_picture
@@ -181,15 +253,15 @@ lvgl:
             styles: container
             scrollbar_mode: "off"
             widgets:
-              # ── Now playing (left of the d-pad) ───────
+              # ── Now playing (left of the d-pad; portrait: across the top) ─
               # Shown only while the Apple TV is playing/paused.
               - obj:
                   id: tv_now_playing
                   align: TOP_LEFT
                   x: 0
                   y: 0
-                  width: ${128*px}
-                  height: ${180*px}
+                  width: ${ (480 if screen_h > 480 else 128)*px }
+                  height: ${ (250 if screen_h > 480 else 180)*px }
                   styles: transparent
                   clickable: false
                   scrollable: false
@@ -198,10 +270,10 @@ lvgl:
                   widgets:
                     - obj:
                         align: TOP_LEFT
-                        x: ${12*px}
+                        x: ${ (20 if screen_h > 480 else 12)*px }
                         y: ${12*px}
-                        width: ${104*px}
-                        height: ${104*px}
+                        width: ${ (168 if screen_h > 480 else 104)*px }
+                        height: ${ (168 if screen_h > 480 else 104)*px }
                         styles: art_frame
                         clickable: false
                         scrollable: false
@@ -213,35 +285,84 @@ lvgl:
                     - label:
                         id: lbl_tv_title
                         text: ""
-                        text_font: font_caption
+                        text_font: ${ 'font_title' if screen_h > 480 else 'font_caption' }
                         text_color: ${c_text}
                         long_mode: DOT
-                        width: ${108*px}
+                        width: ${ (256 if screen_h > 480 else 108)*px }
                         align: TOP_LEFT
-                        x: ${12*px}
-                        y: ${124*px}
+                        x: ${ (204 if screen_h > 480 else 12)*px }
+                        y: ${ (62 if screen_h > 480 else 124)*px }
+                    # Episode title (portrait only)
+                    - label:
+                        id: lbl_tv_subtitle
+                        text: ""
+                        text_font: font_body
+                        text_color: ${c_text}
+                        long_mode: DOT
+                        width: ${256*px}
+                        align: TOP_LEFT
+                        x: ${204*px}
+                        y: ${94*px}
+                        hidden: ${ 'false' if screen_h > 480 else 'true' }
                     - label:
                         id: lbl_tv_app
                         text: ""
                         text_font: font_caption
                         text_color: ${c_text_2}
                         long_mode: DOT
-                        width: ${108*px}
+                        width: ${ (256 if screen_h > 480 else 108)*px }
                         align: TOP_LEFT
-                        x: ${12*px}
-                        y: ${146*px}
+                        x: ${ (204 if screen_h > 480 else 12)*px }
+                        y: ${ (126 if screen_h > 480 else 146)*px }
+                    # Progress bar + times (portrait only), between the skip
+                    # buttons; hidden until the Apple TV reports a duration
+                    - obj:
+                        id: tv_progress
+                        align: TOP_MID
+                        y: ${206*px}
+                        width: ${312*px}
+                        height: ${40*px}
+                        styles: transparent
+                        clickable: false
+                        scrollable: false
+                        scrollbar_mode: "off"
+                        hidden: true
+                        widgets:
+                          - bar:
+                              id: bar_tv_progress
+                              align: TOP_MID
+                              y: ${4*px}
+                              width: 100%
+                              height: ${5*px//1}
+                              min_value: 0
+                              max_value: 1000
+                              value: 0
+                          - label:
+                              id: lbl_tv_elapsed
+                              text: ""
+                              text_font: font_small
+                              text_color: ${c_text_2}
+                              align: TOP_LEFT
+                              y: ${18*px}
+                          - label:
+                              id: lbl_tv_remaining
+                              text: ""
+                              text_font: font_small
+                              text_color: ${c_text_2}
+                              align: TOP_RIGHT
+                              y: ${18*px}
 
               # ── D-pad ─────────────────────────────────
               - obj:
                   id: tv_dpad
                   align: TOP_MID
-                  y: ${4*px}
-                  width: ${240*px}
-                  height: ${240*px}
+                  y: ${ (260 if screen_h > 480 else 4)*px }
+                  width: ${ (256 if screen_h > 480 else 240)*px }
+                  height: ${ (256 if screen_h > 480 else 240)*px }
                   bg_color: ${c_surface}
                   bg_opa: COVER
                   border_width: 0
-                  radius: ${120*px}
+                  radius: ${ (128 if screen_h > 480 else 120)*px }
                   pad_all: 0
                   clickable: false
                   scrollable: false
@@ -252,8 +373,8 @@ lvgl:
                         id: tv_btn_up
                         align: TOP_MID
                         y: ${4*px}
-                        width: ${80*px}
-                        height: ${68*px}
+                        width: ${ (88 if screen_h > 480 else 80)*px }
+                        height: ${ (76 if screen_h > 480 else 68)*px }
                         styles: icon_btn
                         widgets:
                           - label:
@@ -275,8 +396,8 @@ lvgl:
                         id: tv_btn_down
                         align: BOTTOM_MID
                         y: -${4*px}
-                        width: ${80*px}
-                        height: ${68*px}
+                        width: ${ (88 if screen_h > 480 else 80)*px }
+                        height: ${ (76 if screen_h > 480 else 68)*px }
                         styles: icon_btn
                         widgets:
                           - label:
@@ -298,8 +419,8 @@ lvgl:
                         id: tv_btn_left
                         align: LEFT_MID
                         x: ${4*px}
-                        width: ${68*px}
-                        height: ${80*px}
+                        width: ${ (76 if screen_h > 480 else 68)*px }
+                        height: ${ (88 if screen_h > 480 else 80)*px }
                         styles: icon_btn
                         widgets:
                           - label:
@@ -321,8 +442,8 @@ lvgl:
                         id: tv_btn_right
                         align: RIGHT_MID
                         x: -${4*px}
-                        width: ${68*px}
-                        height: ${80*px}
+                        width: ${ (76 if screen_h > 480 else 68)*px }
+                        height: ${ (88 if screen_h > 480 else 80)*px }
                         styles: icon_btn
                         widgets:
                           - label:
@@ -343,8 +464,8 @@ lvgl:
                     - button:
                         id: tv_btn_select
                         align: CENTER
-                        width: ${92*px}
-                        height: ${92*px}
+                        width: ${ (100 if screen_h > 480 else 92)*px }
+                        height: ${ (100 if screen_h > 480 else 92)*px }
                         styles: round_btn
                         bg_color: ${c_surface_2}
                         pressed:
@@ -360,16 +481,19 @@ lvgl:
                                 hold_secs: "0"
 
               # ── Power | Back | Home | Play/Pause ──────
+              # (portrait: Apps / Home above, Back / Play-Pause below, either
+              # side of the d-pad)
               #### Power (tap: wake, hold: sleep): small, in the top-right
               # corner, away from the buttons used while watching
+              # (portrait: a round button in the corner of the now-playing area)
               - button:
                   id: tv_btn_power
                   align: TOP_RIGHT
-                  x: -${8*px}
-                  y: ${8*px}
+                  x: -${ (18 if screen_h > 480 else 8)*px }
+                  y: ${ (12 if screen_h > 480 else 8)*px }
                   width: ${52*px}
                   height: ${52*px}
-                  styles: icon_btn
+                  styles: ${ 'round_btn' if screen_h > 480 else 'icon_btn' }
                   pressed:
                     bg_color: ${c_surface}
                     bg_opa: COVER
@@ -406,10 +530,10 @@ lvgl:
               - button:
                   id: tv_btn_apps
                   align: TOP_MID
-                  x: -${114*px}
-                  y: ${256*px}
-                  width: ${60*px}
-                  height: ${60*px}
+                  x: -${ (182 if screen_h > 480 else 114)*px }
+                  y: ${ (276 if screen_h > 480 else 256)*px }
+                  width: ${ (64 if screen_h > 480 else 60)*px }
+                  height: ${ (64 if screen_h > 480 else 60)*px }
                   styles: round_btn
                   widgets:
                     - label:
@@ -424,10 +548,10 @@ lvgl:
               - button:
                   id: tv_btn_back
                   align: TOP_MID
-                  x: -${38*px}
-                  y: ${256*px}
-                  width: ${60*px}
-                  height: ${60*px}
+                  x: -${ (182 if screen_h > 480 else 38)*px }
+                  y: ${ (436 if screen_h > 480 else 256)*px }
+                  width: ${ (64 if screen_h > 480 else 60)*px }
+                  height: ${ (64 if screen_h > 480 else 60)*px }
                   styles: round_btn
                   widgets:
                     - label:
@@ -448,10 +572,10 @@ lvgl:
               - button:
                   id: tv_btn_home
                   align: TOP_MID
-                  x: ${38*px}
-                  y: ${256*px}
-                  width: ${60*px}
-                  height: ${60*px}
+                  x: ${ (182 if screen_h > 480 else 38)*px }
+                  y: ${ (276 if screen_h > 480 else 256)*px }
+                  width: ${ (64 if screen_h > 480 else 60)*px }
+                  height: ${ (64 if screen_h > 480 else 60)*px }
                   styles: round_btn
                   widgets:
                     - label:
@@ -472,10 +596,10 @@ lvgl:
               - button:
                   id: tv_btn_playpause
                   align: TOP_MID
-                  x: ${114*px}
-                  y: ${256*px}
-                  width: ${60*px}
-                  height: ${60*px}
+                  x: ${ (182 if screen_h > 480 else 114)*px }
+                  y: ${ (436 if screen_h > 480 else 256)*px }
+                  width: ${ (64 if screen_h > 480 else 60)*px }
+                  height: ${ (64 if screen_h > 480 else 60)*px }
                   styles: round_btn
                   widgets:
                     - label:
@@ -491,13 +615,13 @@ lvgl:
               # ── Volume pill: − | Mute | + ─────────────
               - obj:
                   align: TOP_MID
-                  y: ${328*px}
-                  width: ${240*px}
-                  height: ${56*px}
+                  y: ${ (546 if screen_h > 480 else 328)*px }
+                  width: ${ (320 if screen_h > 480 else 240)*px }
+                  height: ${ (64 if screen_h > 480 else 56)*px }
                   bg_color: ${c_surface}
                   bg_opa: COVER
                   border_width: 0
-                  radius: ${28*px}
+                  radius: ${ (32 if screen_h > 480 else 28)*px }
                   pad_all: 0
                   clickable: false
                   scrollable: false
@@ -506,8 +630,8 @@ lvgl:
                     - button:
                         id: tv_btn_vol_down
                         align: LEFT_MID
-                        width: ${80*px}
-                        height: ${56*px}
+                        width: ${ (106 if screen_h > 480 else 80)*px }
+                        height: ${ (64 if screen_h > 480 else 56)*px }
                         styles: icon_btn
                         widgets:
                           - label:
@@ -522,8 +646,8 @@ lvgl:
                     - button:
                         id: tv_btn_mute
                         align: CENTER
-                        width: ${80*px}
-                        height: ${56*px}
+                        width: ${ (106 if screen_h > 480 else 80)*px }
+                        height: ${ (64 if screen_h > 480 else 56)*px }
                         styles: icon_btn
                         widgets:
                           - label:
@@ -539,8 +663,8 @@ lvgl:
                     - button:
                         id: tv_btn_vol_up
                         align: RIGHT_MID
-                        width: ${80*px}
-                        height: ${56*px}
+                        width: ${ (106 if screen_h > 480 else 80)*px }
+                        height: ${ (64 if screen_h > 480 else 56)*px }
                         styles: icon_btn
                         widgets:
                           - label:
@@ -554,14 +678,15 @@ lvgl:
                                 entity_id: ${tv_volume_player}
 
 
-              # ── Skip back / forward (either side of the volume pill) ─
+              # ── Skip back / forward (either side of the volume pill;
+              # portrait: either side of the progress bar) ─
               - button:
                   id: tv_btn_skip_back
                   align: TOP_MID
-                  x: -${164*px}
-                  y: ${328*px}
-                  width: ${56*px}
-                  height: ${56*px}
+                  x: -${ (196 if screen_h > 480 else 164)*px }
+                  y: ${ (190 if screen_h > 480 else 328)*px }
+                  width: ${ (52 if screen_h > 480 else 56)*px }
+                  height: ${ (52 if screen_h > 480 else 56)*px }
                   styles: round_btn
                   widgets:
                     - label:
@@ -578,10 +703,10 @@ lvgl:
               - button:
                   id: tv_btn_skip_fwd
                   align: TOP_MID
-                  x: ${164*px}
-                  y: ${328*px}
-                  width: ${56*px}
-                  height: ${56*px}
+                  x: ${ (196 if screen_h > 480 else 164)*px }
+                  y: ${ (190 if screen_h > 480 else 328)*px }
+                  width: ${ (52 if screen_h > 480 else 56)*px }
+                  height: ${ (52 if screen_h > 480 else 56)*px }
                   styles: round_btn
                   widgets:
                     - label:

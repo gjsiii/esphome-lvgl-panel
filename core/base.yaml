@@ -44,7 +44,7 @@ esphome:
             // Light sliders: one column
             lv_obj_set_flex_flow(id(lights_list), LV_FLEX_FLOW_COLUMN);
             lv_obj_set_flex_align(id(lights_list), LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START);
-            lv_obj_set_style_pad_row(id(lights_list), ${(10*px)|int}, 0);
+            lv_obj_set_style_pad_row(id(lights_list), ${((12 if screen_h > 480 else 10)*px)|int}, 0);
             // Status chips: a right-aligned row in the status bar
             lv_obj_set_flex_flow(id(status_chips), LV_FLEX_FLOW_ROW);
             lv_obj_set_flex_align(id(status_chips), LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
@@ -66,9 +66,21 @@ esphome:
             if (lv_obj_get_child_cnt(id(scene_chips)) == 0) {
               lv_obj_add_flag(id(lbl_scenes_header), LV_OBJ_FLAG_HIDDEN);
               lv_obj_add_flag(id(scene_chips), LV_OBJ_FLAG_HIDDEN);
-              lv_obj_set_y(id(lbl_lights_header), ${(12*px)|int});
-              lv_obj_set_y(id(lights_list), ${(34*px)|int});
-              lv_obj_set_height(id(lights_list), ${(352*px)|int});
+              lv_obj_set_y(id(lbl_lights_header), ${((14 if screen_h > 480 else 12)*px)|int});
+              lv_obj_set_y(id(lights_list), ${((40 if screen_h > 480 else 34)*px)|int});
+              lv_obj_set_height(id(lights_list), ${((screen_h - 80 - 64 - 48 if screen_h > 480 else 352)*px)|int});
+            } else if (${ 'true' if screen_h > 480 else 'false' }) {
+              // Portrait: the scene area takes as many 48 px rows as the
+              // chips need; LIGHTS and the sliders fill the rest of the tab
+              // (tab = screen_h - 80 status bar - 64 tab bar)
+              int rows = (lv_obj_get_child_cnt(id(scene_chips)) + 2) / 3;
+              int chips_h = rows * ${(48*px)|int} + (rows - 1) * ${(10*px)|int};
+              int hdr_y = ${(40*px)|int} + chips_h + ${(18*px)|int};
+              int list_y = hdr_y + ${(26*px)|int};
+              lv_obj_set_height(id(scene_chips), chips_h);
+              lv_obj_set_y(id(lbl_lights_header), hdr_y);
+              lv_obj_set_y(id(lights_list), list_y);
+              lv_obj_set_height(id(lights_list), ${((screen_h - 80 - 64)*px)|int} - list_y - ${(8*px)|int});
             }
         # Tab bar: tabs added by packages at boot get LVGL's default (blue)
         # look, since the YAML tab_style only reaches tabs defined in YAML.

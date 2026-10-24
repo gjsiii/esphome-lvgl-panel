@@ -108,7 +108,7 @@ lvgl:
         - obj:
             id: light_row_${slot}
             width: ${440*px}
-            height: ${56*px}
+            height: ${ (64 if screen_h > 480 else 56)*px }   # portrait: taller for thumbs
             styles: transparent
             scrollbar_mode: "off"
             widgets:

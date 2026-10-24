@@ -34,6 +34,7 @@ substitutions:
   # Shared-file settings (see hardware/guition-4848s040.yaml)
   px: 1.5                  # 720 / 480
   lvgl_buffer_size: 100%   # full-screen buffer: required for clean MIPI-DSI updates
+  screen_h: 480            # square: the standard layout
 
   # Board settings
   p4_engineering_sample: false   # unquoted: true / false
