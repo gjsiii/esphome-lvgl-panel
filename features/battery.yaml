@@ -1,0 +1,189 @@
+# Feature: battery level, docked detection and automatic standby, for
+# battery-powered boards (hardware/guition-jc4880p443.yaml: it provides the
+# battery_voltage sensor and the board_standby script this uses).
+#
+#   battery: !include panel/features/battery.yaml
+#   # or, to change when an untouched remote goes to standby:
+#   battery: !include { file: panel/features/battery.yaml, vars: { standby_after_min: "60" } }
+#
+# - Status bar, far right of the top row: battery icon and level; a charging
+#   bolt while docked, red at 15% or less. (Portrait layout.)
+# - Docked: no charge signal reaches the board, so docking is read from the
+#   battery voltage: a jump up means the charger came on, a jump down (or a
+#   steady fall) that it went off.
+# - Standby (board_standby: screen, Wi-Fi and radio off; a tap or docking
+#   brings it back) after standby_after_min minutes without a touch, or at 3%
+#   battery; never while docked. A banner at 10% asks for the dock.
+# - Home Assistant: Battery (%), Charging, and a Standby button.
+
+defaults:
+  standby_after_min: "120"
+
+font:
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
+    id: icons_battery
+    size: ${22*px}
+    bpp: 4
+    glyphs: [
+        "\U000F008E", # mdi-battery-outline (empty)
+        "\U000F007A", # mdi-battery-10
+        "\U000F007B", # mdi-battery-20
+        "\U000F007C", # mdi-battery-30
+        "\U000F007D", # mdi-battery-40
+        "\U000F007E", # mdi-battery-50
+        "\U000F007F", # mdi-battery-60
+        "\U000F0080", # mdi-battery-70
+        "\U000F0081", # mdi-battery-80
+        "\U000F0082", # mdi-battery-90
+        "\U000F0079", # mdi-battery (full)
+        "\U000F0084", # mdi-battery-charging
+      ]
+
+globals:
+  # Last 30 s battery reading, for the docked check
+  - id: batt_prev_v
+    type: float
+    initial_value: "NAN"
+  - id: batt_falling
+    type: int
+    initial_value: "0"
+  - id: batt_low_shown
+    type: bool
+    initial_value: "false"
+
+esphome:
+  on_boot:
+    # Into the status bar's top row, right end
+    - priority: -310
+      then:
+        - lambda: |-
+            lv_obj_set_parent(id(batt_box), id(status_bar));
+            lv_obj_align(id(batt_box), LV_ALIGN_RIGHT_MID, -${(6*px)|int}, ${((-20 if screen_h > 480 else 0)*px)|int});
+
+sensor:
+  # Level and docked state from each (30 s averaged) reading
+  - id: !extend battery_voltage
+    on_value:
+      - lambda: |-
+          // Li-ion resting curve (V -> %), interpolated
+          static const float v_pts[] = {3.27f, 3.61f, 3.69f, 3.71f, 3.73f, 3.75f, 3.77f, 3.79f, 3.80f, 3.82f, 3.84f,
+                                        3.85f, 3.87f, 3.91f, 3.95f, 3.98f, 4.02f, 4.08f, 4.11f, 4.15f, 4.20f};
+          float pct = 100.0f;
+          if (x <= v_pts[0]) pct = 0;
+          else for (int i = 1; i < 21; i++) {
+            if (x < v_pts[i]) { pct = 5.0f * (i - 1 + (x - v_pts[i - 1]) / (v_pts[i] - v_pts[i - 1])); break; }
+          }
+          id(battery_level).publish_state(roundf(pct));
+
+          bool docked = id(battery_charging).state;
+          float prev = id(batt_prev_v);
+          if (!isnan(prev)) {
+            float dv = x - prev;
+            if (dv > 0.04f) docked = true;          // charger came on
+            else if (dv < -0.04f) docked = false;   // charger went off
+            id(batt_falling) = dv < -0.003f ? id(batt_falling) + 1 : 0;
+            if (id(batt_falling) >= 4) docked = false;   // two minutes of steady drain
+          }
+          id(batt_prev_v) = x;
+          if (docked != id(battery_charging).state) id(battery_charging).publish_state(docked);
+      - script.execute: battery_show
+
+  - platform: template
+    id: battery_level
+    name: Battery
+    unit_of_measurement: "%"
+    device_class: battery
+    state_class: measurement
+    accuracy_decimals: 0
+
+binary_sensor:
+  - platform: template
+    id: battery_charging
+    name: Charging
+    device_class: battery_charging
+    on_state:
+      - script.execute: battery_show
+
+script:
+  - id: battery_show
+    then:
+      - lambda: |-
+          float pct = id(battery_level).state;
+          if (isnan(pct)) return;
+          bool docked = id(battery_charging).state;
+          int step = (int) ((pct + 5) / 10);               // 0..10
+          static const char *glyphs[11] = {
+            "\U000F008E", "\U000F007A", "\U000F007B", "\U000F007C", "\U000F007D", "\U000F007E",
+            "\U000F007F", "\U000F0080", "\U000F0081", "\U000F0082", "\U000F0079"};
+          lv_label_set_text(id(lbl_batt_icon), docked ? "\U000F0084" : glyphs[std::max(0, std::min(10, step))]);
+          char buf[8];
+          snprintf(buf, sizeof(buf), "%d%%", (int) pct);
+          lv_label_set_text(id(lbl_batt_pct), buf);
+          uint32_t c = (!docked && pct <= 15) ? 0xFF453A : ${c_text};
+          lv_obj_set_style_text_color(id(lbl_batt_icon), lv_color_hex(c), LV_PART_MAIN);
+          lv_obj_set_style_text_color(id(lbl_batt_pct), lv_color_hex(c), LV_PART_MAIN);
+          lv_obj_clear_flag(id(batt_box), LV_OBJ_FLAG_HIDDEN);
+      # Low: one banner per discharge
+      - if:
+          condition:
+            lambda: |-
+              float pct = id(battery_level).state;
+              if (id(battery_charging).state || pct > 20) id(batt_low_shown) = false;
+              return !id(battery_charging).state && pct <= 10 && !id(batt_low_shown);
+          then:
+            - lambda: "id(batt_low_shown) = true;"
+            - script.execute:
+                id: msg_show
+                title: "Battery low"
+                message: "Put the remote on its dock."
+                icon: "alert"
+                seconds: 60
+
+interval:
+  # Standby when left alone (or nearly empty), unless docked
+  - interval: 60s
+    then:
+      - if:
+          condition:
+            lambda: |-
+              if (id(battery_charging).state || millis() < 120000) return false;
+              float pct = id(battery_level).state;
+              return lv_disp_get_inactive_time(NULL) >= ${standby_after_min} * 60000UL ||
+                     (!isnan(pct) && pct <= 3);
+          then:
+            - logger.log: "Standby: idle or battery nearly empty"
+            - script.execute: board_standby
+
+button:
+  - platform: template
+    name: Standby
+    icon: mdi:power-sleep
+    on_press:
+      - script.execute: board_standby
+
+lvgl:
+  pages:
+    # Holding page (never shown): batt_box goes into the status bar at boot
+    - id: holding_battery
+      skip: true
+      widgets:
+        - obj:
+            id: batt_box
+            width: ${80*px}
+            height: ${32*px}
+            styles: transparent
+            clickable: false
+            scrollable: false
+            hidden: true   # until the first reading
+            widgets:
+              - label:
+                  id: lbl_batt_icon
+                  text: "\U000F0079"
+                  text_font: icons_battery
+                  align: RIGHT_MID
+              - label:
+                  id: lbl_batt_pct
+                  text: ""
+                  text_font: font_caption
+                  align: RIGHT_MID
+                  x: -${26*px}

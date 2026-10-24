@@ -11,9 +11,9 @@
 # with community configs (touch reset GPIO3), the schematic is right.
 #
 # Provides: my_display, my_touchscreen, display_backlight, battery_voltage,
-# and the audio parts features/voice_assistant.yaml needs (panel_microphone,
-# panel_speaker, panel_media_player "Panel Speaker", audio_amplifier,
-# media_mixing_input).
+# board_standby (see below; features/battery.yaml uses both), and the audio
+# parts features/voice_assistant.yaml needs (panel_microphone, panel_speaker,
+# panel_media_player "Panel Speaker", audio_amplifier, media_mixing_input).
 #
 # The first install must be over USB, on the "Full-speed" USB-C port (the
 # P4's own USB-serial/JTAG; the log also comes out there). If the dashboard
@@ -28,6 +28,9 @@
 #     GPIO21, not one of the LP pins 0-15).
 #   - No charge-status line reaches the P4: charging shows only as a battery
 #     voltage rise.
+#   So "off" is board_standby: screen, Wi-Fi and the C6 radio off, the P4 in
+#   light sleep. A tap on the screen restarts it (about 5-10 s back to Wi-Fi),
+#   and so does docking (checked once a minute from the battery voltage).
 #
 # Board settings a display file can override in its substitutions:
 #
@@ -53,6 +56,12 @@ substitutions:
   p4_cpu_frequency: 360MHz
   p4_psram_speed: 200MHz
   lvgl_rotation: "0"
+
+esphome:
+  includes:
+    - <esp_sleep.h>     # board_standby
+    - <esp_ota_ops.h>
+    - <driver/gpio.h>
 
 esp32:
   variant: esp32p4
@@ -277,3 +286,38 @@ sensor:
     icon: mdi:layers-outline
     update_interval: 60s
     lambda: "return (float) uxTaskGetStackHighWaterMark(nullptr);"
+
+script:
+  # Standby ("off"): see the notes at the top. Restarts on a touch, or when
+  # the battery voltage rises 0.15 V above its rested level (docked).
+  - id: board_standby
+    then:
+      - light.turn_off: { id: display_backlight, transition_length: 0s }
+      - wifi.disable:
+      - delay: 500ms
+      - lambda: |-
+          // ESPHome confirms a new update after a minute of main loop; this
+          // blocks the loop and then restarts, which would roll it back.
+          if (esp_ota_get_running_partition() == esp_ota_get_boot_partition())
+            esp_ota_mark_app_valid_cancel_rollback();
+          // C6 radio off: CHIP_PU (10k pull-up) low; light sleep keeps the level
+          gpio_reset_pin(GPIO_NUM_54);
+          gpio_set_direction(GPIO_NUM_54, GPIO_MODE_OUTPUT);
+          gpio_set_level(GPIO_NUM_54, 0);
+          gpio_wakeup_enable(GPIO_NUM_21, GPIO_INTR_LOW_LEVEL);   // GT911 INT: touch
+          esp_sleep_enable_gpio_wakeup();
+          esp_sleep_enable_timer_wakeup(60ULL * 1000000ULL);
+          ESP_LOGI("standby", "Standby, battery %.2f V", id(battery_voltage).sample() * 1.68f);
+          delay(100);   // let the log line out
+          // The voltage climbs for a while once the load is off, so the
+          // baseline is the lowest reading from the first rested minute on
+          float base = NAN;
+          while (true) {
+            esp_light_sleep_start();
+            App.feed_wdt();
+            if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_GPIO) break;
+            float v = id(battery_voltage).sample() * 1.68f;
+            if (isnan(base) || v < base) base = v;
+            if (v > base + 0.15f) break;   // charging: docked
+          }
+          esp_restart();

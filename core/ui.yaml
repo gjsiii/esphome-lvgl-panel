@@ -28,6 +28,7 @@ lvgl:
               # row 1 as on the square screens (status chips moved out, the
               # battery at the far right), row 2 the status chips.
               - obj:
+                  id: status_bar   # features add widgets here (e.g. battery.yaml)
                   width: 100%
                   height: ${ (80 if screen_h > 480 else 36)*px }
                   align: TOP_MID

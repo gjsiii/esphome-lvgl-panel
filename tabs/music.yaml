@@ -167,8 +167,11 @@ script:
                 capture_response: true
                 on_success:
                   - lambda: |-
-                      std::string txt = response["lyrics"] | "";
-                      bool synced = response["synced"] | false;
+                      // HA sends the script's answer as {"response": {...}}
+                      JsonObjectConst r = response["response"].is<JsonObjectConst>()
+                          ? response["response"].as<JsonObjectConst>() : response;
+                      std::string txt = r["lyrics"] | "";
+                      bool synced = r["synced"] | false;
                       auto &lines = id(lyr_lines);
                       auto &ms = id(lyr_ms);
                       lines.clear();
