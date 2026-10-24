@@ -42,13 +42,19 @@ globals:
   - id: album_art_dsc
     type: lv_image_dsc_t *
     initial_value: "nullptr"
-  # Portrait: position extrapolation (last reported position, when it came)
+  # Portrait: where the song was at millis() == music_pos_ms. HA reports a
+  # position with the time it was taken (not when it arrives), and only now
+  # and then; between songs the old report lingers, so a new title restarts
+  # at 0 until a fresh report (music_stale_at = the report to ignore).
   - id: music_pos_s
     type: float
     initial_value: "NAN"
   - id: music_pos_ms
     type: uint32_t
     initial_value: "0"
+  - id: music_stale_at
+    type: std::string
+    initial_value: '""'
   # Portrait lyrics: the song they belong to, lines and their start times
   # (ms; synced only), the line shown as current, and whether the lyrics
   # view is up
@@ -72,6 +78,8 @@ globals:
     initial_value: "false"
 
 esphome:
+  includes:
+    - <sys/time.h>   # gettimeofday (music_pos_anchor)
   on_boot:
     - priority: -10${tab_position}
       then:
@@ -119,7 +127,38 @@ script:
             entity_id: ${music_player}
             volume_level: !lambda "return lv_slider_get_value(id(music_volume)) / 100.0f;"
 
-  # Portrait: advance the progress bar between HA's position reports
+  # Portrait: a position report arrived (position + the time it was taken):
+  # work out where the song is now
+  - id: music_pos_anchor
+    then:
+      - lambda: |-
+          float p = id(media_position_sensor).state;
+          const std::string &at = id(media_pos_at_text).state;
+          if (isnan(p) || at.empty() || at == id(music_stale_at)) return;
+          id(music_stale_at) = "";
+          float age = 0;
+          // "2026-10-24T12:37:27.269000+00:00" -> ms since the epoch
+          int Y, M, D, h, m, tzh = 0, tzm = 0; float sec; char sign = '+';
+          if (sscanf(at.c_str(), "%d-%d-%dT%d:%d:%f%c%d:%d", &Y, &M, &D, &h, &m, &sec, &sign, &tzh, &tzm) >= 6) {
+            int y = Y - (M <= 2);                       // days from civil (Howard Hinnant)
+            int era = (y >= 0 ? y : y - 399) / 400;
+            int yoe = y - era * 400;
+            int doy = (153 * (M + (M > 2 ? -3 : 9)) + 2) / 5 + D - 1;
+            int doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+            int64_t days = (int64_t) era * 146097 + doe - 719468;
+            double at_s = days * 86400.0 + h * 3600 + m * 60 + sec - (sign == '-' ? -1 : 1) * (tzh * 3600 + tzm * 60);
+            struct timeval tv;
+            gettimeofday(&tv, nullptr);
+            double now_s = tv.tv_sec + tv.tv_usec / 1e6;
+            if (tv.tv_sec > 1600000000 && id(media_state_text).state == "playing") {
+              age = (float) (now_s - at_s);
+              if (age < 0 || age > 600) age = 0;        // clock not set / odd report
+            }
+          }
+          id(music_pos_s) = p + age;
+          id(music_pos_ms) = millis();
+
+  # Where the song is now (s), or NAN
   - id: music_progress_tick
     then:
       - lambda: |-
@@ -250,7 +289,9 @@ script:
           float pos = id(music_pos_s);
           if (isnan(pos)) pos = 0;
           if (id(music_playing)) pos += (millis() - id(music_pos_ms)) / 1000.0f;
-          int32_t now = (int32_t) (pos * 1000) + 250;   // a touch early reads better
+          // A touch early reads better; Lyrics Delay holds them back for
+          // speakers that play behind the reported position (e.g. Sonos)
+          int32_t now = (int32_t) (pos * 1000) + 250 - (int32_t) (id(lyrics_delay).state * 1000);
           const auto &ms = id(lyr_ms);
           int cur = (int) (std::upper_bound(ms.begin(), ms.end(), now) - ms.begin()) - 1;
           if (cur == id(lyr_cur)) return;
@@ -315,9 +356,7 @@ sensor:
     entity_id: ${music_player}
     attribute: media_position
     on_value:
-      - lambda: |-
-          id(music_pos_s) = x;
-          id(music_pos_ms) = millis();
+      - script.execute: music_pos_anchor
       - lvgl.bar.update:
           id: bar_track_progress
           value: !lambda |-
@@ -355,6 +394,25 @@ sensor:
       - lambda: |-
           if (isnan(x) || lv_obj_has_state(id(music_volume), LV_STATE_PRESSED)) return;
           lv_slider_set_value(id(music_volume), lroundf(x * 100.0f), LV_ANIM_OFF);
+
+number:
+  # Portrait lyrics: hold them back this many seconds (speaker latency)
+  - platform: template
+    id: lyrics_delay
+    name: Lyrics Delay
+    icon: mdi:timer-sand
+    entity_category: config
+    unit_of_measurement: s
+    min_value: -5
+    max_value: 10
+    step: 0.5
+    initial_value: 0
+    optimistic: true
+    restore_value: true
+    mode: box
+    internal: ${ 'false' if (screen_h > 480 and music_lyrics | string | lower == 'true') else 'true' }
+    on_value:
+      - lambda: "id(lyr_cur) = -2;"
 
 binary_sensor:
   - platform: homeassistant
@@ -407,6 +465,12 @@ text_sensor:
       - lvgl.label.update:
           id: lbl_track_name
           text: !lambda "return x.c_str();"
+      - lambda: |-
+          // New song: from 0 until HA reports a newer position
+          id(music_stale_at) = id(media_pos_at_text).state;
+          id(music_pos_s) = 0;
+          id(music_pos_ms) = millis();
+          id(lyr_cur) = -2;
       - script.execute: night_music_update
       - script.execute: lyrics_fetch
 
@@ -426,6 +490,14 @@ text_sensor:
     id: media_album_text
     entity_id: ${music_player}
     attribute: media_album_name
+
+  # When the reported position was taken (portrait progress and lyrics)
+  - platform: homeassistant
+    id: media_pos_at_text
+    entity_id: ${music_player}
+    attribute: media_position_updated_at
+    on_value:
+      - script.execute: music_pos_anchor
 
   # Player state: show pause while playing, play otherwise.
   # Also brings up the Music tab when playback (re)starts after a real stop.
