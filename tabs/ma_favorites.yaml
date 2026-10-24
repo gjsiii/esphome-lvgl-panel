@@ -581,13 +581,14 @@ lvgl:
                   text_color: ${c_text_2}
                   align: CENTER
                   y: ${20*px}
-              # Artwork grid: 140 px tiles, 3 per row, scrolls
+              # Artwork grid: 140 px tiles, 3 per row, scrolls (portrait: the
+              # rest of the tab, three full rows)
               - obj:
                   id: maf_grid
                   align: TOP_MID
                   y: ${56*px}
                   width: 100%
-                  height: ${334*px}
+                  height: ${ (screen_h - 80 - 64 - 64 if screen_h > 480 else 334)*px }
                   styles: transparent
                   scrollbar_mode: "off"
                   scroll_dir: VER

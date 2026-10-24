@@ -15,7 +15,8 @@
 # (items/tv_app.yaml) and is hidden when there are none.
 #
 # Portrait screens (screen_h > 480, e.g. the handheld remote) get their own
-# layout: large artwork with show / episode / app beside it, a progress bar
+# layout: power top-left, show / episode / app below it and large artwork on
+# the right, a progress bar
 # between skip back and forward, the d-pad centred with Apps, Home, Back and
 # Play/Pause in the corners around it, and a wide volume pill below.
 
@@ -270,7 +271,7 @@ lvgl:
                   widgets:
                     - obj:
                         align: TOP_LEFT
-                        x: ${ (20 if screen_h > 480 else 12)*px }
+                        x: ${ (292 if screen_h > 480 else 12)*px }
                         y: ${12*px}
                         width: ${ (168 if screen_h > 480 else 104)*px }
                         height: ${ (168 if screen_h > 480 else 104)*px }
@@ -290,8 +291,8 @@ lvgl:
                         long_mode: DOT
                         width: ${ (256 if screen_h > 480 else 108)*px }
                         align: TOP_LEFT
-                        x: ${ (204 if screen_h > 480 else 12)*px }
-                        y: ${ (62 if screen_h > 480 else 124)*px }
+                        x: ${ (20 if screen_h > 480 else 12)*px }
+                        y: ${ (80 if screen_h > 480 else 124)*px }
                     # Episode title (portrait only)
                     - label:
                         id: lbl_tv_subtitle
@@ -301,8 +302,8 @@ lvgl:
                         long_mode: DOT
                         width: ${256*px}
                         align: TOP_LEFT
-                        x: ${204*px}
-                        y: ${94*px}
+                        x: ${20*px}
+                        y: ${112*px}
                         hidden: ${ 'false' if screen_h > 480 else 'true' }
                     - label:
                         id: lbl_tv_app
@@ -312,8 +313,8 @@ lvgl:
                         long_mode: DOT
                         width: ${ (256 if screen_h > 480 else 108)*px }
                         align: TOP_LEFT
-                        x: ${ (204 if screen_h > 480 else 12)*px }
-                        y: ${ (126 if screen_h > 480 else 146)*px }
+                        x: ${ (20 if screen_h > 480 else 12)*px }
+                        y: ${ (144 if screen_h > 480 else 146)*px }
                     # Progress bar + times (portrait only), between the skip
                     # buttons; hidden until the Apple TV reports a duration
                     - obj:
@@ -485,11 +486,12 @@ lvgl:
               # side of the d-pad)
               #### Power (tap: wake, hold: sleep): small, in the top-right
               # corner, away from the buttons used while watching
-              # (portrait: a round button in the corner of the now-playing area)
+              # (portrait: a round button in the top-left corner, clear of the
+              # status chips at the right end of the status bar)
               - button:
                   id: tv_btn_power
-                  align: TOP_RIGHT
-                  x: -${ (18 if screen_h > 480 else 8)*px }
+                  align: ${ 'TOP_LEFT' if screen_h > 480 else 'TOP_RIGHT' }
+                  x: ${ (18 if screen_h > 480 else -8)*px }
                   y: ${ (12 if screen_h > 480 else 8)*px }
                   width: ${52*px}
                   height: ${52*px}
