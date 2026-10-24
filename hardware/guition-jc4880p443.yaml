@@ -1,0 +1,279 @@
+# Hardware package: Guition JC4880P443C_I_W
+# (4.3" 480x800 MIPI-DSI portrait, GT911 touch, battery-powered handheld)
+#
+#   ESP32-P4 (32 MB PSRAM, 16 MB flash) + ESP32-C6 Wi-Fi 6 radio over SDIO,
+#   both in the JC-ESP32P4-M3 module
+#   ES8311 codec: NS4150 3 W speaker amp (MX1.25 2P speaker connector) and
+#   the built-in MEMS microphone
+#   IP5306 Li-ion charger / 5 V boost (MX1.25 2P battery connector)
+#
+# Pins are from the vendor schematic (JC4880P443_V1.0). Where they disagree
+# with community configs (touch reset GPIO3), the schematic is right.
+#
+# Provides: my_display, my_touchscreen, display_backlight, battery_voltage,
+# and the audio parts features/voice_assistant.yaml needs (panel_microphone,
+# panel_speaker, panel_media_player "Panel Speaker", audio_amplifier,
+# media_mixing_input).
+#
+# The first install must be over USB, on the "Full-speed" USB-C port (the
+# P4's own USB-serial/JTAG; the log also comes out there). If the dashboard
+# says "Configuration does not match the platform of the connected device",
+# use Install -> Manual download and flash it with https://web.esphome.io.
+#
+# Power, from the schematic and bench tests:
+#   - SW3 (the IP5306 KEY) switches the 5 V boost only; the P4 can't see it.
+#   - The IP5306 does not cut power at low load on this board, so the P4 can't
+#     power itself off. ESPHome's deep_sleep component doesn't build for the
+#     P4 (2026.10), and touch can't wake deep sleep here anyway (GT911 INT is
+#     GPIO21, not one of the LP pins 0-15).
+#   - No charge-status line reaches the P4: charging shows only as a battery
+#     voltage rise.
+#
+# Board settings a display file can override in its substitutions:
+#
+#   p4_engineering_sample: true     Early boards have pre-rev3 chips: the boot
+#                                   log starts "ESP-ROM:esp32p4-eco2". A build
+#                                   for the wrong revision dies at the
+#                                   bootloader ("Illegal instruction", reboot
+#                                   loop). The first boards sold are eco2.
+#   p4_cpu_frequency: 360MHz        Vendor rating (engineering samples max out
+#                                   at 360MHz).
+#   p4_psram_speed: 200MHz          Use 100MHz if the screen shows a
+#                                   flickering band at one edge.
+#   lvgl_rotation: "0"              Portrait, USB-C ports on the right side.
+
+substitutions:
+  # Shared-file settings (see hardware/guition-4848s040.yaml)
+  px: 1
+  lvgl_buffer_size: 100%   # full-screen buffer: required for clean MIPI-DSI updates
+  screen_h: 800            # 480-wide portrait screen
+
+  # Board settings
+  p4_engineering_sample: true   # unquoted: true / false
+  p4_cpu_frequency: 360MHz
+  p4_psram_speed: 200MHz
+  lvgl_rotation: "0"
+
+esp32:
+  variant: esp32p4
+  engineering_sample: ${p4_engineering_sample}
+  flash_size: 16MB
+  cpu_frequency: ${p4_cpu_frequency}
+  framework:
+    type: esp-idf
+    advanced:
+      enable_idf_experimental_features: true
+      # As on the other P4 board: a full-screen LVGL redraw runs deep, and
+      # RISC-V frames are large. "Loop Stack Free" (below) shows the headroom.
+      loop_task_stack_size: 16384
+
+psram:
+  speed: ${p4_psram_speed}
+
+# MIPI-DSI PHY power
+esp_ldo:
+  - channel: 3
+    voltage: 2.5V
+
+# ESP32-C6 radio co-processor (SDIO, inside the module)
+esp32_hosted:
+  variant: ESP32C6
+  active_high: true
+  reset_pin: GPIO54   # C6 CHIP_PU (10k pull-up)
+  cmd_pin: GPIO19
+  clk_pin: GPIO18
+  d0_pin: GPIO14
+  d1_pin: GPIO15
+  d2_pin: GPIO16
+  d3_pin: GPIO17
+  # Wi-Fi transport buffers in PSRAM (internal RAM runs out at startup with
+  # the full panel UI otherwise; see hardware/waveshare-esp32-p4-86-4b.yaml)
+  use_psram: true
+
+# ── Backlight, touch, display ────────────────────────────────────────────────
+
+output:
+  - platform: ledc
+    id: backlight_output
+    pin: GPIO23   # LCD_PWM -> MP3202 backlight boost
+    frequency: 20000Hz   # above hearing: no whine from the boost coil
+    min_power: 0.03
+    zero_means_zero: true
+
+light:
+  - platform: monochromatic
+    name: Backlight
+    id: display_backlight
+    # A config entity, so Assist doesn't count it as one of the room's
+    # lights ("turn off the family room lights" would blank the screen)
+    entity_category: config
+    output: backlight_output
+    restore_mode: ALWAYS_ON
+    default_transition_length: 1s
+
+# Touch and the ES8311 share this bus. It also comes out on the JST-SH 4P
+# I2C connector and header pins 23 (SDA) / 25 (SCL); 0x18 is taken.
+i2c:
+  - id: i2c_bus_a
+    sda: GPIO7
+    scl: GPIO8
+    frequency: 400kHz
+
+touchscreen:
+  - platform: gt911
+    id: my_touchscreen
+    display: my_display
+    i2c_id: i2c_bus_a
+    interrupt_pin: GPIO21
+    reset_pin: GPIO22
+
+display:
+  - platform: mipi_dsi
+    id: my_display
+    model: JC4880P443   # ST7701S, 480x800; panel reset GPIO5 (set by the model)
+
+lvgl:
+  rotation: ${lvgl_rotation}
+  byte_order: little_endian
+
+# ── Audio: ES8311 DAC -> NS4150 amp -> speaker; MEMS mic -> ES8311 ADC ───────
+
+i2s_audio:
+  - id: i2s_audio_bus
+    i2s_mclk_pin: GPIO13
+    i2s_bclk_pin: GPIO12
+    i2s_lrclk_pin: GPIO10
+
+audio_dac:
+  - platform: es8311
+    id: es8311_dac
+    i2c_id: i2c_bus_a
+    address: 0x18
+    # use_microphone is for a PDM digital mic; this board's mic is analog
+    # (MIC1P/N), which the ES8311 ADC reads without it.
+
+microphone:
+  - platform: i2s_audio
+    id: panel_microphone
+    i2s_audio_id: i2s_audio_bus
+    i2s_din_pin: GPIO48
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    adc_type: external
+    channel: left
+
+speaker:
+  - platform: i2s_audio
+    id: panel_speaker
+    i2s_audio_id: i2s_audio_bus
+    i2s_dout_pin: GPIO9
+    audio_dac: es8311_dac
+    dac_type: external
+    channel: mono
+    buffer_duration: 100ms
+    bits_per_sample: 16bit
+    sample_rate: 48000
+
+  - platform: mixer
+    id: mixing_speaker
+    output_speaker: panel_speaker
+    source_speakers:
+      - id: announcement_mixing_input
+        timeout: never
+      - id: media_mixing_input
+        timeout: never
+
+  - platform: resampler
+    id: announcement_resampling_speaker
+    output_speaker: announcement_mixing_input
+    sample_rate: 48000
+    bits_per_sample: 16
+
+  - platform: resampler
+    id: media_resampling_speaker
+    output_speaker: media_mixing_input
+    sample_rate: 48000
+    bits_per_sample: 16
+
+switch:
+  # NS4150 speaker amplifier enable (PA_CTRL): on only while something plays
+  - platform: gpio
+    pin: GPIO11
+    name: "Audio Amplifier"
+    id: audio_amplifier
+    restore_mode: ALWAYS_OFF
+    internal: true
+
+# The panel's own speaker. features/voice_assistant.yaml adds its actions to
+# these triggers (ESPHome appends them after the ones here).
+media_player:
+  - platform: speaker
+    name: "Panel Speaker"
+    id: panel_media_player
+    volume_min: 0.4
+    volume_max: 0.8   # the 3 W speaker is loud enough at 80%
+    volume_increment: 0.05
+    announcement_pipeline:
+      speaker: announcement_resampling_speaker
+      format: FLAC
+      sample_rate: 48000
+      num_channels: 1
+    media_pipeline:
+      speaker: media_resampling_speaker
+      format: FLAC
+      sample_rate: 48000
+      num_channels: 1
+    on_announcement:
+      # Lower any music under the announcement
+      - mixer_speaker.apply_ducking:
+          id: media_mixing_input
+          decibel_reduction: 20
+          duration: 0.0s
+      - switch.turn_on: audio_amplifier
+    on_state:
+      - if:
+          condition:
+            not:
+              media_player.is_announcing:
+          then:
+            - mixer_speaker.apply_ducking:
+                id: media_mixing_input
+                decibel_reduction: 0
+                duration: 1.0s
+    on_play:
+      - switch.turn_on: audio_amplifier
+      - delay: 100ms
+    on_idle:
+      - delay: 300ms
+      - switch.turn_off: audio_amplifier
+
+sensor:
+  # Battery: BAT+ -> 68k -> GPIO53 (ADC2 ch4) -> 100k -> GND, so
+  # V_bat = V_pin x 1.68. features/battery.yaml turns this into a level.
+  - platform: adc
+    id: battery_voltage
+    name: Battery Voltage
+    pin: GPIO53
+    attenuation: 12db
+    update_interval: 2s
+    accuracy_decimals: 2
+    device_class: voltage
+    unit_of_measurement: V
+    entity_category: diagnostic
+    filters:
+      - multiply: 1.68
+      - sliding_window_moving_average:
+          window_size: 15
+          send_every: 15   # one value every 30 s
+
+  # Smallest free space the main loop's stack has had since boot. Should
+  # stay well above 1000 B; lower means the stack above needs to grow.
+  - platform: template
+    name: Loop Stack Free
+    id: loop_stack_free
+    unit_of_measurement: B
+    accuracy_decimals: 0
+    entity_category: diagnostic
+    icon: mdi:layers-outline
+    update_interval: 60s
+    lambda: "return (float) uxTaskGetStackHighWaterMark(nullptr);"
