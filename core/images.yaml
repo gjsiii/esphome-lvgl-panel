@@ -112,7 +112,9 @@ image:
     url: "https://www.home-assistant.io/images/favicon-192x192.png"
     format: AUTO
     type: RGB565
-    resize: "${(180*px)|int}x${(180*px)|int}"
+    # The largest artwork shown (Music tab; portrait: 320 px); smaller uses
+    # shrink their copies (img_show)
+    resize: "${((320 if screen_h > 480 else 180)*px)|int}x${((320 if screen_h > 480 else 180)*px)|int}"
     on_download_finished:
       - lambda: |-
           id(img_busy) = false;

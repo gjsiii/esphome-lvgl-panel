@@ -76,6 +76,10 @@ globals:
   - id: lyr_view
     type: bool
     initial_value: "false"
+  # Waiting for HA's answer for the current song
+  - id: lyr_loading
+    type: bool
+    initial_value: "false"
 
 esphome:
   includes:
@@ -177,22 +181,20 @@ script:
   - id: lyrics_fetch
     mode: restart
     then:
-      - delay: 2s
+      - delay: 1s
       - if:
           condition:
             lambda: |-
               if (!${ 'true' if (screen_h > 480 and music_lyrics | string | lower == 'true') else 'false' }) return false;
               const std::string &a = id(media_artist_text).state, &t = id(media_title_text).state;
-              if (a.empty() || t.empty() || a == "unknown" || t == "unknown") return false;
-              std::string key = a + "|" + t;
+              bool ok = !a.empty() && !t.empty() && a != "unknown" && t != "unknown";
+              std::string key = ok ? a + "|" + t : "";
               if (key == id(lyr_key)) return false;
               id(lyr_key) = key;
-              id(lyr_lines).clear();
-              id(lyr_ms).clear();
-              id(lyr_synced) = false;
+              id(lyr_loading) = ok;
               id(lyr_cur) = -2;
               id(lyrics_render).execute();
-              return true;
+              return ok;
           then:
             - homeassistant.action:
                 action: script.panel_lyrics
@@ -209,6 +211,13 @@ script:
                       // HA sends the script's answer as {"response": {...}}
                       JsonObjectConst r = response["response"].is<JsonObjectConst>()
                           ? response["response"].as<JsonObjectConst>() : response;
+                      // A late answer for a song already skipped: drop it
+                      std::string asked = std::string(r["artist"] | "") + "|" + std::string(r["title"] | "");
+                      if (asked != id(lyr_key)) {
+                        ESP_LOGD("music", "Lyrics for an earlier song ignored");
+                        return;
+                      }
+                      id(lyr_loading) = false;
                       std::string txt = r["lyrics"] | "";
                       bool synced = r["synced"] | false;
                       auto &lines = id(lyr_lines);
@@ -249,7 +258,11 @@ script:
                       ESP_LOGI("music", "Lyrics: %u lines%s", (unsigned) lines.size(), id(lyr_synced) ? " (synced)" : "");
                   - script.execute: lyrics_render
                 on_error:
-                  - lambda: 'ESP_LOGW("music", "Lyrics lookup failed (is ha/panel_lyrics.yaml installed?)");'
+                  - lambda: |-
+                      ESP_LOGW("music", "Lyrics lookup failed (is ha/panel_lyrics.yaml installed?)");
+                      id(lyr_loading) = false;
+                      id(lyr_cur) = -2;
+                  - script.execute: lyrics_render
 
   # Draw the lyrics view (or the artwork) and the Lyrics button's state
   - id: lyrics_render
@@ -278,7 +291,8 @@ script:
               id(lyr_cur) = -1;
               std::string all;
               for (auto &l : id(lyr_lines)) { all += l; all += "\n"; }
-              if (all.empty()) all = id(lyr_key).empty() ? "No song playing" : "No lyrics found for this song";
+              if (all.empty()) all = id(lyr_loading) ? "Looking up lyrics\u2026"
+                                 : id(lyr_key).empty() ? "No song playing" : "No lyrics found for this song";
               lv_label_set_text(id(lyr_plain), all.c_str());
               lv_obj_scroll_to_y(id(music_lyrics_card), 0, LV_ANIM_OFF);
             }
@@ -466,11 +480,18 @@ text_sensor:
           id: lbl_track_name
           text: !lambda "return x.c_str();"
       - lambda: |-
-          // New song: from 0 until HA reports a newer position
+          // New song: from 0 until HA reports a newer position, and the
+          // old song's lyrics go at once (lyrics_fetch asks for the new ones)
           id(music_stale_at) = id(media_pos_at_text).state;
           id(music_pos_s) = 0;
           id(music_pos_ms) = millis();
+          id(lyr_lines).clear();
+          id(lyr_ms).clear();
+          id(lyr_synced) = false;
+          id(lyr_loading) = true;
+          id(lyr_key) = "";
           id(lyr_cur) = -2;
+      - script.execute: lyrics_render
       - script.execute: night_music_update
       - script.execute: lyrics_fetch
 
@@ -623,6 +644,8 @@ lvgl:
                   text_align: CENTER
                   long_mode: DOT
                   width: ${ (340 if screen_h > 480 else 420)*px }
+                  # portrait: one line (a long title would cover the artist)
+                  height: ${ ((26*px)|int) if screen_h > 480 else 'SIZE_CONTENT' }
                   align: TOP_MID
                   y: ${ (350 if screen_h > 480 else 196)*px }
 
@@ -635,6 +658,7 @@ lvgl:
                   text_align: CENTER
                   long_mode: DOT
                   width: ${ (340 if screen_h > 480 else 420)*px }
+                  height: ${ ((22*px)|int) if screen_h > 480 else 'SIZE_CONTENT' }
                   align: TOP_MID
                   y: ${ (382 if screen_h > 480 else 222)*px }
 

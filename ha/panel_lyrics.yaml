@@ -8,6 +8,8 @@
 #   lyrics:  synced lyrics ("[mm:ss.xx] line" per line) if LRCLIB has them,
 #            else plain text, else ""
 #   synced:  true when `lyrics` has timestamps
+#   artist, title:  the song asked about (so a panel can drop a late answer
+#            for a song it has already skipped)
 #
 # No account or key is needed, and it works for any media player.
 #
@@ -104,6 +106,6 @@ script:
           result: >-
             {% set s = found.syncedLyrics | default('') or '' %}
             {% set p = found.plainLyrics | default('') or '' %}
-            {{ {'lyrics': s if s else p, 'synced': s != ''} }}
+            {{ {'lyrics': s if s else p, 'synced': s != '', 'artist': artist | default(''), 'title': title | default('')} }}
       - stop: "Lyrics looked up"
         response_variable: result
