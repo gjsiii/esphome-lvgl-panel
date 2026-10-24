@@ -6,8 +6,20 @@
 #       tab_position: 3                         # 2-9, order in the tab bar
 #       music_player: media_player.family_room_2
 #
+#       # music_lyrics: "false"                # portrait: no lyrics button
+#
 # The tab selects itself when the player starts playing after a real stop
 # (see media_autoswitch_gap_ms).
+#
+# Portrait screens (screen_h > 480, e.g. the handheld remote) get their own
+# layout: 320 px artwork, Play on and Lyrics either side of the title, the
+# transport row, and volume - / slider / + (the speaker icon inside the
+# slider mutes). The Lyrics button swaps the artwork for the song's lyrics,
+# following along when they have timestamps. Lyrics come from LRCLIB through
+# ha/panel_lyrics.yaml (install it in HA, or set music_lyrics: "false").
+
+defaults:
+  music_lyrics: "true"
 
 substitutions:
   music_volume_step: "5"   # % per tap of the volume - / + buttons
@@ -30,6 +42,34 @@ globals:
   - id: album_art_dsc
     type: lv_image_dsc_t *
     initial_value: "nullptr"
+  # Portrait: position extrapolation (last reported position, when it came)
+  - id: music_pos_s
+    type: float
+    initial_value: "NAN"
+  - id: music_pos_ms
+    type: uint32_t
+    initial_value: "0"
+  # Portrait lyrics: the song they belong to, lines and their start times
+  # (ms; synced only), the line shown as current, and whether the lyrics
+  # view is up
+  - id: lyr_key
+    type: std::string
+    initial_value: '""'
+  - id: lyr_lines
+    type: std::vector<std::string>
+    initial_value: "{}"
+  - id: lyr_ms
+    type: std::vector<int32_t>
+    initial_value: "{}"
+  - id: lyr_synced
+    type: bool
+    initial_value: "false"
+  - id: lyr_cur
+    type: int
+    initial_value: "-2"
+  - id: lyr_view
+    type: bool
+    initial_value: "false"
 
 esphome:
   on_boot:
@@ -47,6 +87,11 @@ esphome:
             lv_obj_set_flex_flow(id(speaker_list), LV_FLEX_FLOW_COLUMN);
             lv_obj_set_flex_align(id(speaker_list), LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START);
             lv_obj_set_style_pad_row(id(speaker_list), ${(10*px)|int}, 0);
+    # Portrait: the mute icon sits inside the slider's left end (drawn on top)
+    - priority: -305
+      then:
+        - lambda: |-
+            if (${ 'true' if screen_h > 480 else 'false' }) lv_obj_move_foreground(id(music_btn_mute));
     # No speaker items: no "Play on" button
     - priority: -305
       then:
@@ -73,6 +118,150 @@ script:
           data:
             entity_id: ${music_player}
             volume_level: !lambda "return lv_slider_get_value(id(music_volume)) / 100.0f;"
+
+  # Portrait: advance the progress bar between HA's position reports
+  - id: music_progress_tick
+    then:
+      - lambda: |-
+          float dur = id(media_duration_sensor).state, pos = id(music_pos_s);
+          if (isnan(dur) || dur <= 0 || isnan(pos)) return;
+          if (id(music_playing)) pos += (millis() - id(music_pos_ms)) / 1000.0f;
+          if (pos > dur) pos = dur;
+          lv_bar_set_value(id(bar_track_progress), (int) (pos / dur * 100.0f), LV_ANIM_OFF);
+          int t = (int) pos;
+          char buf[16];
+          snprintf(buf, sizeof(buf), "%d:%02d", t / 60, t % 60);
+          lv_label_set_text(id(lbl_time_elapsed), buf);
+
+  # ── Lyrics (portrait) ─────────────────────────────────────────────────────
+  # New song: after the captions settle, ask HA (ha/panel_lyrics.yaml) once
+  - id: lyrics_fetch
+    mode: restart
+    then:
+      - delay: 2s
+      - if:
+          condition:
+            lambda: |-
+              if (!${ 'true' if (screen_h > 480 and music_lyrics | string | lower == 'true') else 'false' }) return false;
+              const std::string &a = id(media_artist_text).state, &t = id(media_title_text).state;
+              if (a.empty() || t.empty() || a == "unknown" || t == "unknown") return false;
+              std::string key = a + "|" + t;
+              if (key == id(lyr_key)) return false;
+              id(lyr_key) = key;
+              id(lyr_lines).clear();
+              id(lyr_ms).clear();
+              id(lyr_synced) = false;
+              id(lyr_cur) = -2;
+              id(lyrics_render).execute();
+              return true;
+          then:
+            - homeassistant.action:
+                action: script.panel_lyrics
+                data:
+                  artist: !lambda "return id(media_artist_text).state;"
+                  title: !lambda "return id(media_title_text).state;"
+                  album: !lambda "return id(media_album_text).state;"
+                  duration: !lambda |-
+                    float d = id(media_duration_sensor).state;
+                    return to_string(isnan(d) ? 0 : (int) d);
+                capture_response: true
+                on_success:
+                  - lambda: |-
+                      std::string txt = response["lyrics"] | "";
+                      bool synced = response["synced"] | false;
+                      auto &lines = id(lyr_lines);
+                      auto &ms = id(lyr_ms);
+                      lines.clear();
+                      ms.clear();
+                      // One entry per line; synced lines start "[mm:ss.xx]"
+                      // (possibly several stamps), other tags are skipped
+                      std::vector<std::pair<int32_t, std::string>> timed;
+                      size_t at = 0;
+                      while (at <= txt.size()) {
+                        size_t nl = txt.find('\n', at);
+                        if (nl == std::string::npos) nl = txt.size();
+                        std::string line = txt.substr(at, nl - at);
+                        at = nl + 1;
+                        if (!line.empty() && line.back() == '\r') line.pop_back();
+                        if (!synced) { lines.push_back(line); continue; }
+                        std::vector<int32_t> stamps;
+                        size_t p = 0;
+                        while (p < line.size() && line[p] == '[') {
+                          size_t q = line.find(']', p);
+                          if (q == std::string::npos) break;
+                          int m = 0; float sec = 0;
+                          if (sscanf(line.c_str() + p + 1, "%d:%f", &m, &sec) == 2) stamps.push_back((int32_t) ((m * 60 + sec) * 1000));
+                          p = q + 1;
+                        }
+                        if (stamps.empty()) continue;
+                        while (p < line.size() && line[p] == ' ') p++;
+                        for (int32_t t : stamps) timed.emplace_back(t, line.substr(p));
+                      }
+                      if (synced) {
+                        std::stable_sort(timed.begin(), timed.end(), [](auto &a, auto &b) { return a.first < b.first; });
+                        for (auto &e : timed) { ms.push_back(e.first); lines.push_back(e.second); }
+                      }
+                      while (!lines.empty() && lines.back().empty()) { lines.pop_back(); if (!ms.empty()) ms.pop_back(); }
+                      id(lyr_synced) = synced && !lines.empty();
+                      id(lyr_cur) = -2;
+                      ESP_LOGI("music", "Lyrics: %u lines%s", (unsigned) lines.size(), id(lyr_synced) ? " (synced)" : "");
+                  - script.execute: lyrics_render
+                on_error:
+                  - lambda: 'ESP_LOGW("music", "Lyrics lookup failed (is ha/panel_lyrics.yaml installed?)");'
+
+  # Draw the lyrics view (or the artwork) and the Lyrics button's state
+  - id: lyrics_render
+    then:
+      - lambda: |-
+          if (!${ 'true' if (screen_h > 480 and music_lyrics | string | lower == 'true') else 'false' }) return;
+          bool have = !id(lyr_lines).empty();
+          bool view = id(lyr_view);
+          // Button: filled while the lyrics show; white when there are some
+          lv_obj_set_style_bg_opa(id(music_btn_lyrics), view ? LV_OPA_COVER : LV_OPA_TRANSP, LV_PART_MAIN);
+          lv_obj_set_style_text_color(id(lbl_music_lyrics), lv_color_hex(view ? ${c_on_accent} : (have ? ${c_text} : ${c_text_2})), LV_PART_MAIN);
+          if (view) {
+            lv_obj_clear_flag(id(music_lyrics_card), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(id(music_art_frame), LV_OBJ_FLAG_HIDDEN);
+          } else {
+            lv_obj_add_flag(id(music_lyrics_card), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(id(music_art_frame), LV_OBJ_FLAG_HIDDEN);
+            return;
+          }
+          lv_obj_t *slots[7] = {id(lyr_l0), id(lyr_l1), id(lyr_l2), id(lyr_l3), id(lyr_l4), id(lyr_l5), id(lyr_l6)};
+          if (!id(lyr_synced)) {
+            // Plain lyrics (or none): one scrolling text
+            for (auto *l : slots) lv_obj_add_flag(l, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(id(lyr_plain), LV_OBJ_FLAG_HIDDEN);
+            if (id(lyr_cur) != -1) {
+              id(lyr_cur) = -1;
+              std::string all;
+              for (auto &l : id(lyr_lines)) { all += l; all += "\n"; }
+              if (all.empty()) all = id(lyr_key).empty() ? "No song playing" : "No lyrics found for this song";
+              lv_label_set_text(id(lyr_plain), all.c_str());
+              lv_obj_scroll_to_y(id(music_lyrics_card), 0, LV_ANIM_OFF);
+            }
+            return;
+          }
+          // Synced: the current line in the middle, three either side
+          lv_obj_add_flag(id(lyr_plain), LV_OBJ_FLAG_HIDDEN);
+          float pos = id(music_pos_s);
+          if (isnan(pos)) pos = 0;
+          if (id(music_playing)) pos += (millis() - id(music_pos_ms)) / 1000.0f;
+          int32_t now = (int32_t) (pos * 1000) + 250;   // a touch early reads better
+          const auto &ms = id(lyr_ms);
+          int cur = (int) (std::upper_bound(ms.begin(), ms.end(), now) - ms.begin()) - 1;
+          if (cur == id(lyr_cur)) return;
+          id(lyr_cur) = cur;
+          static const uint32_t colors[4] = {${c_text}, 0x8E8E93, 0x636366, 0x48484A};
+          const int n = (int) id(lyr_lines).size();
+          for (int i = 0; i < 7; i++) {
+            int k = cur + i - 3, d = abs(i - 3);
+            lv_obj_t *l = slots[i];
+            lv_obj_clear_flag(l, LV_OBJ_FLAG_HIDDEN);
+            lv_label_set_text(l, (k >= 0 && k < n) ? id(lyr_lines)[k].c_str() : "");
+            lv_obj_set_style_text_color(l, lv_color_hex(colors[d]), LV_PART_MAIN);
+            lv_obj_set_style_text_font(l, d == 0 ? id(font_title)->get_lv_font() : id(font_body)->get_lv_font(), LV_PART_MAIN);
+          }
 
   # Night clock: "Title · Artist" on its own line while music plays
   - id: night_music_update
@@ -112,7 +301,7 @@ script:
                 // Shared loader (core/images.yaml); keep a copy of the picture
                 id(art_cb) = [](bool ok) {
                   if (!ok) { ESP_LOGW("music", "Album art download failed"); return; }
-                  id(img_show)(id(lvgl_album_art), &id(album_art_dsc), id(art_loader)->get_lv_image_dsc(), ${(180*px)|int});
+                  id(img_show)(id(lvgl_album_art), &id(album_art_dsc), id(art_loader)->get_lv_image_dsc(), ${((320 if screen_h > 480 else 180)*px)|int});
                 };
                 id(art_loader)->set_url(url);
                 id(art_loader)->update();
@@ -123,6 +312,9 @@ sensor:
     entity_id: ${music_player}
     attribute: media_position
     on_value:
+      - lambda: |-
+          id(music_pos_s) = x;
+          id(music_pos_ms) = millis();
       - lvgl.bar.update:
           id: bar_track_progress
           value: !lambda |-
@@ -213,6 +405,7 @@ text_sensor:
           id: lbl_track_name
           text: !lambda "return x.c_str();"
       - script.execute: night_music_update
+      - script.execute: lyrics_fetch
 
   - platform: homeassistant
     id: media_artist_text
@@ -223,6 +416,13 @@ text_sensor:
           id: lbl_artist_name
           text: !lambda "return x.c_str();"
       - script.execute: night_music_update
+      - script.execute: lyrics_fetch
+
+  # Album name (portrait lyrics lookup)
+  - platform: homeassistant
+    id: media_album_text
+    entity_id: ${music_player}
+    attribute: media_album_name
 
   # Player state: show pause while playing, play otherwise.
   # Also brings up the Music tab when playback (re)starts after a real stop.
@@ -265,14 +465,26 @@ text_sensor:
                   // Spotify / Apple / SiriusXM art over plain http (core/images.yaml)
                   u = id(art_http)(u);
                   // Music Assistant artwork comes as a 512 px PNG; ask its
-                  // image proxy for a 256 px JPEG, which the panel decodes
+                  // image proxy for a JPEG, which the panel decodes (256 px;
+                  // portrait shows it at 320 px, so keep 512)
                   if (u.find("/imageproxy") != std::string::npos) {
                     size_t f = u.find("fmt=png");
                     if (f != std::string::npos) u.replace(f, 7, "fmt=jpeg");
                     f = u.find("size=512");
-                    if (f != std::string::npos) u.replace(f, 8, "size=256");
+                    if (f != std::string::npos && !${ 'true' if screen_h > 480 else 'false' }) u.replace(f, 8, "size=256");
                   }
                   return u;
+
+interval:
+  # Portrait: progress bar every second, lyrics line four times a second
+  - interval: 250ms
+    then:
+      - lambda: |-
+          if (!${ 'true' if screen_h > 480 else 'false' }) return;
+          if (lv_tabview_get_tab_active(id(main_tabview)) != id(tab_index_music)) return;
+          static uint8_t n = 0;
+          if (++n % 4 == 0 && id(music_playing)) id(music_progress_tick).execute();
+          if (id(lyr_view) && id(lyr_synced)) id(lyrics_render).execute();
 
 lvgl:
   pages:
@@ -288,13 +500,14 @@ lvgl:
             scrollbar_mode: "off"
             widgets:
               # ── "Play on" (other speakers) ────────────
+              # (portrait: left of the title)
               - button:
                   id: music_btn_playon
-                  align: TOP_RIGHT
-                  x: -${10*px}
-                  y: ${8*px}
-                  width: ${52*px}
-                  height: ${48*px}
+                  align: ${ 'TOP_LEFT' if screen_h > 480 else 'TOP_RIGHT' }
+                  x: ${ (18 if screen_h > 480 else -10)*px }
+                  y: ${ (360 if screen_h > 480 else 8)*px }
+                  width: ${ (44 if screen_h > 480 else 52)*px }
+                  height: ${ (44 if screen_h > 480 else 48)*px }
                   styles: icon_btn
                   widgets:
                     - label:
@@ -310,12 +523,13 @@ lvgl:
 
               # ── Album Art (rounded) ───────────────────
               - obj:
+                  id: music_art_frame
                   align: TOP_MID
-                  y: ${6*px}
-                  width: ${180*px}
-                  height: ${180*px}
+                  y: ${ (16 if screen_h > 480 else 6)*px }
+                  width: ${ (320 if screen_h > 480 else 180)*px }
+                  height: ${ (320 if screen_h > 480 else 180)*px }
                   styles: art_frame
-                  radius: ${14*px}
+                  radius: ${ (16 if screen_h > 480 else 14)*px }
                   clickable: false
                   scrollable: false
                   scrollbar_mode: "off"
@@ -333,9 +547,9 @@ lvgl:
                   text_font: font_title
                   text_align: CENTER
                   long_mode: DOT
-                  width: ${420*px}
+                  width: ${ (340 if screen_h > 480 else 420)*px }
                   align: TOP_MID
-                  y: ${196*px}
+                  y: ${ (350 if screen_h > 480 else 196)*px }
 
               # ── Artist Name ───────────────────────────
               - label:
@@ -345,15 +559,15 @@ lvgl:
                   text_font: font_body
                   text_align: CENTER
                   long_mode: DOT
-                  width: ${420*px}
+                  width: ${ (340 if screen_h > 480 else 420)*px }
                   align: TOP_MID
-                  y: ${222*px}
+                  y: ${ (382 if screen_h > 480 else 222)*px }
 
               # ── Progress Bar + times ──────────────────
               - bar:
                   id: bar_track_progress
                   align: TOP_MID
-                  y: ${250*px}
+                  y: ${ (420 if screen_h > 480 else 250)*px }
                   width: ${400*px}
                   height: ${4*px}
                   min_value: 0
@@ -367,7 +581,7 @@ lvgl:
                   text_font: font_caption
                   align: TOP_LEFT
                   x: ${40*px}
-                  y: ${260*px}
+                  y: ${ (432 if screen_h > 480 else 260)*px }
 
               - label:
                   id: lbl_time_total
@@ -376,7 +590,7 @@ lvgl:
                   text_font: font_caption
                   align: TOP_RIGHT
                   x: -${40*px}
-                  y: ${260*px}
+                  y: ${ (432 if screen_h > 480 else 260)*px }
 
               # ── Transport: Prev | Play/Pause | Next ───
               # Beside the album art (180 px wide, centred): prev + shuffle on the
@@ -384,8 +598,8 @@ lvgl:
               - button:
                   id: music_btn_prev
                   align: TOP_MID
-                  x: -${165*px//1}
-                  y: ${60*px}
+                  x: -${ (96 if screen_h > 480 else 165*px//1)*(px if screen_h > 480 else 1) }
+                  y: ${ (472 if screen_h > 480 else 60)*px }
                   width: ${64*px}
                   height: ${56*px}
                   styles: icon_btn
@@ -400,22 +614,23 @@ lvgl:
                         data:
                           entity_id: ${music_player}
 
-              # Volume - / + either side of play/pause (step: music_volume_step)
+              # Volume - / + either side of play/pause (step: music_volume_step;
+              # portrait: either end of the volume slider)
               - button:
                   id: music_btn_vol_down
                   align: TOP_MID
-                  x: -${112*px}
-                  y: ${284*px}
-                  width: ${64*px}
-                  height: ${56*px}
-                  styles: icon_btn
+                  x: -${ (200 if screen_h > 480 else 112)*px }
+                  y: ${ (562 if screen_h > 480 else 284)*px }
+                  width: ${ (44 if screen_h > 480 else 64)*px }
+                  height: ${ (44 if screen_h > 480 else 56)*px }
+                  styles: ${ 'round_btn' if screen_h > 480 else 'icon_btn' }
                   pressed:
                     bg_color: ${c_surface}
                     bg_opa: COVER
                   widgets:
                     - label:
-                        text: "\U000F075E" # mdi-volume-minus
-                        text_font: icons_xl
+                        text: "${ '\U000F0374' if screen_h > 480 else '\U000F075E' }" # portrait mdi-minus, else mdi-volume-minus
+                        text_font: ${ 'icons_md' if screen_h > 480 else 'icons_xl' }
                         align: CENTER
                   on_click:
                     - script.execute:
@@ -424,18 +639,18 @@ lvgl:
               - button:
                   id: music_btn_vol_up
                   align: TOP_MID
-                  x: ${112*px}
-                  y: ${284*px}
-                  width: ${64*px}
-                  height: ${56*px}
-                  styles: icon_btn
+                  x: ${ (200 if screen_h > 480 else 112)*px }
+                  y: ${ (562 if screen_h > 480 else 284)*px }
+                  width: ${ (44 if screen_h > 480 else 64)*px }
+                  height: ${ (44 if screen_h > 480 else 56)*px }
+                  styles: ${ 'round_btn' if screen_h > 480 else 'icon_btn' }
                   pressed:
                     bg_color: ${c_surface}
                     bg_opa: COVER
                   widgets:
                     - label:
-                        text: "\U000F075D" # mdi-volume-plus
-                        text_font: icons_xl
+                        text: "${ '\U000F0415' if screen_h > 480 else '\U000F075D' }" # portrait mdi-plus, else mdi-volume-plus
+                        text_font: ${ 'icons_md' if screen_h > 480 else 'icons_xl' }
                         align: CENTER
                   on_click:
                     - script.execute:
@@ -445,9 +660,9 @@ lvgl:
               - button:
                   id: music_btn_playpause
                   align: TOP_MID
-                  y: ${280*px}
-                  width: ${64*px}
-                  height: ${64*px}
+                  y: ${ (462 if screen_h > 480 else 280)*px }
+                  width: ${ (76 if screen_h > 480 else 64)*px }
+                  height: ${ (76 if screen_h > 480 else 64)*px }
                   styles: round_btn
                   bg_color: ${c_accent}
                   pressed:
@@ -468,8 +683,8 @@ lvgl:
               - button:
                   id: music_btn_next
                   align: TOP_MID
-                  x: ${165*px//1}
-                  y: ${60*px}
+                  x: ${ (96 if screen_h > 480 else 165*px//1)*(px if screen_h > 480 else 1) }
+                  y: ${ (472 if screen_h > 480 else 60)*px }
                   width: ${64*px}
                   height: ${56*px}
                   styles: icon_btn
@@ -489,8 +704,8 @@ lvgl:
               - button:
                   id: music_btn_shuffle
                   align: TOP_MID
-                  x: -${165*px//1}
-                  y: ${132*px}
+                  x: -${ (188 if screen_h > 480 else 165*px//1)*(px if screen_h > 480 else 1) }
+                  y: ${ (476 if screen_h > 480 else 132)*px }
                   width: ${48*px}
                   height: ${48*px}
                   styles: icon_btn
@@ -511,10 +726,10 @@ lvgl:
               - button:
                   id: music_btn_mute
                   align: TOP_LEFT
-                  x: ${14*px}
-                  y: ${350*px}
+                  x: ${ (78 if screen_h > 480 else 14)*px }
+                  y: ${ (568 if screen_h > 480 else 350)*px }
                   width: ${44*px}
-                  height: ${38*px}
+                  height: ${ (32 if screen_h > 480 else 38)*px }
                   styles: icon_btn
                   widgets:
                     - label:
@@ -533,10 +748,10 @@ lvgl:
               - slider:
                   id: music_volume
                   align: TOP_LEFT
-                  x: ${66*px}
-                  y: ${355*px//1}
-                  width: ${400*px}
-                  height: ${28*px}
+                  x: ${ (76 if screen_h > 480 else 66)*px }
+                  y: ${ (568 if screen_h > 480 else 355*px//1)*(px if screen_h > 480 else 1) }
+                  width: ${ (328 if screen_h > 480 else 400)*px }
+                  height: ${ (32 if screen_h > 480 else 28)*px }
                   min_value: 0
                   max_value: 100
                   value: 0
@@ -550,8 +765,8 @@ lvgl:
               - button:
                   id: music_btn_repeat
                   align: TOP_MID
-                  x: ${165*px//1}
-                  y: ${132*px}
+                  x: ${ (188 if screen_h > 480 else 165*px//1)*(px if screen_h > 480 else 1) }
+                  y: ${ (476 if screen_h > 480 else 132)*px }
                   width: ${48*px}
                   height: ${48*px}
                   styles: icon_btn
@@ -573,6 +788,68 @@ lvgl:
                             if (r == "off") return std::string("all");
                             if (r == "all") return std::string("one");
                             return std::string("off");
+
+              # ── Lyrics (portrait): button right of the title, and the
+              #    lyrics card that takes the artwork's place ─────────────
+              - button:
+                  id: music_btn_lyrics
+                  align: TOP_RIGHT
+                  x: -${18*px}
+                  y: ${360*px}
+                  width: ${44*px}
+                  height: ${44*px}
+                  styles: round_btn
+                  bg_color: ${c_accent}
+                  bg_opa: TRANSP
+                  hidden: ${ 'false' if (screen_h > 480 and music_lyrics | string | lower == 'true') else 'true' }
+                  widgets:
+                    - label:
+                        id: lbl_music_lyrics
+                        text: "\U000F0CB8" # mdi-playlist-music
+                        text_font: icons_md
+                        text_color: ${c_text_2}
+                        align: CENTER
+                  on_click:
+                    - lambda: |-
+                        id(lyr_view) = !id(lyr_view);
+                        id(lyr_cur) = -2;
+                    - script.execute: lyrics_render
+              - obj:
+                  id: music_lyrics_card
+                  align: TOP_MID
+                  y: ${16*px}
+                  width: ${440*px}
+                  height: ${320*px}
+                  styles: card
+                  radius: ${16*px}
+                  scrollbar_mode: "off"
+                  scroll_dir: VER
+                  hidden: true
+                  on_click:
+                    # Tap the lyrics to go back to the artwork
+                    - lambda: "id(lyr_view) = false;"
+                    - script.execute: lyrics_render
+                  widgets:
+                    # Synced: seven fixed lines, the current one in the middle
+                    - label: { id: lyr_l0, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${14*px}" }
+                    - label: { id: lyr_l1, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${58*px}" }
+                    - label: { id: lyr_l2, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${102*px}" }
+                    - label: { id: lyr_l3, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${146*px}" }
+                    - label: { id: lyr_l4, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${194*px}" }
+                    - label: { id: lyr_l5, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${238*px}" }
+                    - label: { id: lyr_l6, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${282*px}" }
+                    # Plain lyrics (no timestamps) or a note: scrolls
+                    - label:
+                        id: lyr_plain
+                        text: ""
+                        text_font: font_body
+                        text_color: ${c_text}
+                        text_align: CENTER
+                        long_mode: WRAP
+                        width: ${400*px}
+                        align: TOP_MID
+                        y: ${16*px}
+                        pad_bottom: ${16*px}
 
     # Holding page (never shown): the "Play on" sheet is moved onto ui_root
     - id: holding_playon

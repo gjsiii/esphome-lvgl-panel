@@ -1,0 +1,109 @@
+# LVGL panel: song lyrics from LRCLIB (https://lrclib.net)
+#
+# The portrait Music tab (tabs/music.yaml) asks for the lyrics of each new
+# song by calling script.panel_lyrics with the song's artist, title, album
+# and length; the script looks them up on LRCLIB, the free, open lyrics
+# database Music Assistant itself uses, and answers with
+#
+#   lyrics:  synced lyrics ("[mm:ss.xx] line" per line) if LRCLIB has them,
+#            else plain text, else ""
+#   synced:  true when `lyrics` has timestamps
+#
+# No account or key is needed, and it works for any media player.
+#
+# Install: copy this file into HA's /config/packages/ and restart Home
+# Assistant (rest_command needs a restart the first time). If packages
+# aren't enabled yet, add to configuration.yaml
+#   homeassistant:
+#     packages: !include_dir_named packages
+# The panel also needs "Allow the device to perform Home Assistant actions"
+# (Settings → Devices & services → ESPHome → the panel → Configure).
+
+rest_command:
+  # Exact match: LRCLIB matches name, artist, album and length (± 2 s)
+  panel_lrclib_get:
+    url: >-
+      https://lrclib.net/api/get?artist_name={{ artist | urlencode }}&track_name={{ title | urlencode }}{% if album %}&album_name={{ album | urlencode }}{% endif %}{% if duration %}&duration={{ duration | int }}{% endif %}
+    method: GET
+    headers:
+      User-Agent: "esphome-lvgl-panel (https://github.com/gjsiii/esphome-lvgl-panel)"
+    timeout: 10
+  # Fallback search by artist and title (album names often differ)
+  panel_lrclib_search:
+    url: >-
+      https://lrclib.net/api/search?artist_name={{ artist | urlencode }}&track_name={{ title | urlencode }}
+    method: GET
+    headers:
+      User-Agent: "esphome-lvgl-panel (https://github.com/gjsiii/esphome-lvgl-panel)"
+    timeout: 10
+
+script:
+  panel_lyrics:
+    alias: "Panel: lyrics lookup"
+    description: "Looks up song lyrics on LRCLIB for the panels' Music tab."
+    mode: parallel
+    fields:
+      artist:
+        description: Artist name
+        example: Fleetwood Mac
+      title:
+        description: Song title
+        example: Dreams
+      album:
+        description: Album name (optional)
+        example: Rumours
+      duration:
+        description: Song length in seconds (optional)
+        example: 257
+    sequence:
+      - variables:
+          found: {}
+      - if:
+          - condition: template
+            value_template: "{{ artist | default('') != '' and title | default('') != '' }}"
+        then:
+          - action: rest_command.panel_lrclib_get
+            data:
+              artist: "{{ artist }}"
+              title: "{{ title }}"
+              album: "{{ album | default('') }}"
+              duration: "{{ duration | default(0) }}"
+            response_variable: got
+            continue_on_error: true
+          - variables:
+              found: >-
+                {% if got is defined and got.status == 200 and got.content is mapping %}{{ got.content }}{% else %}{}{% endif %}
+          # Nothing (or no lyrics): search, preferring synced results whose
+          # length is within 5 s of the song
+          - if:
+              - condition: template
+                value_template: "{{ not (found.syncedLyrics | default('')) and not (found.plainLyrics | default('')) }}"
+            then:
+              - action: rest_command.panel_lrclib_search
+                data:
+                  artist: "{{ artist }}"
+                  title: "{{ title }}"
+                response_variable: hits
+                continue_on_error: true
+              - variables:
+                  found: >-
+                    {% set ns = namespace(best={}) %}
+                    {% if hits is defined and hits.status == 200 and hits.content is list %}
+                      {% set dur = duration | default(0) | float(0) %}
+                      {% for h in hits.content if not h.instrumental %}
+                        {% set close = dur == 0 or (h.duration | float(0) - dur) | abs <= 5 %}
+                        {% if close and h.syncedLyrics and not ns.best.syncedLyrics %}
+                          {% set ns.best = h %}
+                        {% elif close and h.plainLyrics and not ns.best %}
+                          {% set ns.best = h %}
+                        {% endif %}
+                      {% endfor %}
+                    {% endif %}
+                    {{ ns.best }}
+      - variables:
+          result: >-
+            {% set s = found.syncedLyrics | default('') or '' %}
+            {% set p = found.plainLyrics | default('') or '' %}
+            {{ {'lyrics': s if s else p, 'synced': s != ''} }}
+      - stop: "Lyrics looked up"
+        response_variable: result

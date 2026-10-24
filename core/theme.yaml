@@ -117,6 +117,7 @@ font:
         "\U000F0374", # mdi-minus
         "\U000F0415", # mdi-plus
         "\U000F0D38", # mdi-speaker-multiple
+        "\U000F0CB8", # mdi-playlist-music (Music tab: lyrics)
         "\U000F04C3", # mdi-speaker
         "\U000F012C", # mdi-check
         "\U000F0B5C", # mdi-backspace-outline (PIN keypad)
