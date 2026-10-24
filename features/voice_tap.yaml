@@ -1,0 +1,298 @@
+# Feature: tap-to-talk Home Assistant voice (Assist), for battery boards.
+# No wake word: the microphone only runs while you talk, so it costs no
+# battery in between. (features/voice_assistant.yaml is the wake-word version
+# for powered panels.)
+#
+#   voice: !include panel/features/voice_tap.yaml
+#   # or with another button label:
+#   voice: !include { file: panel/features/voice_tap.yaml, vars: { voice_label: "Ask" } }
+#
+# Needs a hardware package with panel_microphone and panel_media_player
+# (hardware/guition-jc4880p443.yaml), and in Home Assistant the panel's
+# "Allow the device to perform Home Assistant actions" option. The Assist
+# pipeline is chosen on the device page in HA (Assistant select).
+#
+# - The "Voice Assistant" button sits at the left end of the status bar's
+#   second row (portrait layout). Tap it and talk; Home Assistant ends the
+#   request when you stop speaking. Tap again (or anywhere on the overlay)
+#   to cancel.
+# - A full-screen overlay shows what is happening: Listening… (white mic),
+#   Hearing you… (green mic, once speech is detected), Thinking… with what
+#   was heard, then Replying with the answer, which is also spoken.
+#   Errors show in red.
+# - Reply volume: the "Panel Speaker" media player in HA.
+
+defaults:
+  voice_label: "Voice Assistant"
+
+voice_assistant:
+  id: va
+  microphone: panel_microphone
+  media_player: panel_media_player
+  noise_suppression_level: 2
+  auto_gain: 31dBFS
+  volume_multiplier: 2.0
+  on_listening:
+    - script.execute:
+        id: vt_state
+        text: "Listening…"
+        color: ${c_text}
+        button: 0xFF453A
+  # Speech detected / ended (Home Assistant's voice detection)
+  on_stt_vad_start:
+    - script.execute:
+        id: vt_state
+        text: "Hearing you…"
+        color: 0x30D158
+        button: 0x30D158
+  on_stt_vad_end:
+    - script.execute:
+        id: vt_state
+        text: "Thinking…"
+        color: ${c_text_2}
+        button: ${c_surface_2}
+  on_stt_end:
+    - lvgl.label.update:
+        id: lbl_vt_request
+        text: !lambda 'return "“" + x + "”";'
+    - script.execute:
+        id: vt_state
+        text: "Thinking…"
+        color: ${c_text_2}
+        button: ${c_surface_2}
+  on_tts_start:
+    - lvgl.label.update:
+        id: lbl_vt_response
+        text: !lambda "return x;"
+    - script.execute:
+        id: vt_state
+        text: "Replying"
+        color: ${c_text_2}
+        button: ${c_surface_2}
+  on_end:
+    # Let the spoken reply start and finish, then close
+    - wait_until:
+        condition:
+          media_player.is_announcing:
+        timeout: 0.5s
+    - wait_until:
+        condition:
+          not:
+            media_player.is_announcing:
+        timeout: 60s
+    - script.execute: vt_button_idle
+    - delay: 3s
+    - script.execute: vt_hide
+  on_error:
+    - script.execute:
+        id: vt_state
+        text: "Error"
+        color: 0xFF453A
+        button: ${c_surface}
+    - lvgl.label.update:
+        id: lbl_vt_response
+        text: !lambda "return message;"
+    - delay: 4s
+    - script.execute: vt_hide
+  on_client_disconnected:
+    - voice_assistant.stop:
+
+script:
+  # Start, or cancel if already going
+  - id: vt_tap
+    then:
+      - if:
+          condition:
+            voice_assistant.is_running:
+          then:
+            - voice_assistant.stop:
+            - script.execute: vt_hide
+          else:
+            - if:
+                condition:
+                  api.connected:
+                    state_subscription_only: true
+                then:
+                  - lvgl.label.update: { id: lbl_vt_request, text: "" }
+                  - lvgl.label.update: { id: lbl_vt_response, text: "" }
+                  - script.execute:
+                      id: vt_state
+                      text: "Starting…"
+                      color: ${c_text_2}
+                      button: 0xFF453A
+                  - lambda: |-
+                      lv_obj_clear_flag(id(vt_overlay), LV_OBJ_FLAG_HIDDEN);
+                      lv_obj_move_foreground(id(vt_overlay));
+                  - voice_assistant.start:
+                else:
+                  - script.execute:
+                      id: msg_show
+                      title: "Voice"
+                      message: "Not connected to Home Assistant."
+                      icon: "alert"
+                      seconds: 5
+
+  # State line, mic colour, and the status-bar button's colour
+  - id: vt_state
+    mode: restart
+    parameters:
+      text: string
+      color: int
+      button: int
+    then:
+      - lambda: |-
+          lv_label_set_text(id(lbl_vt_state), text.c_str());
+          lv_obj_set_style_text_color(id(lbl_vt_state), lv_color_hex(color == ${c_text_2} ? ${c_text} : color), LV_PART_MAIN);
+          lv_obj_set_style_text_color(id(lbl_vt_mic), lv_color_hex(color), LV_PART_MAIN);
+          lv_obj_set_style_bg_color(id(btn_vt), lv_color_hex(button), LV_PART_MAIN);
+          lv_disp_trig_activity(NULL);   // keep the screen up while talking
+
+  - id: vt_button_idle
+    then:
+      - lambda: "lv_obj_set_style_bg_color(id(btn_vt), lv_color_hex(${c_surface}), LV_PART_MAIN);"
+
+  - id: vt_hide
+    mode: restart
+    then:
+      - script.execute: vt_button_idle
+      - lvgl.widget.hide: vt_overlay
+
+font:
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
+    id: vt_icons
+    size: ${18*px}
+    bpp: 4
+    glyphs: ["\U000F036C"] # mdi-microphone
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf
+    id: vt_icons_xl
+    size: ${64*px}
+    bpp: 4
+    glyphs: ["\U000F036C"] # mdi-microphone
+
+esphome:
+  on_boot:
+    # Into the status bar: left end of the second row; the status chips
+    # (right-aligned) keep the rest of the row
+    - priority: -310
+      then:
+        - lambda: |-
+            lv_obj_set_parent(id(btn_vt), id(status_bar));
+            lv_obj_align(id(btn_vt), LV_ALIGN_LEFT_MID, ${(12*px)|int}, ${((20 if screen_h > 480 else 0)*px)|int});
+            lv_obj_set_width(id(status_chips), ${((456 - 196)*px)|int});
+
+lvgl:
+  pages:
+    # Holding page (never shown): the button goes into the status bar at boot
+    - id: holding_voice_tap
+      skip: true
+      widgets:
+        - button:
+            id: btn_vt
+            width: ${180*px}
+            height: ${32*px}
+            styles: chip
+            bg_color: ${c_surface}
+            bg_opa: COVER
+            widgets:
+              - label:
+                  text: "\U000F036C" # mdi-microphone
+                  text_font: vt_icons
+                  text_color: ${c_text}
+                  align: LEFT_MID
+                  x: ${12*px}
+              - label:
+                  text: "${voice_label}"
+                  text_font: font_caption
+                  text_color: ${c_text}
+                  align: LEFT_MID
+                  x: ${36*px}
+            on_click:
+              - script.execute: vt_tap
+
+  # Above every page and sheet
+  top_layer:
+    widgets:
+      - obj:
+          id: vt_overlay
+          width: 100%
+          height: 100%
+          styles: container
+          scrollbar_mode: "off"
+          hidden: true
+          # Tap anywhere to cancel
+          on_click:
+            - voice_assistant.stop:
+            - script.execute: vt_hide
+          widgets:
+            # Ring spinning around the mic; the mic's colour is the state
+            # (white listening, green hearing you, grey thinking/replying,
+            # red error)
+            - spinner:
+                align: TOP_MID
+                y: ${ (120 if screen_h > 480 else 48)*px }
+                width: ${160*px}
+                height: ${160*px}
+                spin_time: 1.5s
+                arc_length: 80deg
+                arc_width: ${5*px}
+                arc_color: ${c_surface}
+                indicator:
+                  arc_color: ${c_accent}
+                  arc_width: ${5*px}
+                clickable: false
+                widgets:
+                  - label:
+                      id: lbl_vt_mic
+                      text: "\U000F036C" # mdi-microphone
+                      text_font: vt_icons_xl
+                      text_color: ${c_text}
+                      align: CENTER
+            - label:
+                id: lbl_vt_state
+                text: ""
+                text_font: font_title
+                text_color: ${c_text}
+                align: TOP_MID
+                y: ${ (310 if screen_h > 480 else 220)*px }
+            # What was heard
+            - label:
+                id: lbl_vt_request
+                text: ""
+                text_color: ${c_text_2}
+                text_align: CENTER
+                long_mode: WRAP
+                width: ${420*px}
+                align: TOP_MID
+                y: ${ (356 if screen_h > 480 else 256)*px }
+            # The answer (long ones scroll)
+            - obj:
+                align: TOP_MID
+                y: ${ (420 if screen_h > 480 else 300)*px }
+                width: ${420*px}
+                height: ${ (240 if screen_h > 480 else 96)*px }
+                styles: transparent
+                scrollbar_mode: "off"
+                widgets:
+                  - label:
+                      id: lbl_vt_response
+                      text: ""
+                      text_font: font_title
+                      text_color: ${c_text}
+                      text_align: CENTER
+                      long_mode: WRAP
+                      width: 100%
+                      align: TOP_MID
+            - button:
+                align: BOTTOM_MID
+                y: -${32*px}
+                width: ${180*px}
+                height: ${52*px}
+                styles: chip
+                widgets:
+                  - label:
+                      text: "Dismiss"
+                      text_color: ${c_text}
+                      align: CENTER
+                on_click:
+                  - voice_assistant.stop:
+                  - script.execute: vt_hide
