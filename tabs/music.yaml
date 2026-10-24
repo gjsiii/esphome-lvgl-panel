@@ -57,10 +57,10 @@ globals:
     initial_value: '""'
   - id: lyr_lines
     type: std::vector<std::string>
-    initial_value: "{}"
+    initial_value: "std::vector<std::string>()"   # "{}" is ambiguous for GlobalsComponent
   - id: lyr_ms
     type: std::vector<int32_t>
-    initial_value: "{}"
+    initial_value: "std::vector<int32_t>()"   # "{}" is ambiguous for GlobalsComponent
   - id: lyr_synced
     type: bool
     initial_value: "false"
