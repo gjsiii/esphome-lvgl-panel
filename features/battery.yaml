@@ -9,8 +9,11 @@
 # - Status bar, far right of the top row: battery icon and level; a charging
 #   bolt while docked, red at 15% or less. (Portrait layout.)
 # - Docked: no charge signal reaches the board, so docking is read from the
-#   battery voltage: a jump up means the charger came on, a jump down (or a
-#   steady fall) that it went off.
+#   battery voltage: a jump up (or a steady climb) means the charger came
+#   on, a jump down (or a steady fall) that it went off.
+# - Lifting the remote off a powered dock restarts it (Reset Reason "power-on
+#   event"): the IP5306 drops its 5 V output while it switches from USB to
+#   the battery. Firmware can't bridge that; see docs (smart-plug dock).
 # - Standby (board_standby: screen, Wi-Fi and radio off; a tap or docking
 #   brings it back) after standby_after_min minutes without a touch, or at 3%
 #   battery; never while docked. A banner at 10% asks for the dock.
@@ -45,6 +48,9 @@ globals:
     type: float
     initial_value: "NAN"
   - id: batt_falling
+    type: int
+    initial_value: "0"
+  - id: batt_rising
     type: int
     initial_value: "0"
   - id: batt_low_shown
@@ -82,7 +88,11 @@ sensor:
             if (dv > 0.04f) docked = true;          // charger came on
             else if (dv < -0.04f) docked = false;   // charger went off
             id(batt_falling) = dv < -0.003f ? id(batt_falling) + 1 : 0;
+            id(batt_rising) = dv > 0.003f ? id(batt_rising) + 1 : 0;
             if (id(batt_falling) >= 4) docked = false;   // two minutes of steady drain
+            // Two minutes of steady climb: charging, e.g. after a restart on
+            // the dock, when the jump from docking has already happened
+            if (id(batt_rising) >= 4) docked = true;
           }
           id(batt_prev_v) = x;
           if (docked != id(battery_charging).state) id(battery_charging).publish_state(docked);
