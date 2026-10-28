@@ -149,10 +149,11 @@ lvgl:
                   align: TOP_RIGHT
                   x: -${20*px}
                   y: ${25*px//1}
-              # Snapshot (tap to dismiss)
+              # Snapshot (tap to dismiss). Portrait: the snapshot, caption and
+              # Dismiss sit 160 px lower, in the middle of the tall screen
               - button:
                   align: TOP_MID
-                  y: ${66*px}
+                  y: ${ (226 if screen_h > 480 else 66)*px }
                   width: ${448*px}
                   height: ${252*px}
                   styles: art_frame
@@ -178,10 +179,10 @@ lvgl:
                   text_font: font_caption
                   text_color: ${c_text_2}
                   align: TOP_MID
-                  y: ${328*px}
+                  y: ${ (488 if screen_h > 480 else 328)*px }
               - button:
                   align: TOP_MID
-                  y: ${368*px}
+                  y: ${ (528 if screen_h > 480 else 368)*px }
                   width: ${220*px}
                   height: ${56*px}
                   radius: ${28*px}

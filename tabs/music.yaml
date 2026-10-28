@@ -66,9 +66,15 @@ globals:
   - id: lyr_key
     type: std::string
     initial_value: '""'
-  - id: lyr_lines
-    type: std::vector<std::string>
-    initial_value: "std::vector<std::string>()"   # "{}" is ambiguous for GlobalsComponent
+  # The lines live in one PSRAM buffer (lyr_buf, NUL-terminated lines;
+  # plain lyrics: the text as is) found by offset (lyr_off): the 480 S3
+  # boards' internal RAM is too scarce for a string per line
+  - id: lyr_buf
+    type: char *
+    initial_value: "nullptr"
+  - id: lyr_off
+    type: std::vector<uint32_t>
+    initial_value: "std::vector<uint32_t>()"   # "{}" is ambiguous for GlobalsComponent
   - id: lyr_ms
     type: std::vector<int32_t>
     initial_value: "std::vector<int32_t>()"   # "{}" is ambiguous for GlobalsComponent
@@ -223,44 +229,75 @@ script:
                         return;
                       }
                       id(lyr_loading) = false;
-                      std::string txt = r["lyrics"] | "";
+                      const char *txt = r["lyrics"] | "";   // in the JSON doc (PSRAM)
                       bool synced = r["synced"] | false;
-                      auto &lines = id(lyr_lines);
+                      id(lyrics_clear).execute();
+                      auto &off = id(lyr_off);
                       auto &ms = id(lyr_ms);
-                      lines.clear();
-                      ms.clear();
-                      // One entry per line; synced lines start "[mm:ss.xx]"
-                      // (possibly several stamps), other tags are skipped
-                      std::vector<std::pair<int32_t, std::string>> timed;
-                      size_t at = 0;
-                      while (at <= txt.size()) {
-                        size_t nl = txt.find('\n', at);
-                        if (nl == std::string::npos) nl = txt.size();
-                        std::string line = txt.substr(at, nl - at);
-                        at = nl + 1;
-                        if (!line.empty() && line.back() == '\r') line.pop_back();
-                        if (!synced) { lines.push_back(line); continue; }
-                        std::vector<int32_t> stamps;
-                        size_t p = 0;
-                        while (p < line.size() && line[p] == '[') {
-                          size_t q = line.find(']', p);
-                          if (q == std::string::npos) break;
-                          int m = 0; float sec = 0;
-                          if (sscanf(line.c_str() + p + 1, "%d:%f", &m, &sec) == 2) stamps.push_back((int32_t) ((m * 60 + sec) * 1000));
-                          p = q + 1;
+                      size_t n = strlen(txt);
+                      if (!synced) {
+                        // Plain: the text as is, minus trailing blank lines
+                        while (n > 0 && (txt[n - 1] == '\n' || txt[n - 1] == '\r' || txt[n - 1] == ' ')) n--;
+                        if (n > 0) {
+                          char *b = (char *) heap_caps_malloc(n + 1, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+                          if (b != nullptr) {
+                            size_t w = 0;
+                            for (size_t i = 0; i < n; i++) if (txt[i] != '\r') b[w++] = txt[i];
+                            b[w] = 0;
+                            id(lyr_buf) = b;
+                            off.push_back(0);
+                          }
                         }
-                        if (stamps.empty()) continue;
-                        while (p < line.size() && line[p] == ' ') p++;
-                        for (int32_t t : stamps) timed.emplace_back(t, line.substr(p));
+                      } else {
+                        // Synced lines start "[mm:ss.xx]" (possibly several
+                        // stamps); other tags are skipped. First collect
+                        // (time, where, length), sort by time, then copy.
+                        struct Seg { int32_t t; uint32_t at, len; };
+                        std::vector<Seg> segs;
+                        segs.reserve(96);
+                        size_t at = 0;
+                        while (at < n) {
+                          size_t e = at;
+                          while (e < n && txt[e] != '\n') e++;
+                          size_t le = e;
+                          if (le > at && txt[le - 1] == '\r') le--;
+                          size_t p = at;
+                          size_t stamps_from = segs.size();
+                          while (p < le && txt[p] == '[') {
+                            size_t q = p;
+                            while (q < le && txt[q] != ']') q++;
+                            if (q >= le) break;
+                            int m = 0; float sec = 0;
+                            if (sscanf(txt + p + 1, "%d:%f", &m, &sec) == 2)
+                              segs.push_back({(int32_t) ((m * 60 + sec) * 1000), 0, 0});
+                            p = q + 1;
+                          }
+                          while (p < le && txt[p] == ' ') p++;
+                          for (size_t k = stamps_from; k < segs.size(); k++) { segs[k].at = p; segs[k].len = le - p; }
+                          at = e + 1;
+                        }
+                        std::stable_sort(segs.begin(), segs.end(), [](const Seg &a, const Seg &b) { return a.t < b.t; });
+                        while (!segs.empty() && segs.back().len == 0) segs.pop_back();
+                        size_t total = 0;
+                        for (auto &g : segs) total += g.len + 1;
+                        char *b = total ? (char *) heap_caps_malloc(total, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) : nullptr;
+                        if (b != nullptr) {
+                          off.reserve(segs.size());
+                          ms.reserve(segs.size());
+                          size_t w = 0;
+                          for (auto &g : segs) {
+                            off.push_back(w);
+                            ms.push_back(g.t);
+                            memcpy(b + w, txt + g.at, g.len);
+                            w += g.len;
+                            b[w++] = 0;
+                          }
+                          id(lyr_buf) = b;
+                        }
                       }
-                      if (synced) {
-                        std::stable_sort(timed.begin(), timed.end(), [](auto &a, auto &b) { return a.first < b.first; });
-                        for (auto &e : timed) { ms.push_back(e.first); lines.push_back(e.second); }
-                      }
-                      while (!lines.empty() && lines.back().empty()) { lines.pop_back(); if (!ms.empty()) ms.pop_back(); }
-                      id(lyr_synced) = synced && !lines.empty();
+                      id(lyr_synced) = synced && !off.empty();
                       id(lyr_cur) = -2;
-                      ESP_LOGI("music", "Lyrics: %u lines%s", (unsigned) lines.size(), id(lyr_synced) ? " (synced)" : "");
+                      ESP_LOGI("music", "Lyrics: %u lines%s", (unsigned) (id(lyr_synced) ? off.size() : 0), id(lyr_synced) ? " (synced)" : (id(lyr_buf) ? " (plain)" : ""));
                   - script.execute: lyrics_render
                 on_error:
                   - lambda: |-
@@ -269,12 +306,22 @@ script:
                       id(lyr_cur) = -2;
                   - script.execute: lyrics_render
 
+  # Forget the current lyrics (and free their PSRAM buffer)
+  - id: lyrics_clear
+    then:
+      - lambda: |-
+          if (id(lyr_buf) != nullptr) heap_caps_free(id(lyr_buf));
+          id(lyr_buf) = nullptr;
+          id(lyr_off).clear();
+          id(lyr_ms).clear();
+          id(lyr_synced) = false;
+
   # Draw the lyrics view (or the artwork) and the Lyrics button's state
   - id: lyrics_render
     then:
       - lambda: |-
           if (!${ 'true' if (music_lyrics | string | lower == 'true' or (music_lyrics | string | lower == 'auto' and screen_h > 480)) else 'false' }) return;
-          bool have = !id(lyr_lines).empty();
+          bool have = id(lyr_buf) != nullptr;
           bool view = id(lyr_view);
           // Button: filled while the lyrics show; white when there are some
           lv_obj_set_style_bg_opa(id(music_btn_lyrics), view ? LV_OPA_COVER : LV_OPA_TRANSP, LV_PART_MAIN);
@@ -300,11 +347,10 @@ script:
             lv_obj_clear_flag(id(lyr_plain), LV_OBJ_FLAG_HIDDEN);
             if (id(lyr_cur) != -1) {
               id(lyr_cur) = -1;
-              std::string all;
-              for (auto &l : id(lyr_lines)) { all += l; all += "\n"; }
-              if (all.empty()) all = id(lyr_loading) ? "Looking up lyrics\u2026"
-                                 : id(lyr_key).empty() ? "No song playing" : "No lyrics found for this song";
-              lv_label_set_text(id(lyr_plain), all.c_str());
+              const char *t = id(lyr_buf) ? id(lyr_buf)
+                            : id(lyr_loading) ? "Looking up lyrics\u2026"
+                            : id(lyr_key).empty() ? "No song playing" : "No lyrics found for this song";
+              lv_label_set_text(id(lyr_plain), t);
               lv_obj_scroll_to_y(id(music_lyrics_card), 0, LV_ANIM_OFF);
             }
             return;
@@ -323,13 +369,13 @@ script:
           if (cur == id(lyr_cur)) return;
           id(lyr_cur) = cur;
           static const uint32_t colors[4] = {${c_text}, 0x8E8E93, 0x636366, 0x48484A};
-          const int n = (int) id(lyr_lines).size();
+          const int n = (int) id(lyr_off).size();
           for (int i = 0; i < 7; i++) {
             int k = cur + i - 3, d = abs(i - 3);
             lv_obj_t *l = slots[i];
             if (sq && d == 3) { lv_obj_add_flag(l, LV_OBJ_FLAG_HIDDEN); continue; }
             lv_obj_clear_flag(l, LV_OBJ_FLAG_HIDDEN);
-            lv_label_set_text(l, (k >= 0 && k < n) ? id(lyr_lines)[k].c_str() : "");
+            lv_label_set_text(l, (k >= 0 && k < n) ? id(lyr_buf) + id(lyr_off)[k] : "");
             lv_obj_set_style_text_color(l, lv_color_hex(colors[d]), LV_PART_MAIN);
             lv_obj_set_style_text_font(l, d == 0 ? id(font_title)->get_lv_font() : id(font_body)->get_lv_font(), LV_PART_MAIN);
           }
@@ -499,9 +545,7 @@ text_sensor:
           id(music_stale_at) = id(media_pos_at_text).state;
           id(music_pos_s) = 0;
           id(music_pos_ms) = millis();
-          id(lyr_lines).clear();
-          id(lyr_ms).clear();
-          id(lyr_synced) = false;
+          id(lyrics_clear).execute();
           id(lyr_loading) = true;
           id(lyr_key) = "";
           id(lyr_cur) = -2;
@@ -616,10 +660,10 @@ lvgl:
               # (portrait: left of the title)
               - button:
                   id: music_btn_playon
-                  # square with lyrics: top-left (Lyrics takes the right, as
-                  # on the portrait layout)
-                  align: ${ 'TOP_LEFT' if (screen_h > 480 or (music_lyrics | string | lower == 'true' or (music_lyrics | string | lower == 'auto' and screen_h > 480))) else 'TOP_RIGHT' }
-                  x: ${ (18 if screen_h > 480 else (10 if (music_lyrics | string | lower == 'true' or (music_lyrics | string | lower == 'auto' and screen_h > 480)) else -10))*px }
+                  # top-right (portrait: right of the title); Lyrics mirrors it
+                  # on the left
+                  align: TOP_RIGHT
+                  x: -${ (18 if screen_h > 480 else 10)*px }
                   y: ${ (360 if screen_h > 480 else 8)*px }
                   width: ${ (44 if screen_h > 480 else 52)*px }
                   height: ${ (44 if screen_h > 480 else 48)*px }
@@ -911,9 +955,9 @@ lvgl:
               #    lyrics card that takes the artwork's place ─────────────
               - button:
                   id: music_btn_lyrics
-                  # square: top-right corner (Play on moves to the left)
-                  align: TOP_RIGHT
-                  x: -${ (18 if screen_h > 480 else 10)*px }
+                  # top-left (portrait: left of the title), mirroring Play on
+                  align: TOP_LEFT
+                  x: ${ (18 if screen_h > 480 else 10)*px }
                   y: ${ (360 if screen_h > 480 else 10)*px }
                   width: ${44*px}
                   height: ${44*px}
