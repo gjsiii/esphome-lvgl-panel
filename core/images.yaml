@@ -13,6 +13,11 @@
 # with ok = true / false; it shows the picture with img_show, which copies it
 # (shrunk to fit, if asked) into the screen's own PSRAM image, so the loader
 # is free for the next picture.
+#
+# ESPHome's online_image has no timeout: a download that stalls stays
+# "being updated" for good and every later picture is refused. The watchdog
+# below aborts a download that has held the lock for 12 s (callers wait up
+# to 15 s for it) and logs which picture it was.
 
 globals:
   # art_http(url): artwork hosts that serve the same file over plain http get
@@ -105,6 +110,28 @@ globals:
         }
         return true;
       }
+
+interval:
+  - interval: 2s
+    then:
+      - lambda: |-
+          if (!id(img_busy) || millis() - id(img_busy_ms) < 12000) return;
+          bool art = id(art_loader)->is_decoding(), cam = id(cam_loader)->is_decoding();
+          if (!art && !cam) return;
+          ESP_LOGW("images", "Picture download stuck for 12 s, aborted: %s", id(img_url).c_str());
+          id(img_busy) = false;
+          if (art) {
+            id(art_loader)->release();
+            auto cb = id(art_cb);
+            id(art_cb) = nullptr;
+            if (cb) cb(false);
+          }
+          if (cam) {
+            id(cam_loader)->release();
+            auto cb = id(cam_cb);
+            id(cam_cb) = nullptr;
+            if (cb) cb(false);
+          }
 
 image:
   - platform: online_image

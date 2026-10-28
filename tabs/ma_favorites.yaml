@@ -298,6 +298,7 @@ script:
             id(img_busy) = true;
             id(img_busy_ms) = millis();
             id(art_cb) = [](bool ok) { id(maf_art_done)->execute(ok); };
+            id(img_url) = u;
             id(art_loader)->set_url(u);
             id(art_loader)->update();
             return;

@@ -170,6 +170,10 @@ globals:
   - id: img_busy_ms
     type: uint32_t
     initial_value: "0"
+  # The picture being downloaded (for the stuck-download warning)
+  - id: img_url
+    type: std::string
+    initial_value: '""'
 
   # Backlight level chosen in Settings (0.1–1.0), kept across reboots
   - id: user_brightness

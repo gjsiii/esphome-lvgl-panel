@@ -6,7 +6,8 @@
 #       tab_position: 3                         # 2-9, order in the tab bar
 #       music_player: media_player.family_room_2
 #
-#       # music_lyrics: "false"                # portrait: no lyrics button
+#       # music_lyrics: "true"                 # lyrics on: "auto" (default) =
+#       #                                      # portrait only, "true", "false"
 #
 # The tab selects itself when the player starts playing after a real stop
 # (see media_autoswitch_gap_ms).
@@ -17,9 +18,13 @@
 # slider mutes). The Lyrics button swaps the artwork for the song's lyrics,
 # following along when they have timestamps. Lyrics come from LRCLIB through
 # ha/panel_lyrics.yaml (install it in HA, or set music_lyrics: "false").
+#
+# Square screens can have lyrics too (music_lyrics: "true"): the Lyrics
+# button sits in the top-left corner and the lyrics (five lines) take the
+# place of the artwork and the buttons beside it.
 
 defaults:
-  music_lyrics: "true"
+  music_lyrics: "auto"
 
 substitutions:
   music_volume_step: "2"   # % per tap of the volume - / + buttons
@@ -185,7 +190,7 @@ script:
       - if:
           condition:
             lambda: |-
-              if (!${ 'true' if (screen_h > 480 and music_lyrics | string | lower == 'true') else 'false' }) return false;
+              if (!${ 'true' if (music_lyrics | string | lower == 'true' or (music_lyrics | string | lower == 'auto' and screen_h > 480)) else 'false' }) return false;
               const std::string &a = id(media_artist_text).state, &t = id(media_title_text).state;
               bool ok = !a.empty() && !t.empty() && a != "unknown" && t != "unknown";
               std::string key = ok ? a + "|" + t : "";
@@ -268,18 +273,24 @@ script:
   - id: lyrics_render
     then:
       - lambda: |-
-          if (!${ 'true' if (screen_h > 480 and music_lyrics | string | lower == 'true') else 'false' }) return;
+          if (!${ 'true' if (music_lyrics | string | lower == 'true' or (music_lyrics | string | lower == 'auto' and screen_h > 480)) else 'false' }) return;
           bool have = !id(lyr_lines).empty();
           bool view = id(lyr_view);
           // Button: filled while the lyrics show; white when there are some
           lv_obj_set_style_bg_opa(id(music_btn_lyrics), view ? LV_OPA_COVER : LV_OPA_TRANSP, LV_PART_MAIN);
           lv_obj_set_style_text_color(id(lbl_music_lyrics), lv_color_hex(view ? ${c_on_accent} : (have ? ${c_text} : ${c_text_2})), LV_PART_MAIN);
+          // Square: prev / next / shuffle / repeat sit beside the artwork,
+          // under the lyrics card
+          const bool sq = ${ 'false' if screen_h > 480 else 'true' };
+          lv_obj_t *beside[4] = {id(music_btn_prev), id(music_btn_next), id(music_btn_shuffle), id(music_btn_repeat)};
           if (view) {
             lv_obj_clear_flag(id(music_lyrics_card), LV_OBJ_FLAG_HIDDEN);
             lv_obj_add_flag(id(music_art_frame), LV_OBJ_FLAG_HIDDEN);
+            if (sq) for (auto *b : beside) lv_obj_add_flag(b, LV_OBJ_FLAG_HIDDEN);
           } else {
             lv_obj_add_flag(id(music_lyrics_card), LV_OBJ_FLAG_HIDDEN);
             lv_obj_clear_flag(id(music_art_frame), LV_OBJ_FLAG_HIDDEN);
+            if (sq) for (auto *b : beside) lv_obj_clear_flag(b, LV_OBJ_FLAG_HIDDEN);
             return;
           }
           lv_obj_t *slots[7] = {id(lyr_l0), id(lyr_l1), id(lyr_l2), id(lyr_l3), id(lyr_l4), id(lyr_l5), id(lyr_l6)};
@@ -299,6 +310,7 @@ script:
             return;
           }
           // Synced: the current line in the middle, three either side
+          // (square: two)
           lv_obj_add_flag(id(lyr_plain), LV_OBJ_FLAG_HIDDEN);
           float pos = id(music_pos_s);
           if (isnan(pos)) pos = 0;
@@ -315,6 +327,7 @@ script:
           for (int i = 0; i < 7; i++) {
             int k = cur + i - 3, d = abs(i - 3);
             lv_obj_t *l = slots[i];
+            if (sq && d == 3) { lv_obj_add_flag(l, LV_OBJ_FLAG_HIDDEN); continue; }
             lv_obj_clear_flag(l, LV_OBJ_FLAG_HIDDEN);
             lv_label_set_text(l, (k >= 0 && k < n) ? id(lyr_lines)[k].c_str() : "");
             lv_obj_set_style_text_color(l, lv_color_hex(colors[d]), LV_PART_MAIN);
@@ -361,6 +374,7 @@ script:
                   if (!ok) { ESP_LOGW("music", "Album art download failed"); return; }
                   id(img_show)(id(lvgl_album_art), &id(album_art_dsc), id(art_loader)->get_lv_image_dsc(), ${((320 if screen_h > 480 else 180)*px)|int});
                 };
+                id(img_url) = url;
                 id(art_loader)->set_url(url);
                 id(art_loader)->update();
 
@@ -424,7 +438,7 @@ number:
     optimistic: true
     restore_value: true
     mode: box
-    internal: ${ 'false' if (screen_h > 480 and music_lyrics | string | lower == 'true') else 'true' }
+    internal: ${ 'false' if (music_lyrics | string | lower == 'true' or (music_lyrics | string | lower == 'auto' and screen_h > 480)) else 'true' }
     on_value:
       - lambda: "id(lyr_cur) = -2;"
 
@@ -892,15 +906,16 @@ lvgl:
               #    lyrics card that takes the artwork's place ─────────────
               - button:
                   id: music_btn_lyrics
-                  align: TOP_RIGHT
-                  x: -${18*px}
-                  y: ${360*px}
+                  # square: top-left corner, mirroring Play on
+                  align: ${ 'TOP_RIGHT' if screen_h > 480 else 'TOP_LEFT' }
+                  x: ${ (-18 if screen_h > 480 else 10)*px }
+                  y: ${ (360 if screen_h > 480 else 10)*px }
                   width: ${44*px}
                   height: ${44*px}
                   styles: round_btn
                   bg_color: ${c_accent}
                   bg_opa: TRANSP
-                  hidden: ${ 'false' if (screen_h > 480 and music_lyrics | string | lower == 'true') else 'true' }
+                  hidden: ${ 'false' if (music_lyrics | string | lower == 'true' or (music_lyrics | string | lower == 'auto' and screen_h > 480)) else 'true' }
                   widgets:
                     - label:
                         id: lbl_music_lyrics
@@ -916,9 +931,9 @@ lvgl:
               - obj:
                   id: music_lyrics_card
                   align: TOP_MID
-                  y: ${16*px}
+                  y: ${ (16 if screen_h > 480 else 6)*px }
                   width: ${440*px}
-                  height: ${320*px}
+                  height: ${ (320 if screen_h > 480 else 180)*px }
                   styles: card
                   radius: ${16*px}
                   scrollbar_mode: "off"
@@ -930,13 +945,14 @@ lvgl:
                     - script.execute: lyrics_render
                   widgets:
                     # Synced: seven fixed lines, the current one in the middle
-                    - label: { id: lyr_l0, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${14*px}" }
-                    - label: { id: lyr_l1, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${58*px}" }
-                    - label: { id: lyr_l2, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${102*px}" }
-                    - label: { id: lyr_l3, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${146*px}" }
-                    - label: { id: lyr_l4, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${194*px}" }
-                    - label: { id: lyr_l5, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${238*px}" }
-                    - label: { id: lyr_l6, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${282*px}" }
+                    # (square: the middle five)
+                    - label: { id: lyr_l0, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (14 if screen_h > 480 else 0)*px }" }
+                    - label: { id: lyr_l1, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (58 if screen_h > 480 else 6)*px }" }
+                    - label: { id: lyr_l2, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (102 if screen_h > 480 else 42)*px }" }
+                    - label: { id: lyr_l3, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (146 if screen_h > 480 else 78)*px }" }
+                    - label: { id: lyr_l4, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (194 if screen_h > 480 else 116)*px }" }
+                    - label: { id: lyr_l5, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (238 if screen_h > 480 else 152)*px }" }
+                    - label: { id: lyr_l6, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (282 if screen_h > 480 else 180)*px }" }
                     # Plain lyrics (no timestamps) or a note: scrolls
                     - label:
                         id: lyr_plain
@@ -947,7 +963,7 @@ lvgl:
                         long_mode: WRAP
                         width: ${400*px}
                         align: TOP_MID
-                        y: ${16*px}
+                        y: ${ (16 if screen_h > 480 else 8)*px }
                         pad_bottom: ${16*px}
 
     # Holding page (never shown): the "Play on" sheet is moved onto ui_root

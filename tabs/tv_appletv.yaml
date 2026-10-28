@@ -138,6 +138,7 @@ script:
                   if (!ok) { ESP_LOGW("tv", "Apple TV art download failed"); return; }
                   id(img_show)(id(img_tv_art), &id(tv_art_dsc), id(art_loader)->get_lv_image_dsc(), ${((168 if screen_h > 480 else 104)*px)|int});
                 };
+                id(img_url) = url;
                 id(art_loader)->set_url(url);
                 id(art_loader)->update();
 

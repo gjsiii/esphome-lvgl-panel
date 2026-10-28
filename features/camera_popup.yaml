@@ -109,6 +109,7 @@ script:
                       // camera image takes seconds to download and decode, enough
                       // to exhaust memory or trip the watchdog); the time stamp
                       // makes every refresh fetch a new frame.
+                      id(img_url) = p;
                       id(cam_loader)->set_url(p + "&width=${(448*px)|int}&height=${(252*px)|int}&t=" + std::to_string(millis()));
                       id(cam_loader)->update();
             - delay: ${camera_refresh_seconds}s
