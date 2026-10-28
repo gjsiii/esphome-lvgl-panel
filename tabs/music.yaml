@@ -586,15 +586,18 @@ text_sensor:
                   return u;
 
 interval:
-  # Portrait: progress bar every second, lyrics line four times a second
+  # Progress bar every second (portrait), lyrics line four times a second
+  # (whenever lyrics are on)
   - interval: 250ms
     then:
       - lambda: |-
-          if (!${ 'true' if screen_h > 480 else 'false' }) return;
+          const bool portrait = ${ 'true' if screen_h > 480 else 'false' };
+          const bool lyrics = ${ 'true' if (music_lyrics | string | lower == 'true' or (music_lyrics | string | lower == 'auto' and screen_h > 480)) else 'false' };
+          if (!portrait && !lyrics) return;
           if (lv_tabview_get_tab_active(id(main_tabview)) != id(tab_index_music)) return;
           static uint8_t n = 0;
-          if (++n % 4 == 0 && id(music_playing)) id(music_progress_tick).execute();
-          if (id(lyr_view) && id(lyr_synced)) id(lyrics_render).execute();
+          if (portrait && ++n % 4 == 0 && id(music_playing)) id(music_progress_tick).execute();
+          if (lyrics && id(lyr_view) && id(lyr_synced)) id(lyrics_render).execute();
 
 lvgl:
   pages:
@@ -613,8 +616,10 @@ lvgl:
               # (portrait: left of the title)
               - button:
                   id: music_btn_playon
-                  align: ${ 'TOP_LEFT' if screen_h > 480 else 'TOP_RIGHT' }
-                  x: ${ (18 if screen_h > 480 else -10)*px }
+                  # square with lyrics: top-left (Lyrics takes the right, as
+                  # on the portrait layout)
+                  align: ${ 'TOP_LEFT' if (screen_h > 480 or (music_lyrics | string | lower == 'true' or (music_lyrics | string | lower == 'auto' and screen_h > 480))) else 'TOP_RIGHT' }
+                  x: ${ (18 if screen_h > 480 else (10 if (music_lyrics | string | lower == 'true' or (music_lyrics | string | lower == 'auto' and screen_h > 480)) else -10))*px }
                   y: ${ (360 if screen_h > 480 else 8)*px }
                   width: ${ (44 if screen_h > 480 else 52)*px }
                   height: ${ (44 if screen_h > 480 else 48)*px }
@@ -906,9 +911,9 @@ lvgl:
               #    lyrics card that takes the artwork's place ─────────────
               - button:
                   id: music_btn_lyrics
-                  # square: top-left corner, mirroring Play on
-                  align: ${ 'TOP_RIGHT' if screen_h > 480 else 'TOP_LEFT' }
-                  x: ${ (-18 if screen_h > 480 else 10)*px }
+                  # square: top-right corner (Play on moves to the left)
+                  align: TOP_RIGHT
+                  x: -${ (18 if screen_h > 480 else 10)*px }
                   y: ${ (360 if screen_h > 480 else 10)*px }
                   width: ${44*px}
                   height: ${44*px}
