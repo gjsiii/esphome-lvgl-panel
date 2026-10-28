@@ -122,6 +122,10 @@ template:
                 {%- for full, code in prefixes if ap.v.startswith(full) -%}
                   {%- set ap.v = code ~ ap.v[full | length:] -%}
                 {%- endfor -%}
+                {#- Other https sites (e.g. a radio station's own logo): no art.
+                    A server that sends no size can leave the panel's picture
+                    download hanging, which freezes the screen (WBEZ, 2026-10) -#}
+                {%- if ap.v.startswith('https://') -%}{%- set ap.v = '' -%}{%- endif -%}
                 {%- set lib = 'library://' ~ cat ~ '/' -%}
                 {%- set uri = i.uri[lib | length:] if i.uri.startswith(lib) else i.uri -%}
                 {%- set ns.out = ns.out + [codes[cat] ~ '|' ~ name ~ '|' ~ uri ~ '|' ~ ap.v] -%}
