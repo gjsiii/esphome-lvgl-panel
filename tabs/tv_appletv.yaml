@@ -20,6 +20,9 @@
 # between skip back and forward, the d-pad centred with Apps, Home, Back and
 # Play/Pause in the corners around it, and a wide volume pill below.
 
+substitutions:
+  tv_volume_step: "2"   # % per tap of the volume - / + keys
+
 globals:
   - id: tab_index_tv
     type: int
@@ -43,6 +46,14 @@ globals:
     type: float
     initial_value: "NAN"
   - id: tv_pos_ms
+    type: uint32_t
+    initial_value: "0"
+  # Volume keys: the level asked for last (0-100) and when, so quick taps
+  # add up while the speaker's reported level lags
+  - id: tv_vol_target
+    type: int
+    initial_value: "-1"
+  - id: tv_vol_tap_ms
     type: uint32_t
     initial_value: "0"
 
@@ -72,6 +83,37 @@ esphome:
               lv_obj_add_flag(id(tv_btn_apps), LV_OBJ_FLAG_HIDDEN);
 
 script:
+  # Volume - / +: to the next multiple of tv_volume_step. Falls back to the
+  # speaker's own step when its level isn't known.
+  - id: tv_volume_nudge
+    mode: queued
+    parameters:
+      up: bool
+    then:
+      - if:
+          condition:
+            lambda: |-
+              float lvl = id(tv_volume_level).state;
+              bool recent = id(tv_vol_target) >= 0 && millis() - id(tv_vol_tap_ms) < 2000;
+              if (!recent && isnan(lvl)) return false;
+              const int s = ${tv_volume_step};
+              int cur = recent ? id(tv_vol_target) : (int) lroundf(lvl * 100.0f);
+              int v = up ? (cur / s + 1) * s : ((cur + s - 1) / s - 1) * s;
+              id(tv_vol_target) = std::max(0, std::min(100, v));
+              id(tv_vol_tap_ms) = millis();
+              return true;
+          then:
+            - homeassistant.action:
+                action: media_player.volume_set
+                data:
+                  entity_id: ${tv_volume_player}
+                  volume_level: !lambda "return id(tv_vol_target) / 100.0f;"
+          else:
+            - homeassistant.action:
+                action: !lambda 'return up ? "media_player.volume_up" : "media_player.volume_down";'
+                data:
+                  entity_id: ${tv_volume_player}
+
   # Debounced Apple TV artwork fetch (downloads briefly block the UI)
   - id: load_tv_art
     mode: restart
@@ -144,6 +186,12 @@ script:
           lv_label_set_text(id(lbl_tv_remaining), fmt((int) (dur - pos), "-").c_str());
 
 sensor:
+  # Level of the speaker the volume keys control (for the volume steps)
+  - platform: homeassistant
+    id: tv_volume_level
+    entity_id: ${tv_volume_player}
+    attribute: volume_level
+
   # Progress bar (portrait only; the square layout has no room for it)
   - platform: homeassistant
     id: tv_position
@@ -641,10 +689,9 @@ lvgl:
                               text_font: icons_md
                               align: CENTER
                         on_press:
-                          - homeassistant.action:
-                              action: media_player.volume_down
-                              data:
-                                entity_id: ${tv_volume_player}
+                          - script.execute:
+                              id: tv_volume_nudge
+                              up: false
                     - button:
                         id: tv_btn_mute
                         align: CENTER
@@ -674,10 +721,9 @@ lvgl:
                               text_font: icons_md
                               align: CENTER
                         on_press:
-                          - homeassistant.action:
-                              action: media_player.volume_up
-                              data:
-                                entity_id: ${tv_volume_player}
+                          - script.execute:
+                              id: tv_volume_nudge
+                              up: true
 
 
               # ── Skip back / forward (either side of the volume pill;

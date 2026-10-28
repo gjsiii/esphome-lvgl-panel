@@ -270,6 +270,20 @@ switch:
     on_turn_off:
       - script.execute: sync_settings_ui
 
+  # Swipe left / right to change tabs. Off by default: a sideways slip while
+  # setting a light or the volume would change tabs (the tab bar always works)
+  - platform: template
+    id: sw_tab_swipe
+    name: Swipe Between Tabs
+    icon: mdi:gesture-swipe-horizontal
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - script.execute: apply_tab_swipe
+    on_turn_off:
+      - script.execute: apply_tab_swipe
+
   # Messages from HA wake the screen to the Settings brightness (on) or to
   # the dim level (off)
   - platform: template
@@ -285,6 +299,15 @@ switch:
       - script.execute: sync_settings_ui
 
 script:
+  # Swipe Between Tabs: the tab view's content area scrolls (swipes) or not
+  - id: apply_tab_swipe
+    then:
+      - lambda: |-
+          if (!id(ui_ready)) return;   // applied once the tabs exist (base.yaml)
+          lv_obj_t *content = lv_tabview_get_content(id(main_tabview));
+          if (id(sw_tab_swipe).state) lv_obj_add_flag(content, LV_OBJ_FLAG_SCROLLABLE);
+          else lv_obj_clear_flag(content, LV_OBJ_FLAG_SCROLLABLE);
+
   # Paint the slider color onto every slider, progress bar and switch, and
   # the preview dot in Settings.
   - id: apply_accent
@@ -653,6 +676,7 @@ esphome:
         - script.execute: accent_changed
         - script.execute: sync_settings_ui
         - script.execute: update_clock
+        - script.execute: apply_tab_swipe
 
 # ── Screen idle: dim, then backlight off (touch or presence wakes it) ────────
 interval:

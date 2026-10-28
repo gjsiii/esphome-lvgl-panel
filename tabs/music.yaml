@@ -22,7 +22,7 @@ defaults:
   music_lyrics: "true"
 
 substitutions:
-  music_volume_step: "5"   # % per tap of the volume - / + buttons
+  music_volume_step: "2"   # % per tap of the volume - / + buttons
 
 globals:
   - id: tab_index_music
