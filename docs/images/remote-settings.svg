@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="800" viewBox="0 0 480 800" font-family="Inter, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+<rect width="480" height="800" rx="18" fill="#000"/>
+<text x="20" y="42" fill="#FFF" font-size="20" font-weight="600">Settings</text><text x="415" y="42" fill="#F2F2F7" font-size="20" font-weight="600" text-anchor="middle">Done</text>
+<text x="32" y="92" fill="#8E8E93" font-size="16" font-weight="500" letter-spacing="1">HOLIDAYS</text>
+<rect x="16" y="102" width="448" height="92" rx="14" fill="#1C1C1E"/>
+<text x="32" y="135" fill="#FFF" font-size="16">Holiday theme</text>
+<rect x="396" y="115" width="52" height="30" rx="15" fill="#F2F2F7"/><circle cx="433" cy="130" r="12" fill="#000"/>
+<text x="32" y="166" fill="#8E8E93" font-size="13">Holiday colours, an icon by the clock and night-clock decorations</text><text x="32" y="183" fill="#8E8E93" font-size="13">on Halloween, Christmas, Valentine’s and St. Patrick’s Day.</text>
+<text x="32" y="232" fill="#8E8E93" font-size="16" font-weight="500" letter-spacing="1">OPTIONS</text>
+<rect x="16" y="242" width="448" height="270" rx="14" fill="#1C1C1E"/>
+<text x="32" y="275" fill="#FFF" font-size="16">24-hour clock</text>
+<rect x="396" y="255" width="52" height="30" rx="15" fill="#39393D"/><circle cx="411" cy="270" r="12" fill="#FFF"/>
+<rect x="32" y="306" width="432" height="1" fill="#38383A"/>
+<text x="32" y="329" fill="#FFF" font-size="16">Auto-open TV &amp; Music</text>
+<rect x="396" y="309" width="52" height="30" rx="15" fill="#F2F2F7"/><circle cx="433" cy="324" r="12" fill="#000"/>
+<rect x="32" y="360" width="432" height="1" fill="#38383A"/>
+<text x="32" y="383" fill="#FFF" font-size="16">Messages wake at full brightness</text>
+<rect x="396" y="363" width="52" height="30" rx="15" fill="#39393D"/><circle cx="411" cy="378" r="12" fill="#FFF"/>
+<rect x="32" y="414" width="432" height="1" fill="#38383A"/>
+<text x="32" y="437" fill="#FFF" font-size="16">Lock settings with PIN</text>
+<rect x="396" y="417" width="52" height="30" rx="15" fill="#39393D"/><circle cx="411" cy="432" r="12" fill="#FFF"/>
+<rect x="32" y="468" width="432" height="1" fill="#38383A"/>
+<text x="32" y="491" fill="#FFF" font-size="16">Swipe between tabs</text>
+<rect x="396" y="471" width="52" height="30" rx="15" fill="#39393D"/><circle cx="411" cy="486" r="12" fill="#FFF"/>
+<text x="32" y="550" fill="#8E8E93" font-size="16" font-weight="500" letter-spacing="1">BATTERY</text>
+<rect x="16" y="560" width="448" height="108" rx="14" fill="#1C1C1E"/><text x="32" y="593" fill="#FFF" font-size="16">Battery</text><text x="448" y="593" fill="#8E8E93" font-size="16" text-anchor="end">82% · Charging</text><rect x="32" y="614" width="432" height="1" fill="#38383A"/><text x="240" y="647" fill="#F2F2F7" font-size="16" text-anchor="middle">Go to standby now</text>
+<text x="32" y="706" fill="#8E8E93" font-size="16" font-weight="500" letter-spacing="1">VOICE</text>
+<rect x="16" y="716" width="448" height="84" fill="#1C1C1E"/><rect x="16" y="716" width="448" height="30" rx="14" fill="#1C1C1E"/><text x="32" y="749" fill="#FFF" font-size="16">Reply volume</text><text x="448" y="749" fill="#8E8E93" font-size="16" text-anchor="end">60%</text>
+</svg>

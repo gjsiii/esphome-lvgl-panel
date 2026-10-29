@@ -276,19 +276,7 @@ esphome:
     # moves down to make room (as the update card does at the top)
     - priority: -305
       then:
-        - lambda: |-
-            const int32_t at = ${(1444*px)|int};       // where ABOUT starts
-            const int32_t shift = ${(254*px)|int};     // header + card + gap
-            uint32_t n = lv_obj_get_child_cnt(id(settings_panel));
-            for (uint32_t k = 0; k < n; k++) {
-              lv_obj_t *c = lv_obj_get_child(id(settings_panel), k);
-              int32_t y = lv_obj_get_style_y(c, LV_PART_MAIN);
-              if (y >= at) lv_obj_set_y(c, y + shift);
-            }
-            lv_obj_set_parent(id(voice_settings_header), id(settings_panel));
-            lv_obj_set_parent(id(voice_settings_card), id(settings_panel));
-            lv_obj_set_y(id(voice_settings_header), at);
-            lv_obj_set_y(id(voice_settings_card), at + ${(22*px)|int});
+        - lambda: "id(settings_insert)(id(voice_settings_header), id(voice_settings_card), id(settings_about_hdr));"
         - script.execute: voice_settings_refresh
 
 # While Settings is open, follow changes made in HA (wake word, volume)

@@ -127,6 +127,17 @@ panel's own controls call `select.set` / `switch.turn_on`, and a
 `sync_settings_ui` script redraws the controls when a value changes from
 anywhere.
 
+A feature can add its own **Settings section**: build a header label and a
+card on a holding page, then at boot (priority `-305`) call
+
+```cpp
+id(settings_insert)(id(my_header), id(my_card), id(settings_about_hdr));
+```
+
+It goes in just above ABOUT (or `settings_options_hdr`: above OPTIONS) and
+everything below moves down; see `features/battery.yaml` or
+`features/holidays.yaml`.
+
 ## Writing a new item
 
 As an example, a cover (blinds) slider modeled on `items/light.yaml`. It reuses

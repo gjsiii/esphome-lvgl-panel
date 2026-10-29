@@ -60,6 +60,10 @@ globals:
 esphome:
   on_boot:
     # Into the status bar's top row, right end
+    # Settings → Battery: a section above ABOUT
+    - priority: -305
+      then:
+        - lambda: "id(settings_insert)(id(batt_settings_header), id(batt_settings_card), id(settings_about_hdr));"
     - priority: -310
       then:
         - lambda: |-
@@ -133,6 +137,10 @@ script:
           lv_obj_set_style_text_color(id(lbl_batt_icon), lv_color_hex(c), LV_PART_MAIN);
           lv_obj_set_style_text_color(id(lbl_batt_pct), lv_color_hex(c), LV_PART_MAIN);
           lv_obj_clear_flag(id(batt_box), LV_OBJ_FLAG_HIDDEN);
+          // Settings → Battery
+          snprintf(buf, sizeof(buf), "%d%%", (int) pct);
+          std::string st = std::string(buf) + (docked ? " \u00B7 Charging" : "");
+          lv_label_set_text(id(lbl_batt_settings), st.c_str());
       # Low: one banner per discharge
       - if:
           condition:
@@ -173,6 +181,70 @@ button:
 
 lvgl:
   pages:
+    # Holding page (never shown): Settings → Battery, moved in at boot
+    - id: holding_batt_settings
+      skip: true
+      widgets:
+        - label:
+            id: batt_settings_header
+            text: "BATTERY"
+            styles: section_header
+            translate_y: -${4*px}   # as the other Settings headers
+            align: TOP_LEFT
+            x: ${32*px}
+        - obj:
+            id: batt_settings_card
+            align: TOP_MID
+            width: ${448*px}
+            height: ${108*px}
+            styles: card
+            clickable: false
+            scrollable: false
+            scrollbar_mode: "off"
+            widgets:
+              - label:
+                  text: "Battery"
+                  align: TOP_LEFT
+                  x: ${16*px}
+                  y: ${17*px//1}
+              - label:
+                  id: lbl_batt_settings
+                  text: "\u2014"
+                  text_color: ${c_text_2}
+                  align: TOP_RIGHT
+                  x: -${16*px}
+                  y: ${17*px//1}
+              - obj:   # divider
+                  align: TOP_RIGHT
+                  y: ${54*px}
+                  width: ${432*px}
+                  height: 1
+                  bg_color: ${c_separator}
+                  bg_opa: COVER
+                  border_width: 0
+                  radius: 0
+                  clickable: false
+              # Standby now (a tap on the screen brings it back)
+              - button:
+                  align: TOP_MID
+                  y: ${55*px}
+                  width: 100%
+                  height: ${53*px}
+                  bg_opa: TRANSP
+                  radius: ${14*px}
+                  pad_all: 0
+                  pressed:
+                    bg_color: ${c_surface_2}
+                    bg_opa: COVER
+                  widgets:
+                    - label:
+                        text: "Go to standby now"
+                        text_color: ${c_accent}
+                        align: CENTER
+                  on_click:
+                    - script.execute: close_sheets
+                    - delay: 300ms
+                    - script.execute: board_standby
     # Holding page (never shown): batt_box goes into the status bar at boot
     - id: holding_battery
       skip: true

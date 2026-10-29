@@ -1443,6 +1443,7 @@ lvgl:
 
                     # ── Options ─────────────────────────────────────
                     - label:
+                        id: settings_options_hdr   # features insert sections before it
                         text: "OPTIONS"
                         styles: section_header
                         translate_y: -${4*px}   # 16 px header: keep a gap above the card
@@ -1454,7 +1455,7 @@ lvgl:
                         align: TOP_MID
                         y: ${1212*px}
                         width: ${448*px}
-                        height: ${216*px}
+                        height: ${270*px}
                         styles: card
                         clickable: false
                         scrollable: false
@@ -1560,19 +1561,48 @@ lvgl:
                                       - script.execute: pin_choose
                                     else:
                                       - switch.turn_off: sw_pin_lock
+                          - obj:   # divider
+                              align: TOP_RIGHT
+                              y: ${216*px}
+                              width: ${432*px}
+                              height: 1
+                              bg_color: ${c_separator}
+                              bg_opa: COVER
+                              border_width: 0
+                              radius: 0
+                              clickable: false
+                          - label:
+                              text: "Swipe between tabs"
+                              align: TOP_LEFT
+                              x: ${16*px}
+                              y: ${233*px//1}
+                          - switch:
+                              id: lv_sw_tab_swipe
+                              align: TOP_RIGHT
+                              x: -${16*px}
+                              y: ${228*px}
+                              width: ${52*px}
+                              height: ${30*px}
+                              on_click:
+                                - lambda: |-
+                                    if (lv_obj_has_state(id(lv_sw_tab_swipe), LV_STATE_CHECKED)) id(sw_tab_swipe).turn_on();
+                                    else id(sw_tab_swipe).turn_off();
 
                     # ── About ───────────────────────────────────────
+                    # Features insert their own sections before this header
+                    # (settings_insert, core/settings.yaml)
                     - label:
+                        id: settings_about_hdr
                         text: "ABOUT"
                         styles: section_header
                         translate_y: -${4*px}   # 16 px header: keep a gap above the card
                         align: TOP_LEFT
                         x: ${32*px}
-                        y: ${1444*px}
+                        y: ${1498*px}
 
                     - obj:
                         align: TOP_MID
-                        y: ${1466*px}
+                        y: ${1520*px}
                         width: ${448*px}
                         height: ${332*px}
                         styles: card
@@ -1704,7 +1734,7 @@ lvgl:
                     # Restart (hold, so a stray tap can't reboot the panel)
                     - button:
                         align: TOP_MID
-                        y: ${1814*px}
+                        y: ${1868*px}
                         width: ${448*px}
                         height: ${50*px}
                         styles: card
@@ -1725,10 +1755,10 @@ lvgl:
                         translate_y: -${4*px}   # 16 px header: keep a gap above the card
                         align: TOP_LEFT
                         x: ${32*px}
-                        y: ${1888*px}
+                        y: ${1942*px}
                     - obj:
                         align: TOP_MID
-                        y: ${1910*px}
+                        y: ${1964*px}
                         width: ${448*px}
                         height: ${188*px}
                         styles: card

@@ -782,13 +782,19 @@ Assistant (device page → Configuration), so you can change panels remotely.
 | | **Turn off after** | 1, 5, 10, 30 min or Never. |
 | | **Sleep screen** | What "off" looks like: Blank, Clock or Red clock. |
 | Night | **Night mode**, **Starts**, **Ends**, **Night brightness** | See [Night mode](#night-mode). |
+| Holidays | **Holiday theme** | Panels with [holiday themes](#holiday-themes): holiday colours and night-clock decorations by date. |
 | Options | **24-hour clock** | 14:30 instead of 2:30pm. |
 | | **Auto-open TV & Music** | Bring up the TV or Music tab when playback starts. |
 | | **Messages wake at full brightness** | Off: messages wake a sleeping panel dimly. On: to your brightness. |
 | | **Lock settings with PIN** | See [PIN lock](#pin-lock). |
-| (HA only) | **Swipe Between Tabs** | Off by default: a sideways slip while setting a slider would change tabs. Turn it on to swipe left and right between tabs; the tab bar always works. |
-| Voice | **Wake word**, **Mute wake word**, **Reply volume** | Panels with [voice](#voice) only. |
+| | **Swipe between tabs** | Off by default: a sideways slip while setting a slider would change tabs. Turn it on to swipe left and right between tabs; the tab bar always works. |
+| Battery | **Battery**, **Go to standby now** | The [handheld remote](#handheld-remote): level and charging, and standby on demand. |
+| Voice | **Wake word**, **Mute wake word**, **Reply volume** | Panels with [voice](#voice); the remote ([tap-to-talk](#tap-to-talk-voice-handheld-remote)) has **Reply volume** only. |
 | About | | See [About and restart](#about-and-restart). |
+
+![Settings on the remote](images/remote-settings.svg)
+
+*The remote's Settings, scrolled to the sections it adds.*
 
 ## Screen dimming, sleep and the night clock
 

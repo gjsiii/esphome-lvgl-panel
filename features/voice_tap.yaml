@@ -175,6 +175,17 @@ script:
             - delay: 8s
             - script.execute: vt_hide
 
+  # Settings → Voice: the reply volume (the Panel Speaker's volume)
+  - id: vt_settings_refresh
+    then:
+      - lambda: |-
+          if (lv_obj_has_state(id(slider_vt_volume), LV_STATE_PRESSED)) return;
+          int v = (int) lroundf(id(panel_media_player)->volume * 100.0f);
+          lv_slider_set_value(id(slider_vt_volume), v, LV_ANIM_OFF);
+          char buf[8];
+          snprintf(buf, sizeof(buf), "%d%%", v);
+          lv_label_set_text(id(lbl_vt_volume), buf);
+
   - id: vt_button_idle
     then:
       - lambda: "lv_obj_set_style_bg_color(id(btn_vt), lv_color_hex(${c_surface}), LV_PART_MAIN);"
@@ -207,9 +218,79 @@ esphome:
             lv_obj_set_parent(id(btn_vt), id(status_bar));
             lv_obj_align(id(btn_vt), LV_ALIGN_LEFT_MID, ${(12*px)|int}, ${((20 if screen_h > 480 else 0)*px)|int});
             lv_obj_set_width(id(status_chips), ${((456 - 196)*px)|int});
+    # Settings → Voice: a section above ABOUT
+    - priority: -305
+      then:
+        - lambda: "id(settings_insert)(id(vt_settings_header), id(vt_settings_card), id(settings_about_hdr));"
+        - script.execute: vt_settings_refresh
+
+# While Settings is open, follow volume changes made in HA
+interval:
+  - interval: 2s
+    then:
+      - if:
+          condition:
+            lambda: "return !lv_obj_has_flag(id(settings_panel), LV_OBJ_FLAG_HIDDEN);"
+          then:
+            - script.execute: vt_settings_refresh
 
 lvgl:
   pages:
+    # Holding page (never shown): Settings → Voice, moved in at boot
+    - id: holding_vt_settings
+      skip: true
+      widgets:
+        - label:
+            id: vt_settings_header
+            text: "VOICE"
+            styles: section_header
+            translate_y: -${4*px}   # as the other Settings headers
+            align: TOP_LEFT
+            x: ${32*px}
+        - obj:
+            id: vt_settings_card
+            align: TOP_MID
+            width: ${448*px}
+            height: ${112*px}
+            styles: card
+            clickable: false
+            scrollable: false
+            scrollbar_mode: "off"
+            widgets:
+              - label:
+                  text: "Reply volume"
+                  align: TOP_LEFT
+                  x: ${16*px}
+                  y: ${17*px//1}
+              - label:
+                  id: lbl_vt_volume
+                  text: ""
+                  text_color: ${c_text_2}
+                  align: TOP_RIGHT
+                  x: -${16*px}
+                  y: ${17*px//1}
+              - slider:
+                  id: slider_vt_volume
+                  align: BOTTOM_MID
+                  y: -${14*px}
+                  width: ${416*px}
+                  height: ${44*px}
+                  min_value: 0
+                  max_value: 100
+                  value: 50
+                  bg_color: ${c_surface_2}
+                  radius: ${14*px}
+                  indicator:
+                    radius: ${14*px}
+                  on_value:
+                    - lambda: |-
+                        char buf[8];
+                        snprintf(buf, sizeof(buf), "%d%%", (int) x);
+                        lv_label_set_text(id(lbl_vt_volume), buf);
+                  on_release:
+                    - media_player.volume_set:
+                        id: panel_media_player
+                        volume: !lambda "return x / 100.0f;"
     # Holding page (never shown): the button goes into the status bar at boot
     - id: holding_voice_tap
       skip: true

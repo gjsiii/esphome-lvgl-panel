@@ -415,3 +415,19 @@ ACT=2; { head; status "8:42pm" "" "#8E8E93"
  echo '<circle cx="240" cy="348" r="32" fill="#F2F2F7"/><g fill="#000"><rect x="228" y="334" width="8" height="28" rx="2"/><rect x="244" y="334" width="8" height="28" rx="2"/></g>'
  echo '<text x="36" y="410" fill="#8E8E93" font-size="18" text-anchor="middle">🔈</text><rect x="66" y="391" width="400" height="28" rx="14" fill="#1C1C1E"/><rect x="66" y="391" width="140" height="28" rx="14" fill="#F2F2F7"/>'
  tabs Lights TV Music Favorites; foot; } > $O/music-lyrics.svg
+
+# ── Remote: Settings, scrolled to the sections added for the remote ────────
+toggle() { # x y on
+  if [ "$3" = 1 ]; then echo "<rect x=\"$1\" y=\"$2\" width=\"52\" height=\"30\" rx=\"15\" fill=\"#F2F2F7\"/><circle cx=\"$(( $1 + 37 ))\" cy=\"$(( $2 + 15 ))\" r=\"12\" fill=\"#000\"/>"
+  else echo "<rect x=\"$1\" y=\"$2\" width=\"52\" height=\"30\" rx=\"15\" fill=\"#39393D\"/><circle cx=\"$(( $1 + 15 ))\" cy=\"$(( $2 + 15 ))\" r=\"12\" fill=\"#FFF\"/>"; fi; }
+row() { # y label on [divider-above]
+  [ -n "$4" ] && echo "<rect x=\"32\" y=\"$(( $1 - 17 ))\" width=\"432\" height=\"1\" fill=\"#38383A\"/>"
+  echo "<text x=\"32\" y=\"$(( $1 + 6 ))\" fill=\"#FFF\" font-size=\"16\">$2</text>"; toggle 396 $(( $1 - 14 )) $3; }
+{ phead; hdr Settings
+ sec 32 92 HOLIDAYS; echo '<rect x="16" y="102" width="448" height="92" rx="14" fill="#1C1C1E"/>'; row 129 "Holiday theme" 1
+ echo '<text x="32" y="166" fill="#8E8E93" font-size="13">Holiday colours, an icon by the clock and night-clock decorations</text><text x="32" y="183" fill="#8E8E93" font-size="13">on Halloween, Christmas, Valentine’s and St. Patrick’s Day.</text>'
+ sec 32 232 OPTIONS; echo '<rect x="16" y="242" width="448" height="270" rx="14" fill="#1C1C1E"/>'
+ row 269 "24-hour clock" 0; row 323 "Auto-open TV &amp; Music" 1 d; row 377 "Messages wake at full brightness" 0 d; row 431 "Lock settings with PIN" 0 d; row 485 "Swipe between tabs" 0 d
+ sec 32 550 BATTERY; echo '<rect x="16" y="560" width="448" height="108" rx="14" fill="#1C1C1E"/><text x="32" y="593" fill="#FFF" font-size="16">Battery</text><text x="448" y="593" fill="#8E8E93" font-size="16" text-anchor="end">82% · Charging</text><rect x="32" y="614" width="432" height="1" fill="#38383A"/><text x="240" y="647" fill="#F2F2F7" font-size="16" text-anchor="middle">Go to standby now</text>'
+ sec 32 706 VOICE; echo '<rect x="16" y="716" width="448" height="84" fill="#1C1C1E"/><rect x="16" y="716" width="448" height="30" rx="14" fill="#1C1C1E"/><text x="32" y="749" fill="#FFF" font-size="16">Reply volume</text><text x="448" y="749" fill="#8E8E93" font-size="16" text-anchor="end">60%</text>'
+ foot; } > $O/remote-settings.svg

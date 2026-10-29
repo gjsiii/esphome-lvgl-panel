@@ -25,6 +25,29 @@ substitutions:
 
 globals:
   # Set at the end of boot; settings only touch widgets after this
+  # settings_insert(header, card, before): a feature's Settings section (a
+  # header label and a card, built on a holding page) goes in just above the
+  # `before` header (settings_options_hdr or settings_about_hdr, core/ui.yaml);
+  # everything from there down moves down to make room. Call it at boot
+  # (priority -305); sections inserted before the same header stack in the
+  # order they are inserted, the last one lowest.
+  - id: settings_insert
+    type: std::function<void(lv_obj_t *, lv_obj_t *, lv_obj_t *)>
+    initial_value: |-
+      [](lv_obj_t *hdr, lv_obj_t *card, lv_obj_t *before) {
+        const int32_t at = lv_obj_get_style_y(before, LV_PART_MAIN);
+        const int32_t shift = ${(22*px)|int} + lv_obj_get_style_height(card, LV_PART_MAIN) + ${(16*px)|int};
+        uint32_t n = lv_obj_get_child_cnt(id(settings_panel));
+        for (uint32_t k = 0; k < n; k++) {
+          lv_obj_t *c = lv_obj_get_child(id(settings_panel), k);
+          int32_t y = lv_obj_get_style_y(c, LV_PART_MAIN);
+          if (y >= at) lv_obj_set_y(c, y + shift);
+        }
+        lv_obj_set_parent(hdr, id(settings_panel));
+        lv_obj_set_parent(card, id(settings_panel));
+        lv_obj_set_y(hdr, at);
+        lv_obj_set_y(card, at + ${(22*px)|int});
+      }
   - id: ui_ready
     type: bool
     initial_value: "false"
@@ -281,8 +304,10 @@ switch:
     restore_mode: RESTORE_DEFAULT_OFF
     on_turn_on:
       - script.execute: apply_tab_swipe
+      - script.execute: sync_settings_ui
     on_turn_off:
       - script.execute: apply_tab_swipe
+      - script.execute: sync_settings_ui
 
   # Messages from HA wake the screen to the Settings brightness (on) or to
   # the dim level (off)
@@ -480,6 +505,8 @@ script:
                 else lv_obj_clear_state(id(lv_sw_auto_media), LV_STATE_CHECKED);
                 if (id(sw_msg_full).state) lv_obj_add_state(id(lv_sw_msg_full), LV_STATE_CHECKED);
                 else lv_obj_clear_state(id(lv_sw_msg_full), LV_STATE_CHECKED);
+                if (id(sw_tab_swipe).state) lv_obj_add_state(id(lv_sw_tab_swipe), LV_STATE_CHECKED);
+                else lv_obj_clear_state(id(lv_sw_tab_swipe), LV_STATE_CHECKED);
 
   # Go to sleep: a blank screen (backlight off, LVGL paused) or the night
   # clock. The clock is used at night, when Sleep Screen is Clock or Red

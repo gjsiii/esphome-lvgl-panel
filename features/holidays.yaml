@@ -52,8 +52,10 @@ switch:
     restore_mode: RESTORE_DEFAULT_OFF
     on_turn_on:
       - script.execute: holiday_check
+      - lambda: "lv_obj_add_state(id(lv_sw_holiday), LV_STATE_CHECKED);"
     on_turn_off:
       - script.execute: holiday_check
+      - lambda: "lv_obj_clear_state(id(lv_sw_holiday), LV_STATE_CHECKED);"
 
 select:
   - platform: template
@@ -96,6 +98,12 @@ esphome:
             // Night clock recolour (red at night): the drifting icons follow
             id(night_clock_hook) = [](bool red) { id(holiday_colors)->execute(red); };
         - script.execute: holiday_check
+    # Settings → Holidays: a section above OPTIONS
+    - priority: -305
+      then:
+        - lambda: |-
+            id(settings_insert)(id(holiday_settings_header), id(holiday_settings_card), id(settings_options_hdr));
+            if (id(sw_holiday).state) lv_obj_add_state(id(lv_sw_holiday), LV_STATE_CHECKED);
 
 interval:
   # The date (and so the countdown) changes once a day; checking each minute
@@ -265,3 +273,52 @@ font:
     size: ${40*px}
     bpp: 4
     glyphs: ["\U000F0B5F", "\U000F02A0", "\U000F0717", "\U000F02D1", "\U000F0816"] # bat, ghost, snowflake, heart, clover
+
+lvgl:
+  pages:
+    # Holding page (never shown): Settings → Holidays, moved in at boot
+    - id: holding_holiday_settings
+      skip: true
+      widgets:
+        - label:
+            id: holiday_settings_header
+            text: "HOLIDAYS"
+            styles: section_header
+            translate_y: -${4*px}   # as the other Settings headers
+            align: TOP_LEFT
+            x: ${32*px}
+        - obj:
+            id: holiday_settings_card
+            align: TOP_MID
+            width: ${448*px}
+            height: ${92*px}
+            styles: card
+            clickable: false
+            scrollable: false
+            scrollbar_mode: "off"
+            widgets:
+              - label:
+                  text: "Holiday theme"
+                  align: TOP_LEFT
+                  x: ${16*px}
+                  y: ${17*px//1}
+              - switch:
+                  id: lv_sw_holiday
+                  align: TOP_RIGHT
+                  x: -${16*px}
+                  y: ${12*px}
+                  width: ${52*px}
+                  height: ${30*px}
+                  on_click:
+                    - lambda: |-
+                        if (lv_obj_has_state(id(lv_sw_holiday), LV_STATE_CHECKED)) id(sw_holiday).turn_on();
+                        else id(sw_holiday).turn_off();
+              - label:
+                  text: "Holiday colours, an icon by the clock and night-clock decorations on Halloween, Christmas, Valentine's and St. Patrick's Day."
+                  text_font: font_small
+                  text_color: ${c_text_2}
+                  long_mode: WRAP
+                  width: ${416*px}
+                  align: TOP_LEFT
+                  x: ${16*px}
+                  y: ${50*px}

@@ -34,8 +34,12 @@ A hardware package of your own needs `screen_h: 480` in its substitutions.
 - **Volume − / + step 2%** on the Music and TV tabs (`music_volume_step`,
   `tv_volume_step`). The TV keys now set the level, so quick taps add up,
   whatever the speaker's own step.
-- **Swipe Between Tabs** (HA switch, off by default): a sideways slip while
-  setting a slider no longer changes tabs.
+- **Swipe Between Tabs** (Settings → Options and HA, off by default): a
+  sideways slip while setting a slider no longer changes tabs.
+- **Settings:** a *Holidays* section with the **Holiday theme** switch
+  (panels with holiday themes), and on the remote *Battery* (level, Go to
+  standby now) and *Voice* (Reply volume). Features add their sections with
+  `settings_insert` (`core/settings.yaml`) instead of fixed positions.
 - **Music Assistant favorites, recently played first** within each category
   (`fav_order` in the package). Artwork only from Music Assistant, Spotify,
   Apple Music and SiriusXM; other sites show the music note (a radio
