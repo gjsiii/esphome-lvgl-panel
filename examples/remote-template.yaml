@@ -1,0 +1,114 @@
+# Example display file for the handheld remote (Guition JC4880P443, 4.3"
+# 480x800, battery) — copy into your Home Assistant's /config/esphome/,
+# rename it to match the device name, and edit everything marked ◀.
+# Delete any feature, tab or item you don't want; all are optional except
+# the hardware and core files.
+#
+# Full guide: docs/getting-started.md · the remote: docs/features.md#handheld-remote
+# Every option: docs/display-file.md
+#
+# After adopting the remote in Home Assistant, open the ESPHome integration's
+# options for it and turn on "Allow the device to perform Home Assistant
+# actions" — otherwise its buttons, lyrics and voice do nothing.
+
+substitutions:
+  # ── Connection (put the values in secrets.yaml) ──────────────────────────
+  api_key: !secret living_room_remote_api_key          # ◀ 32-byte base64 key
+  wifi_ssid: !secret wifi_ssid
+  wifi_password: !secret wifi_password
+  ap_password: !secret living_room_remote_ap_password  # ◀ fallback hotspot, 8+ chars
+
+  # ── Site ─────────────────────────────────────────────────────────────────
+  ha_url: "http://homeassistant.local:8123"            # ◀ your HA address (for artwork)
+
+  # Board (see docs/display-file.md#hardware). The first boards sold have a
+  # pre-production chip (boot log "esp32p4-eco2"), which is the default:
+  # p4_engineering_sample: false   # only for a production (rev 3) chip
+
+esphome:
+  name: esp-living-room-remote                         # ◀ lowercase, digits, hyphens
+  friendly_name: Living Room Remote                    # ◀
+
+packages:
+  panel:
+    url: https://github.com/gjsiii/esphome-lvgl-panel
+    ref: v0.7.0                                        # ◀ release to build from
+    refresh: 1d
+    files:
+      # ── Board + core (always) ──────────────────────────────────────────
+      - hardware/guition-jc4880p443.yaml               # portrait layout, battery
+      - core/core.yaml
+
+      # ── Battery: level in the status bar, standby when left alone ──────
+      - features/battery.yaml
+      # or change when an untouched remote goes to standby (minutes):
+      # - path: features/battery.yaml
+      #   vars: { standby_after_min: "60" }
+
+      # ── Voice: "Voice Assistant" button (tap to talk, no wake word) ────
+      - features/voice_tap.yaml
+      # - path: features/voice_tap.yaml
+      #   vars: { voice_label: "Ask" }                # ◀ button text
+
+      # ── Status bar ─────────────────────────────────────────────────────
+      - path: features/weather.yaml                    # needs ha/panel_weather.yaml in HA
+        vars:
+          weather_entity: weather.home
+          forecast_entity: sensor.panel_weather_forecast
+      - path: features/climate.yaml
+        vars: { climate_entity: climate.living_room, climate_name: "Living Room" }   # ◀
+      - path: features/status_chip.yaml                # one per status icon (row 2)
+        vars:
+          chip_id: garage
+          slot: 1                                      # 1 = rightmost
+          entity: cover.garage_door                    # ◀
+          icon: "\U000F06DA"                           # mdi-garage-open
+          color: "0xFF9F0A"
+          show_when: "open,opening"
+          show_value: "false"
+
+      # ── Camera pop-ups (wake the remote; not while it's in standby) ────
+      - path: features/camera_popup.yaml               # one per trigger
+        vars:
+          popup_id: doorbell
+          title: "Doorbell"
+          trigger_entity: binary_sensor.front_doorbell_visitor   # ◀
+          camera_entity: camera.front_doorbell                   # ◀
+
+      # ── Lights tab ─────────────────────────────────────────────────────
+      - path: items/scene.yaml
+        vars: { slot: 1, name: "Evening", entity: scene.living_room_evening }   # ◀
+      - path: items/light.yaml
+        vars: { slot: 1, name: "Ceiling", entity: light.living_room_ceiling }   # ◀
+      - path: items/light.yaml
+        vars: { slot: 2, name: "Lamp", entity: light.living_room_lamp }         # ◀
+
+      # ── TV tab (Apple TV) ──────────────────────────────────────────────
+      - path: tabs/tv_appletv.yaml
+        vars:
+          tab_position: 2
+          tv_remote: remote.living_room_apple_tv              # ◀
+          tv_player: media_player.living_room_apple_tv        # ◀
+          tv_volume_player: media_player.living_room_speaker  # ◀ what − / + control
+          tv_mute_player: media_player.living_room_speaker    # ◀ what mute controls
+      - path: items/tv_app.yaml                        # optional: one per app on the Apps sheet
+        vars:
+          slot: 1
+          icon: ../www/tv_app_icons/netflix.svg        # ◀ your own white logo
+          source: "Netflix"                            # ◀ exactly as in the Apple TV source list
+          entity: media_player.living_room_apple_tv    # ◀
+
+      # ── Music tab with lyrics (needs ha/panel_lyrics.yaml) ─────────────
+      - path: tabs/music.yaml
+        vars:
+          tab_position: 3
+          music_player: media_player.living_room_speaker      # ◀ Music Assistant player works best
+      - path: items/speaker.yaml
+        vars: { slot: 1, name: "Kitchen", entity: media_player.kitchen_speaker, leader: media_player.living_room_speaker }   # ◀
+
+      # ── Favorites live from Music Assistant (needs ha/panel_ma_favorites.yaml)
+      - path: tabs/ma_favorites.yaml
+        vars:
+          tab_position: 4
+          music_player: media_player.living_room_speaker      # ◀
+          ma_url: "http://192.168.1.10:8095"                  # ◀ Music Assistant

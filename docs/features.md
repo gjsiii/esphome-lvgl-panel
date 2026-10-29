@@ -5,11 +5,13 @@ on in a display file. Display file snippets use the GitHub form (an entry in
 the `files:` list); see [Display file reference](display-file.md) for the
 local `!include` form and every option.
 
+- [Handheld remote](#handheld-remote)
 - [The status bar](#the-status-bar)
 - [Lights tab](#lights-tab)
 - [Light color sheet](#light-color-sheet)
 - [TV tab](#tv-tab)
 - [Music tab and Play on](#music-tab-and-play-on)
+- [Lyrics](#lyrics)
 - [Favorites tab](#favorites-tab)
 - [Favorites from Music Assistant](#favorites-from-music-assistant)
 - [Timer tab](#timer-tab)
@@ -22,6 +24,7 @@ local `!include` form and every option.
 - [Holiday themes](#holiday-themes)
 - [Sleep screen notes](#sleep-screen-notes)
 - [Voice](#voice)
+- [Tap-to-talk voice (handheld remote)](#tap-to-talk-voice-handheld-remote)
 - [Messages from Home Assistant](#messages-from-home-assistant)
 - [Settings](#settings)
 - [Screen dimming, sleep and the night clock](#screen-dimming-sleep-and-the-night-clock)
@@ -33,12 +36,79 @@ local `!include` form and every option.
 
 ---
 
+## Handheld remote
+
+| Lights | TV | Music | Lyrics |
+|:---:|:---:|:---:|:---:|
+| ![Remote: Lights](images/remote-lights.svg) | ![Remote: TV](images/remote-tv.svg) | ![Remote: Music](images/remote-music.svg) | ![Remote: Lyrics](images/remote-lyrics.svg) |
+
+The **Guition JC4880P443** (4.3″, 480×800, ESP32-P4 with a battery connector,
+speaker connector and built-in microphone) makes a battery-powered remote
+you hold in one hand. It runs the same tabs and features as the wall panels,
+in a **portrait layout** drawn for the tall screen:
+
+- **Status bar, two rows:** weather, indoor temperature, the time, Wi-Fi,
+  Settings and the **battery** on top; the **Voice Assistant** button and the
+  status icons below.
+- **Lights:** taller sliders; the scene area grows with the number of scenes.
+- **TV:** power top-left, show / episode / app and large artwork, a
+  **progress bar** between skip back and forward, the d-pad centred with
+  Apps, Home, Back and Play/Pause around it, and a wide volume pill.
+- **Music:** 320 px artwork (or the [lyrics](#lyrics)), Lyrics and Play on
+  either side of the title, the transport row, and volume − / slider / +
+  (the speaker icon inside the slider mutes).
+- **Favorites:** three full rows of tiles.
+- **Camera pop-ups** are centred on the tall screen, Dismiss within thumb
+  reach.
+
+Start from [`examples/remote-template.yaml`](../examples/remote-template.yaml)
+and see [Getting started](getting-started.md#the-handheld-remote) for the
+first install.
+
+### Battery, standby and charging
+
+```yaml
+- hardware/guition-jc4880p443.yaml
+- core/core.yaml
+- features/battery.yaml          # battery level, docked detection, standby
+```
+
+- **Battery level** at the right end of the status bar: a charging bolt while
+  on the charger, red at 15% or less, and a "Battery low" banner at 10%.
+  Home Assistant gets **Battery** (%), **Charging** and a **Standby** button.
+- **Screen off, still awake:** after *Turn off after* (Settings) the screen
+  goes dark but Wi-Fi stays up, so a tap wakes it instantly and camera
+  pop-ups still arrive.
+- **Standby:** after 2 hours without a touch (`standby_after_min`), or at 3%
+  battery, the remote turns off its screen, Wi-Fi and radio and sleeps. A
+  **tap on the screen** brings it back (it restarts: about 5 s to the screen,
+  10–15 s to Home Assistant). Docking it also wakes it, within about two
+  minutes. In standby nothing reaches it from Home Assistant (no pop-ups).
+  It never goes to standby while charging.
+- **Charging** is read from the battery voltage, as no charge signal reaches
+  the chip: a jump (or a steady climb) means it's charging. HA's **Charging**
+  sensor can lag a minute.
+- **Lifting it off a powered dock restarts it.** The board's charger chip
+  (IP5306) cuts its output for a moment when it switches from USB to the
+  battery; the screen is back in about 5 s. To avoid it most of the time,
+  power the dock from a smart plug and charge only when needed (see the
+  [automation](home-assistant.md#charging-the-remote-only-when-needed)).
+- **The power button** on the board (SW3) only switches the charger chip;
+  the firmware can't see it. Use it to start a remote whose battery ran flat.
+
+### Wi-Fi
+
+The board's antenna is small; keep the battery, speaker magnet and screws
+clear of it in a case. Below about −80 dBm (HA's *Wi-Fi Signal*) installs get
+slow and pictures load late.
+
 ## The status bar
 
 Left to right: **outside weather** (tap for the forecast), **indoor
 temperature** (tap for the thermostat), the **time**, **status icons**, the
 **microphone** (panels with [voice](#voice)), the **connection icon** and the
-**gear** (Settings).
+**gear** (Settings). On the [handheld remote](#handheld-remote) the status
+icons move to a second row, and the battery sits at the right end.
 
 - The connection icon is grey while Home Assistant is connected and turns
   **red (Wi-Fi off)** when HA isn't. Buttons don't work while it's red.
@@ -82,10 +152,12 @@ sliders the whole tab.
   vars: { slot: 2, name: "Fan", entity: fan.living_room }
 - path: items/cover.yaml                 # shade, blind or curtain
   vars: { slot: 3, name: "Shade", entity: cover.living_room_shade }
+- path: items/switch.yaml                # on/off only (switch, non-dimming light)
+  vars: { slot: 4, name: "Closet", entity: switch.closet_light }
 ```
 
 `slot` sets the order. Scene chips and action chips share one numbering;
-lights, fans and shades share another. With shades in the list you may want
+lights, fans, shades and switches share another. With shades in the list you may want
 the heading to say so: set `lights_title: "LIGHTS & SHADES"` in `substitutions`.
 
 > **Tip — scenes that span several systems.** If a room mixes Hue scenes and
@@ -128,8 +200,10 @@ Modeled on the iOS Remote app, for an Apple TV.
 - **Skip back / forward** either side of the volume pill.
 - **Volume − / mute / +** — can control a different device than the Apple TV
   (for example a Sonos soundbar), and mute can target yet another (the TV).
+  Each tap moves the volume 2% (`tv_volume_step`); quick taps add up.
 - **Now playing** (top left, only while playing or paused) — the show's
-  artwork, name and app.
+  artwork, name and app. On the [handheld remote](#handheld-remote) it is
+  larger, with the episode title and a progress bar.
 - **Apps** (optional) — opens a sheet of large round app-logo buttons, four
   per row (twelve fit; more scroll). Tap one to open the app on the Apple TV;
   the sheet closes. Without app items the Apps button is hidden.
@@ -178,9 +252,10 @@ artwork, shuffle/repeat and grouping are all reliable).
   **repeat** (cycles off → all → one) on the right; shuffle and repeat light
   up white when active.
 - **Volume − / +** either side of **Play-Pause**: each tap moves to the next
-  5% (`music_volume_step` substitution). Below them, **mute** and a
+  2% (`music_volume_step` substitution). Below them, **mute** and a
   full-width **volume slider** that follows the speaker.
 - **Play on** (speaker icon, top right) — opens a list of other speakers.
+- **Lyrics** (top left, where turned on) — see [Lyrics](#lyrics).
 
 ![Play on](images/play-on.svg)
 
@@ -200,6 +275,43 @@ player as the leader.
 ```
 
 No `speaker` items → no Play on button.
+
+## Lyrics
+
+| Handheld remote | Square panel |
+|:---:|:---:|
+| ![Lyrics on the remote](images/remote-lyrics.svg) | ![Lyrics on a square panel](images/music-lyrics.svg) |
+
+The Music tab can show the words of the song playing. When a song starts the
+panel asks Home Assistant, which looks them up on
+[LRCLIB](https://lrclib.net) — the free lyrics database Music Assistant uses
+— by artist, title, album and length. No account or key is needed, and it
+works for any player.
+
+- The **Lyrics** button (top left of the Music tab) lights up when lyrics
+  were found. Tap it to swap the artwork for the lyrics; tap the lyrics (or
+  the button) to go back.
+- **Synced lyrics** follow the song: the current line is large and white in
+  the middle. Lyrics without timestamps show as text you scroll.
+- **Lyrics Delay** (HA, the panel's device page → Configuration): speakers
+  such as Sonos play a few seconds behind the position Music Assistant
+  reports, so the words run early. Set the delay once per panel (−5 to
+  +10 s in half seconds). A song can still be a second off when LRCLIB's
+  timing is for another version of the track.
+- **Square panels:** the lyrics (five lines) take the place of the artwork
+  and the buttons beside it; title, progress, play/pause and volume stay.
+
+```yaml
+- path: tabs/music.yaml
+  vars:
+    tab_position: 3
+    music_player: media_player.living_room
+    music_lyrics: "true"     # default "auto": on for the remote, off for square panels
+```
+
+Needs `ha/panel_lyrics.yaml` in Home Assistant (see [Home Assistant
+side](home-assistant.md#packages-to-install)). The lyrics are kept in PSRAM,
+so they're safe on the 480×480 boards too.
 
 ## Favorites tab
 
@@ -251,10 +363,16 @@ wait until then, so a second tap can't queue a second reload.
   restarts.
 - **Refresh** (the circular arrow) re-reads the list now; it is also re-read
   every 15 minutes.
-- Up to 36 favorites, in the order playlists, radio, albums, artists.
+- Up to 36 favorites, in the order playlists, radio, albums, artists;
+  **recently played first** within each (Music Assistant keeps the play
+  history; `fav_order` in `panel_ma_favorites.yaml` can make it most played
+  or A–Z).
 - Artwork is downloaded once, one tile at a time, when the list changes
   (expect a few seconds of slightly jerky scrolling after a restart). JPEG and
-  PNG artwork are shown; anything else keeps the music-note placeholder.
+  PNG artwork from Music Assistant, Spotify, Apple Music and SiriusXM are
+  shown; other sites (a radio station's own logo) keep the music-note
+  placeholder, because a server that doesn't say how big a picture is can
+  leave the panel's download hanging.
 
 Needs the `panel_ma_favorites.yaml` package in Home Assistant (see
 [Home Assistant side](home-assistant.md#packages-to-install)); update it
@@ -476,7 +594,10 @@ panel wakes and shows that camera, refreshing every few seconds. It closes on
     camera_entity: camera.front_doorbell
 ```
 
-Include it once per trigger. Snapshots come through Home Assistant's camera
+Include it once per trigger. On the [handheld remote](#handheld-remote) the
+pop-up is centred on the tall screen
+([picture](images/remote-camera.svg)); it doesn't arrive while the remote is
+in standby. Snapshots come through Home Assistant's camera
 proxy (so `ha_url` must be right). Pick the camera entity that answers
 fastest: with **Frigate**, its own camera entity (e.g. `camera.front_doorbell`)
 hands over the latest frame in about 10 ms, while a Reolink doorbell entity
@@ -589,6 +710,30 @@ what it heard and the answer, and speaks the reply. Tap anywhere (or
 Set up Assist in Home Assistant first (Settings → Voice assistants). See
 [Home Assistant side](home-assistant.md#voice) for the entities.
 
+## Tap-to-talk voice (handheld remote)
+
+![Tap-to-talk voice](images/remote-voice.svg)
+
+The remote has a microphone but no wake word: listening all the time would
+drain the battery. Instead, tap **Voice Assistant** (left end of the status
+bar's second row) and talk.
+
+- **Listening…** (white mic, the button turns red) → **Hearing you…** (green,
+  once your voice is detected) → **Thinking…** with what it heard →
+  **Replying** with the answer, which is also spoken.
+- Home Assistant ends the request when you stop talking; tap the button
+  again, or anywhere on the overlay, to cancel.
+- If Home Assistant doesn't start listening within 8 seconds, the overlay
+  says so in red (see [Troubleshooting](troubleshooting.md#voice-stays-on-starting)).
+- Reply volume: the remote's **Panel Speaker** media player in HA.
+
+```yaml
+- features/voice_tap.yaml
+# or with your own button text:
+- path: features/voice_tap.yaml
+  vars: { voice_label: "Ask" }
+```
+
 ## Messages from Home Assistant
 
 ![Message banner](images/message.svg)
@@ -641,6 +786,7 @@ Assistant (device page → Configuration), so you can change panels remotely.
 | | **Auto-open TV & Music** | Bring up the TV or Music tab when playback starts. |
 | | **Messages wake at full brightness** | Off: messages wake a sleeping panel dimly. On: to your brightness. |
 | | **Lock settings with PIN** | See [PIN lock](#pin-lock). |
+| (HA only) | **Swipe Between Tabs** | Off by default: a sideways slip while setting a slider would change tabs. Turn it on to swipe left and right between tabs; the tab bar always works. |
 | Voice | **Wake word**, **Mute wake word**, **Reply volume** | Panels with [voice](#voice) only. |
 | About | | See [About and restart](#about-and-restart). |
 

@@ -25,6 +25,13 @@ each panel keeps its own rooms, lights, speakers and TV.
 |:---:|:---:|:---:|:---:|
 | ![Apps sheet](docs/images/tv-apps.svg) | ![Marine forecast](docs/images/marine.svg) | ![Light color sheet](docs/images/light-sheet.svg) | ![Sleep note](docs/images/sleep-note.svg) |
 
+**The handheld remote** (4.3″ portrait, battery) — the same tabs, laid out
+for one hand:
+
+| Lights | TV | Music | Lyrics |
+|:---:|:---:|:---:|:---:|
+| ![Remote: Lights](docs/images/remote-lights.svg) | ![Remote: TV](docs/images/remote-tv.svg) | ![Remote: Music](docs/images/remote-music.svg) | ![Remote: Lyrics](docs/images/remote-lyrics.svg) |
+
 *Illustrations drawn to the panel's real layout and colors; photos welcome.*
 
 ## What it does
@@ -37,9 +44,13 @@ each panel keeps its own rooms, lights, speakers and TV.
 - **Music** — Now Playing for a Music Assistant or Sonos speaker: artwork,
   progress, play/pause, shuffle, repeat, volume − / + buttons and a full-width
   slider, and **Play on** to group other speakers.
+- **Lyrics** — the words of the song playing, following along line by line
+  (from [LRCLIB](https://lrclib.net) through Home Assistant; no account
+  needed).
 - **Favorites** — a grid of playlists and stations, one tap to play: a few
   hand-picked tiles, or your Music Assistant favorites,
-  live, with Playlists / Radio / Albums / Artists chips.
+  live and recently played first, with Playlists / Radio / Albums / Artists
+  chips.
 - **Timer** — on the Waveshare P4 panel: preset and custom timers, and timers
   set by voice, with a chime when time's up.
 - **Status bar** — time, outside weather, indoor temperature, small status
@@ -54,7 +65,10 @@ each panel keeps its own rooms, lights, speakers and TV.
   appears.
 - **Voice** — on the Waveshare P4 panel, say "Okay Nabu" and ask Home
   Assistant's Assist; the panel shows what it heard and speaks the answer.
-  A mic icon in the status bar mutes it.
+  A mic icon in the status bar mutes it. On the handheld remote, tap
+  **Voice Assistant** and talk.
+- **Handheld remote** — a battery-powered portrait version: battery level,
+  tap to wake, standby when left alone, gate and doorbell pop-ups.
 - **Messages** — Home Assistant automations can put a banner on any panel
   ("Washer done", "Mail arrived").
 - **Holiday themes** — Halloween, Christmas, Valentine's Day and St. Patrick's
@@ -76,11 +90,13 @@ favorites, status icons) has as many entries as a room needs.
 |---|---|
 | Guition ESP32-S3-4848S040 (4″, 480×480, ST7701S display, GT911 touch, 16 MB flash, 8 MB PSRAM) | `hardware/guition-4848s040.yaml` |
 | Waveshare ESP32-P4-WIFI6-Touch-LCD-4B (4″, 720×720 MIPI-DSI, GT911 touch, Wi-Fi 6, speaker + 2 mics, 32 MB flash, 32 MB PSRAM, 86 mm wall box) | `hardware/waveshare-esp32-p4-86-4b.yaml` |
+| Guition JC4880P443C_I_W (4.3″, 480×800 portrait MIPI-DSI, GT911 touch, ESP32-P4 + C6 Wi-Fi 6, battery connector, speaker connector + mic, 16 MB flash, 32 MB PSRAM) — the handheld remote | `hardware/guition-jc4880p443.yaml` |
 
 The design is drawn once and scaled to each board: the 720×720 panel looks
-the same as the 480×480 one, only sharper.
+the same as the 480×480 one, only sharper. The 480×800 board gets its own
+portrait layout.
 
-Requires ESPHome **2026.9.0** or newer and Home Assistant with the ESPHome
+Requires ESPHome **2026.10.0** or newer and Home Assistant with the ESPHome
 integration. Music features work best with
 [Music Assistant](https://music-assistant.io/).
 
@@ -99,7 +115,9 @@ integration. Music features work best with
 ## Quick start
 
 1. Flash nothing yet — first copy [`examples/display-template.yaml`](examples/display-template.yaml)
-   into your Home Assistant's `/config/esphome/` and fill in the lines marked ◀.
+   (or [`examples/remote-template.yaml`](examples/remote-template.yaml) for
+   the handheld remote) into your Home Assistant's `/config/esphome/` and
+   fill in the lines marked ◀.
 2. Add the secrets it names to `/config/esphome/secrets.yaml`.
 3. Copy [`ha/panel_weather.yaml`](ha/panel_weather.yaml) and
    [`ha/panel_messages.yaml`](ha/panel_messages.yaml) (and optionally

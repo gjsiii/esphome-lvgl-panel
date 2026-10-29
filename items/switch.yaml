@@ -1,0 +1,76 @@
+# Item: one on/off row on the Lights tab (same look as a light slider).
+#
+# Include once per switch; `slot` shares the light slots (order in the list)
+# and must not repeat a light's slot.
+#   switch_6: !include { file: panel/items/switch.yaml, vars: { slot: 6, name: "Closet Light", entity: switch.closet_light } }
+#
+# For anything that only turns on and off (switch, input_boolean, a light
+# that doesn't dim). Tap anywhere on the row to toggle; the bar fills when on.
+
+esphome:
+  on_boot:
+    - priority: -20${slot}
+      then:
+        - lambda: "lv_obj_set_parent(id(light_row_${slot}), id(lights_list));"
+
+binary_sensor:
+  - platform: homeassistant
+    id: switch_state_${slot}
+    entity_id: ${entity}
+    on_state:
+      - lvgl.slider.update:
+          id: light_slider_${slot}
+          value: !lambda "return x ? 1 : 0;"
+      - lvgl.label.update:
+          id: light_pct_${slot}
+          text: !lambda 'return std::string(x ? "On" : "Off");'
+      - script.execute: update_slider_labels
+
+lvgl:
+  pages:
+    - id: holding_switch_${slot}
+      skip: true
+      widgets:
+        - obj:
+            id: light_row_${slot}
+            width: ${440*px}
+            height: ${ (64 if screen_h > 480 else 56)*px }   # portrait: taller for thumbs
+            styles: transparent
+            scrollbar_mode: "off"
+            widgets:
+              # Display only: 0 = off, 1 = full bar
+              - slider:
+                  id: light_slider_${slot}
+                  width: 100%
+                  height: 100%
+                  min_value: 0
+                  max_value: 1
+                  value: 0
+                  clickable: false
+              - label:
+                  text: "${name}"
+                  text_color: ${c_text_2}
+                  align: LEFT_MID
+                  x: ${18*px}
+              - label:
+                  id: light_pct_${slot}
+                  text: "Off"
+                  text_color: ${c_text_2}
+                  align: RIGHT_MID
+                  x: -${18*px}
+              # Whole row toggles. Last child, so it sits on top.
+              - button:
+                  id: light_toggle_${slot}
+                  width: 100%
+                  height: 100%
+                  radius: ${16*px}
+                  bg_opa: TRANSP
+                  pad_all: 0
+                  pressed:
+                    bg_color: ${c_text}
+                    bg_opa: 15%
+                  on_click:
+                    - homeassistant.action:
+                        action: homeassistant.toggle
+                        data:
+                          entity_id: ${entity}

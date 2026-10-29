@@ -297,3 +297,121 @@ cake() { # cx cy color
  echo '<text x="192" y="320" fill="#FFF" font-size="20" font-weight="600">esphome-lvgl-panel</text><text x="192" y="348" fill="#8E8E93" font-size="16">https://github.com/gjsiii/</text><text x="192" y="367" fill="#8E8E93" font-size="16">esphome-lvgl-panel</text>'
  echo '<text x="192" y="391" fill="#8E8E93" font-size="16">Scan for the code, setup guides</text><text x="192" y="410" fill="#8E8E93" font-size="16">and updates.</text><text x="192" y="437" fill="#30D158" font-size="16" font-weight="500">Version 0.4.0  ·  v0.5.0 available</text>'
  foot; } > $O/about.svg
+
+# ═══ Portrait (480x800, the handheld remote: hardware/guition-jc4880p443.yaml) ═══
+phead() { echo "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"480\" height=\"800\" viewBox=\"0 0 480 800\" $F>"; echo '<rect width="480" height="800" rx="18" fill="#000"/>'; }
+batt() { echo "<text x=\"$(( $1 - 20 ))\" y=\"$(( $2 + 6 ))\" fill=\"#FFF\" font-size=\"16\" font-weight=\"500\" text-anchor=\"end\">82%</text><g transform=\"translate($1 $2)\"><rect x=\"-13\" y=\"-7\" width=\"24\" height=\"14\" rx=\"3.5\" fill=\"none\" stroke=\"#FFF\" stroke-width=\"1.8\"/><rect x=\"12.5\" y=\"-2.5\" width=\"2.5\" height=\"5\" rx=\"1\" fill=\"#FFF\"/><rect x=\"-10.5\" y=\"-4.5\" width=\"16\" height=\"9\" rx=\"1.5\" fill=\"#FFF\"/></g>"; }
+garage() { echo "<g transform=\"translate($1 $2)\" fill=\"none\" stroke=\"#FF9F0A\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M-10 -2L0 -9L10 -2V9H-10Z\"/><path d=\"M-6 3h12M-6 6h12\"/></g>"; }
+mic() { # cx cy scale color
+  echo "<g transform=\"translate($1 $2) scale($3)\"><rect x=\"-4.5\" y=\"-11\" width=\"9\" height=\"14\" rx=\"4.5\" fill=\"$4\"/><path d=\"M-8 -1a8 8 0 0 0 16 0\" fill=\"none\" stroke=\"$4\" stroke-width=\"1.8\" stroke-linecap=\"round\"/><rect x=\"-0.9\" y=\"7\" width=\"1.8\" height=\"4.5\" fill=\"$4\"/></g>"; }
+pstatus() { # row 1 as on the square panels + battery far right; row 2: Voice Assistant button, status chips
+  sun 24 20; echo '<text x="38" y="27" fill="#FFF" font-size="20" font-weight="600">70°</text>'
+  house 106 20 "#8E8E93"; echo '<text x="124" y="27" fill="#FFF" font-size="20" font-weight="600">72°</text>'
+  echo '<text x="240" y="28" fill="#FFF" font-size="22" font-weight="600" text-anchor="middle">8:42pm</text>'
+  wifi 334 21; gear 370 20; batt 456 20
+  echo '<rect x="12" y="44" width="180" height="32" rx="16" fill="#1C1C1E"/>'; mic 34 60 0.9 "#FFF"; echo '<text x="48" y="66" fill="#FFF" font-size="16" font-weight="500">Voice Assistant</text>'
+  garage 420 60; boat 456 60 '#30D158'; }
+ptabs() { # active index, labels (64 px tab bar)
+  echo '<rect x="0" y="736" width="480" height="64" fill="#000"/><rect x="0" y="736" width="480" height="1" fill="#38383A"/>'
+  local i=0 n=$#; local w=$(( 460 / n ))
+  for t in "$@"; do local x=$((10 + i*w));
+    if [ $i -eq $ACT ]; then echo "<rect x=\"$((x+3))\" y=\"744\" width=\"$((w-6))\" height=\"48\" rx=\"14\" fill=\"#2C2C2E\"/>"; c="#FFF"; else c="#8E8E93"; fi
+    echo "<text x=\"$((x + w/2))\" y=\"774\" fill=\"$c\" font-size=\"16\" font-weight=\"500\" text-anchor=\"middle\">$t</text>"; i=$((i+1)); done; }
+pslider() { # y name pct (64 tall)
+  local fw=$(( 440 * $3 / 100 ))
+  echo "<rect x=\"20\" y=\"$1\" width=\"440\" height=\"64\" rx=\"16\" fill=\"#1C1C1E\"/>"
+  [ $fw -gt 0 ] && echo "<rect x=\"20\" y=\"$1\" width=\"$fw\" height=\"64\" rx=\"16\" fill=\"#F2F2F7\"/>"
+  local nc="#8E8E93"; [ $fw -gt 150 ] && nc="#1C1C1E"; local pc="#8E8E93"; [ $fw -gt 420 ] && pc="#1C1C1E"
+  echo "<text x=\"40\" y=\"$(( $1 + 38 ))\" fill=\"$nc\" font-size=\"16\" font-weight=\"500\">$2</text><text x=\"440\" y=\"$(( $1 + 38 ))\" fill=\"$pc\" font-size=\"16\" font-weight=\"500\" text-anchor=\"end\">$3%</text>"; }
+pskip() { # cx cy dir(1 back, -1 fwd) radius
+  echo "<circle cx=\"$1\" cy=\"$2\" r=\"$4\" fill=\"#1C1C1E\"/><g transform=\"translate($1 $2) scale($3 1)\" fill=\"#FFF\"><path d=\"M-1 -8l-10 8 10 8z\"/><path d=\"M10 -8l-10 8 10 8z\"/></g>"; }
+spkmulti() { # cx cy color (mdi-speaker-multiple)
+  echo "<g transform=\"translate($1 $2)\" fill=\"none\" stroke=\"$3\" stroke-width=\"2\"><rect x=\"-3\" y=\"-12\" width=\"14\" height=\"22\" rx=\"3\"/><circle cx=\"4\" cy=\"3\" r=\"3.4\"/><circle cx=\"4\" cy=\"-6\" r=\"1.3\" fill=\"$3\" stroke=\"none\"/><path d=\"M-7 -9h-1.5a2.5 2.5 0 0 0 -2.5 2.5v14a2.5 2.5 0 0 0 2.5 2.5h10\" stroke-linecap=\"round\"/></g>"; }
+lyricsicon() { # cx cy color (mdi-playlist-music)
+  echo "<g transform=\"translate($1 $2)\" fill=\"none\" stroke=\"$3\" stroke-width=\"2.2\" stroke-linecap=\"round\"><path d=\"M-10 -7h16M-10 -1h16M-10 5h8\"/><path d=\"M8 0v9\"/><circle cx=\"5.5\" cy=\"9\" r=\"2.6\" fill=\"$3\" stroke=\"none\"/></g>"; }
+
+# ── Remote: Lights ──────────────────────────────────────────────────────────
+ACT=0; { phead; pstatus
+ sec 24 110 SCENES; chip 20 120 140 Daytime; chip 170 120 140 Bright; chip 320 120 140 Dim; chip 20 178 215 "Movie Lights"; chip 245 178 215 Off
+ sec 24 262 LIGHTS; y=272; for l in "Recessed Lights:0" "Chandelier:75" "Table Lamp:40" "Reading Lamp:100" "Bookshelf:0" "Shades:60"; do pslider $y "${l%%:*}" "${l##*:}"; y=$((y+76)); done
+ ptabs Lights TV Music Favorites; foot; } > $O/remote-lights.svg
+
+# ── Remote: TV (power top-left, art right, progress, centred d-pad) ─────────
+ACT=1; { phead; pstatus
+ echo '<circle cx="44" cy="118" r="26" fill="#1C1C1E"/><g transform="translate(44 118)" fill="none" stroke="#8E8E93" stroke-width="2.6" stroke-linecap="round"><path d="M-7 -7a10 10 0 1 0 14 0"/><path d="M0 -12v11"/></g>'
+ echo '<text x="20" y="180" fill="#FFF" font-size="20" font-weight="600">The Last of Us</text><text x="20" y="210" fill="#FFF" font-size="16">S2 E3 · The Path</text><text x="20" y="240" fill="#8E8E93" font-size="16">HBO Max</text>'
+ echo '<defs><linearGradient id="tvart" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4B6CB7"/><stop offset="1" stop-color="#182848"/></linearGradient></defs>'
+ echo '<rect x="292" y="92" width="168" height="168" rx="12" fill="url(#tvart)"/><text x="376" y="181" fill="#FFF" font-size="13" text-anchor="middle" opacity=".7">artwork</text>'
+ pskip 44 296 1 26; pskip 436 296 -1 26
+ echo '<rect x="84" y="290" width="312" height="5" rx="2.5" fill="#38383A"/><rect x="84" y="290" width="124" height="5" rx="2.5" fill="#F2F2F7"/>'
+ echo '<text x="84" y="318" fill="#8E8E93" font-size="13">18:42</text><text x="396" y="318" fill="#8E8E93" font-size="13" text-anchor="end">-28:15</text>'
+ echo '<circle cx="240" cy="468" r="128" fill="#1C1C1E"/><circle cx="240" cy="468" r="50" fill="#2C2C2E"/>'
+ echo '<g fill="none" stroke="#FFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M229 376l11-11 11 11"/><path d="M229 560l11 11 11-11"/><path d="M148 457l-11 11 11 11"/><path d="M332 457l11 11-11 11"/></g>'
+ echo '<circle cx="58" cy="388" r="32" fill="#1C1C1E"/><g fill="#FFF">'; for dx in -8 4; do for dy in -8 4; do echo "<rect x=\"$((58+dx-2))\" y=\"$((388+dy-2))\" width=\"9\" height=\"9\" rx=\"1.5\"/>"; done; done; echo '</g>'
+ echo '<circle cx="422" cy="388" r="32" fill="#1C1C1E"/>'; house 422 390 "#FFF"
+ round 58 548 32 "←" "#1C1C1E" "#FFF" 22
+ echo '<circle cx="422" cy="548" r="32" fill="#1C1C1E"/><g fill="#FFF"><path d="M407 537l13 11-13 11z"/><rect x="424" y="538" width="4" height="20" rx="1"/><rect x="432" y="538" width="4" height="20" rx="1"/></g>'
+ echo '<rect x="80" y="626" width="320" height="64" rx="32" fill="#1C1C1E"/><text x="133" y="667" fill="#FFF" font-size="30" text-anchor="middle">−</text><text x="347" y="667" fill="#FFF" font-size="30" text-anchor="middle">+</text>'
+ echo '<g transform="translate(240 658)" fill="#FFF"><path d="M-12 -5h5l7-6v22l-7-6h-5z"/><path d="M5 -6l10 12M15 -6l-10 12" stroke="#FFF" stroke-width="2.2" stroke-linecap="round"/></g>'
+ ptabs Lights TV Music Favorites; foot; } > $O/remote-tv.svg
+
+# ── Remote: Music (art view) and lyrics view ───────────────────────────────
+rmusic() { # $1 = art | lyrics
+ echo '<defs><linearGradient id="mart" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3A6073"/><stop offset="1" stop-color="#16222A"/></linearGradient></defs>'
+ if [ "$1" = art ]; then
+  echo '<rect x="80" y="96" width="320" height="320" rx="16" fill="url(#mart)"/><text x="240" y="262" fill="#FFF" font-size="14" text-anchor="middle" opacity=".7">album art</text>'
+ else
+  echo '<rect x="20" y="96" width="440" height="320" rx="16" fill="#1C1C1E"/>'
+  y=128; for l in "Down by the salley gardens:#48484A:16:500" "my love and I did meet;:#636366:16:500" "She passed the salley gardens:#8E8E93:16:500" "with little snow-white feet.:#FFF:20:600" "She bid me take love easy,:#8E8E93:16:500" "as the leaves grow on the tree;:#636366:16:500" "But I, being young and foolish,:#48484A:16:500"; do
+    IFS=: read t c sz w <<< "$l"; echo "<text x=\"240\" y=\"$y\" fill=\"$c\" font-size=\"$sz\" font-weight=\"$w\" text-anchor=\"middle\">$t</text>"; y=$((y+44)); done
+ fi
+ if [ "$1" = art ]; then lc="#FFF"; lb="none"; else lc="#000"; lb="#F2F2F7"; fi
+ [ "$lb" != none ] && echo "<circle cx=\"40\" cy=\"462\" r=\"22\" fill=\"$lb\"/>"; lyricsicon 40 462 "$lc"
+ spkmulti 438 462 "#8E8E93"
+ echo '<text x="240" y="452" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">The Salley Gardens</text><text x="240" y="480" fill="#8E8E93" font-size="16" text-anchor="middle">Liam O’Flynn</text>'
+ echo '<rect x="40" y="500" width="400" height="4" rx="2" fill="#38383A"/><rect x="40" y="500" width="150" height="4" rx="2" fill="#F2F2F7"/>'
+ echo '<text x="40" y="530" fill="#8E8E93" font-size="16">1:27</text><text x="440" y="530" fill="#8E8E93" font-size="16" text-anchor="end">3:51</text>'
+ echo '<g transform="translate(52 580)" fill="none" stroke="#FFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M-12 -6h5l12 12h7M-12 6h5l12-12h7M8 -10l4 4l-4 4M8 2l4 4l-4 4"/></g>'
+ echo '<g transform="translate(144 580)" fill="#FFF"><rect x="-13" y="-11" width="4" height="22" rx="1"/><path d="M11 -11L-7 0L11 11Z"/></g>'
+ echo '<circle cx="240" cy="580" r="38" fill="#F2F2F7"/><g fill="#000"><rect x="228" y="566" width="8" height="28" rx="2"/><rect x="244" y="566" width="8" height="28" rx="2"/></g>'
+ echo '<g transform="translate(336 580) scale(-1 1)" fill="#FFF"><rect x="-13" y="-11" width="4" height="22" rx="1"/><path d="M11 -11L-7 0L11 11Z"/></g>'
+ echo '<g transform="translate(428 580)" fill="none" stroke="#8E8E93" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M-10 2v-4a4 4 0 0 1 4-4h14M4 -10l4 4l-4 4M10 -2v4a4 4 0 0 1-4 4h-14M-4 10l-4-4l4-4"/></g>'
+ echo '<circle cx="40" cy="664" r="22" fill="#1C1C1E"/><rect x="31" y="662.5" width="18" height="3" rx="1.5" fill="#FFF"/>'
+ echo '<circle cx="440" cy="664" r="22" fill="#1C1C1E"/><rect x="431" y="662.5" width="18" height="3" rx="1.5" fill="#FFF"/><rect x="438.5" y="655" width="3" height="18" rx="1.5" fill="#FFF"/>'
+ echo '<rect x="76" y="648" width="328" height="32" rx="16" fill="#1C1C1E"/><rect x="76" y="648" width="210" height="32" rx="16" fill="#F2F2F7"/>'
+ echo '<g transform="translate(100 664)" fill="#8E8E93"><path d="M-9 -4h4l6-5v18l-6-5h-4z"/><path d="M5 -5a7 7 0 0 1 0 10" fill="none" stroke="#8E8E93" stroke-width="2" stroke-linecap="round"/></g>'
+}
+ACT=2; { phead; pstatus; rmusic art; ptabs Lights TV Music Favorites; foot; } > $O/remote-music.svg
+ACT=2; { phead; pstatus; rmusic lyrics; ptabs Lights TV Music Favorites; foot; } > $O/remote-lyrics.svg
+
+# ── Remote: tap-to-talk voice (speech detected) ─────────────────────────────
+{ phead
+ echo '<circle cx="240" cy="200" r="78" fill="none" stroke="#1C1C1E" stroke-width="5"/><path d="M240 122a78 78 0 0 1 75 56" fill="none" stroke="#F2F2F7" stroke-width="5" stroke-linecap="round"/>'
+ mic 240 200 2.6 "#30D158"
+ echo '<text x="240" y="335" fill="#30D158" font-size="20" font-weight="600" text-anchor="middle">Hearing you…</text>'
+ echo '<text x="240" y="378" fill="#8E8E93" font-size="16" text-anchor="middle">“Turn off the chandelier”</text>'
+ chip 150 696 180 Dismiss; foot; } > $O/remote-voice.svg
+
+# ── Remote: camera pop-up (centred on the tall screen) ─────────────────────
+{ phead; hdr "Doorbell" | sed 's/Done//'; echo '<text x="460" y="42" fill="#8E8E93" font-size="16" text-anchor="end">8:42pm</text>'
+ echo '<defs><linearGradient id="pcam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5D6D7E"/><stop offset="1" stop-color="#2C3E50"/></linearGradient></defs>'
+ echo '<rect x="16" y="306" width="448" height="252" rx="14" fill="url(#pcam)"/><text x="240" y="438" fill="#FFF" font-size="14" text-anchor="middle" opacity=".7">camera snapshot</text>'
+ echo '<text x="240" y="584" fill="#8E8E93" font-size="16" text-anchor="middle">Live · updates every 5 s</text>'
+ echo '<rect x="130" y="608" width="220" height="56" rx="28" fill="#2C2C2E"/><text x="240" y="643" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">Dismiss</text>'
+ foot; } > $O/remote-camera.svg
+
+# ── Lyrics on a square panel (music_lyrics: "true") ─────────────────────────
+ACT=2; { head; status "8:42pm" "" "#8E8E93"
+ # the card sits between the Lyrics button (left, lit) and Play on (right)
+ echo '<rect x="62" y="42" width="356" height="180" rx="14" fill="#1C1C1E"/>'
+ echo '<circle cx="32" cy="68" r="22" fill="#F2F2F7"/>'; lyricsicon 32 68 "#000"; spkmulti 442 68 "#8E8E93"
+ y=66; for l in "my love and I did meet;:#636366:15:500" "She passed the salley gardens:#8E8E93:15:500" "with little snow-white feet.:#FFF:19:600" "She bid me take love easy,:#8E8E93:15:500" "as the leaves grow on the tree;:#636366:15:500"; do
+   IFS=: read t c sz w <<< "$l"; echo "<text x=\"240\" y=\"$y\" fill=\"$c\" font-size=\"$sz\" font-weight=\"$w\" text-anchor=\"middle\">$t</text>"; y=$((y+36)); done
+ echo '<text x="240" y="251" fill="#FFF" font-size="20" font-weight="600" text-anchor="middle">The Salley Gardens</text><text x="240" y="276" fill="#8E8E93" font-size="16" text-anchor="middle">Liam O’Flynn</text>'
+ echo '<rect x="40" y="286" width="400" height="4" rx="2" fill="#38383A"/><rect x="40" y="286" width="150" height="4" rx="2" fill="#F2F2F7"/>'
+ echo '<text x="40" y="309" fill="#8E8E93" font-size="16">1:27</text><text x="440" y="309" fill="#8E8E93" font-size="16" text-anchor="end">3:51</text>'
+ vol() { echo "<g transform=\"translate($1 348)\" fill=\"#FFF\"><path d=\"M-15 -5h5l7-6v22l-7-6h-5z\"/><rect x=\"4\" y=\"-1.5\" width=\"12\" height=\"3\" rx=\"1\"/>$2</g>"; }
+ vol 128 ''; vol 352 '<rect x="8.5" y="-6" width="3" height="12" rx="1"/>'
+ echo '<circle cx="240" cy="348" r="32" fill="#F2F2F7"/><g fill="#000"><rect x="228" y="334" width="8" height="28" rx="2"/><rect x="244" y="334" width="8" height="28" rx="2"/></g>'
+ echo '<text x="36" y="410" fill="#8E8E93" font-size="18" text-anchor="middle">🔈</text><rect x="66" y="391" width="400" height="28" rx="14" fill="#1C1C1E"/><rect x="66" y="391" width="140" height="28" rx="14" fill="#F2F2F7"/>'
+ tabs Lights TV Music Favorites; foot; } > $O/music-lyrics.svg

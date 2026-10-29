@@ -981,7 +981,8 @@ lvgl:
                   id: music_lyrics_card
                   align: TOP_MID
                   y: ${ (16 if screen_h > 480 else 6)*px }
-                  width: ${440*px}
+                  # square: between the Lyrics and Play on corner buttons
+                  width: ${ (440 if screen_h > 480 else 356)*px }
                   height: ${ (320 if screen_h > 480 else 180)*px }
                   styles: card
                   radius: ${16*px}
@@ -995,13 +996,13 @@ lvgl:
                   widgets:
                     # Synced: seven fixed lines, the current one in the middle
                     # (square: the middle five)
-                    - label: { id: lyr_l0, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (14 if screen_h > 480 else 0)*px }" }
-                    - label: { id: lyr_l1, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (58 if screen_h > 480 else 6)*px }" }
-                    - label: { id: lyr_l2, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (102 if screen_h > 480 else 42)*px }" }
-                    - label: { id: lyr_l3, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (146 if screen_h > 480 else 78)*px }" }
-                    - label: { id: lyr_l4, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (194 if screen_h > 480 else 116)*px }" }
-                    - label: { id: lyr_l5, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (238 if screen_h > 480 else 152)*px }" }
-                    - label: { id: lyr_l6, text: "", width: "${400*px}", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (282 if screen_h > 480 else 180)*px }" }
+                    - label: { id: lyr_l0, text: "", width: "${ (400 if screen_h > 480 else 336)*px }", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (14 if screen_h > 480 else 0)*px }" }
+                    - label: { id: lyr_l1, text: "", width: "${ (400 if screen_h > 480 else 336)*px }", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (58 if screen_h > 480 else 6)*px }" }
+                    - label: { id: lyr_l2, text: "", width: "${ (400 if screen_h > 480 else 336)*px }", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (102 if screen_h > 480 else 42)*px }" }
+                    - label: { id: lyr_l3, text: "", width: "${ (400 if screen_h > 480 else 336)*px }", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (146 if screen_h > 480 else 78)*px }" }
+                    - label: { id: lyr_l4, text: "", width: "${ (400 if screen_h > 480 else 336)*px }", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (194 if screen_h > 480 else 116)*px }" }
+                    - label: { id: lyr_l5, text: "", width: "${ (400 if screen_h > 480 else 336)*px }", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (238 if screen_h > 480 else 152)*px }" }
+                    - label: { id: lyr_l6, text: "", width: "${ (400 if screen_h > 480 else 336)*px }", text_align: CENTER, long_mode: DOT, align: TOP_MID, y: "${ (282 if screen_h > 480 else 180)*px }" }
                     # Plain lyrics (no timestamps) or a note: scrolls
                     - label:
                         id: lyr_plain
@@ -1010,7 +1011,7 @@ lvgl:
                         text_color: ${c_text}
                         text_align: CENTER
                         long_mode: WRAP
-                        width: ${400*px}
+                        width: ${ (400 if screen_h > 480 else 336)*px }
                         align: TOP_MID
                         y: ${ (16 if screen_h > 480 else 8)*px }
                         pad_bottom: ${16*px}

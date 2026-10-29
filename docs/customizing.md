@@ -63,8 +63,27 @@ To find odd values missing `//1`:
 grep -rnE '\$\{[0-9]*[13579]\*px\}' --include=*.yaml .
 ```
 
-A new hardware package sets `px` (screen width ÷ 480) and `lvgl_buffer_size`
-in its `substitutions:`.
+A new hardware package sets `px` (screen width ÷ 480), `lvgl_buffer_size`
+and `screen_h` (screen height in the same 480-wide units: 480 for square
+screens, 800 for the 480×800 remote) in its `substitutions:`.
+
+### Portrait screens
+
+`screen_h > 480` selects the portrait layout. Shared files keep the square
+value and add the portrait one in the same place, so square panels build
+exactly as before:
+
+| Where | Write |
+|---|---|
+| A size or position | `y: ${ (260 if screen_h > 480 else 4)*px }` |
+| A negative value | `x: -${ (182 if screen_h > 480 else 114)*px }` (the minus outside, as above) |
+| A widget only portrait shows | `hidden: ${ 'false' if screen_h > 480 else 'true' }` |
+| C++ that only portrait runs | `if (${ 'true' if screen_h > 480 else 'false' }) { … }` |
+
+Two things don't work: a substitution derived from another one (such as
+`portrait: ${ screen_h > 480 }`, which becomes the text "False", and text
+counts as true), and a `!include` whose file name depends on `screen_h`
+(include names are resolved before the hardware file's substitutions).
 
 ## How the panel is put together
 

@@ -67,6 +67,12 @@ address (an IP rather than a cloud URL).
 - `ha_url` must be the address the **panel** can reach (usually
   `http://<HA IP>:8123`).
 - Some TV apps don't share artwork with HA — the corner stays empty.
+- **Artwork stopped changing everywhere on one panel:** a picture download
+  hung. Since v0.7 the panel aborts it after 12 s and logs
+  `Picture download stuck for 12 s, aborted: <address>` in HA's log, naming
+  the culprit; the next picture loads normally. (Typically a site that
+  doesn't say how big the picture is — the favorites package leaves such
+  artwork out.)
 
 ## Music Assistant favorites: empty tab, or a music note instead of artwork
 
@@ -143,6 +149,46 @@ Since v0.4.0 the Backlight is a configuration entity, which Assist leaves out,
 but Home Assistant keeps panels added earlier exposed: turn it off under
 Settings → Voice assistants → **Expose** (search "Backlight"). A tap brings
 the screen back.
+
+## Lyrics don't appear
+
+- `ha/panel_lyrics.yaml` isn't installed, or HA wasn't restarted after
+  installing it (its `rest_command`s need one). The panel logs
+  `Lyrics lookup failed (is ha/panel_lyrics.yaml installed?)`.
+- "Allow the device to perform Home Assistant actions" is off.
+- The song isn't in [LRCLIB](https://lrclib.net) — the lyrics card says *No
+  lyrics found for this song*. LRCLIB is sometimes briefly unavailable (HA
+  logs a 503 from `lrclib.net`); the next song tries again.
+- **They run early or late:** set **Lyrics Delay** on the panel's device
+  page (Sonos plays a few seconds behind; see [Lyrics](features.md#lyrics)).
+
+## Voice stays on "Starting…"
+
+The panel asked Home Assistant to listen, but HA didn't start. On the remote
+the overlay turns red after 8 s with *No answer from Home Assistant*.
+
+- Check the device page: **Assistant** names a pipeline and **Finished
+  speaking detection** has a value. If either shows *unavailable* (it
+  happens when a panel's firmware dropped voice and later got it back), HA's
+  voice code fails on it: **Settings → Devices & services → ESPHome → the
+  panel → ⋮ → Reload**.
+- "Allow the device to perform Home Assistant actions" must be on.
+
+## The remote restarts when I lift it off the dock
+
+The board's charger chip (IP5306) cuts its output for a moment while it
+switches from USB to the battery; *Reset Reason* shows "power-on event".
+It's the hardware, not the firmware. Charging only when needed, from a
+smart plug, avoids most of it — see [Charging the remote only when
+needed](home-assistant.md#charging-the-remote-only-when-needed).
+
+## The remote doesn't wake from standby
+
+- Tap the screen and wait 5–10 s: standby ends with a restart.
+- A remote whose battery ran flat needs the charger, or a short press of the
+  board's power button (SW3) once it has charge.
+- Updating firmware: wake it first; a remote in standby has Wi-Fi off and
+  can't be reached for an install.
 
 ## Voice doesn't respond
 

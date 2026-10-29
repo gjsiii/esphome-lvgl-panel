@@ -10,10 +10,13 @@ take a few minutes each.
   - **Waveshare ESP32-P4-WIFI6-Touch-LCD-4B**: 4″ 720×720, sharper and
     faster, with a speaker and microphones for [voice](features.md#voice).
     It fits a standard 86 mm wall box.
+  - **Guition JC4880P443C_I_W**: 4.3″ 480×800 portrait, for a
+    [handheld remote](features.md#handheld-remote) with a battery, speaker
+    and microphone. See [The handheld remote](#the-handheld-remote) below.
 - A **5 V USB power supply of at least 2 A** and a short, good-quality USB-C
   data cable. Thin or long cables cause brown-outs and random restarts.
 - **Home Assistant** with the **ESPHome Device Builder** add-on (or ESPHome
-  installed elsewhere) — version **2026.9.0 or newer**.
+  installed elsewhere) — version **2026.10.0 or newer**.
 - A computer with **Chrome or Edge** for the first (USB) install.
 - Optional but recommended: **Music Assistant**, for the Music tab, speaker
   grouping and favorites.
@@ -28,7 +31,7 @@ them from this repo into Home Assistant:
 | [`ha/panel_weather.yaml`](../ha/panel_weather.yaml) | `/config/packages/panel_weather.yaml` | `sensor.panel_weather_forecast` (hourly and daily forecast for the weather sheet) |
 | [`ha/panel_messages.yaml`](../ha/panel_messages.yaml) | `/config/packages/panel_messages.yaml` | `script.panel_message` (send a banner to one or more panels) |
 
-Optional features have their own package; see [Home Assistant side](home-assistant.md) (for example `ha/panel_marine.yaml` for the marine forecast).
+Optional features have their own package; see [Home Assistant side](home-assistant.md) (for example `ha/panel_marine.yaml` for the marine forecast, `ha/panel_lyrics.yaml` for [lyrics](features.md#lyrics), `ha/panel_ma_favorites.yaml` for Music Assistant favorites).
 
 If you don't use packages yet, add this to `configuration.yaml`:
 
@@ -130,6 +133,43 @@ Each display file names a release of this repository with `ref:`. To update:
 2. Change `ref:` (e.g. `v0.4.0`) to the new tag.
 3. ESPHome dashboard → **Update All** (or install each panel). Updates are over
    Wi-Fi.
+
+## The handheld remote
+
+The Guition JC4880P443C_I_W (the bare board, "C_I_W"; "_Y" has a case) is
+set up like any panel, with a few differences.
+
+**What you need besides the board**
+
+- A single-cell **Li-ion / LiPo battery** with an **MX1.25 2-pin** plug (the
+  board's battery connector; ~3000 mAh lasts a day or more of use). Check the
+  plug's polarity against the board before connecting.
+- Optionally a small **speaker** (MX1.25 2-pin, up to 3 W) for voice replies;
+  the microphone is built in.
+- A charger or dock that supplies the board's USB-C port.
+
+**Display file.** Start from
+[`examples/remote-template.yaml`](../examples/remote-template.yaml): it uses
+`hardware/guition-jc4880p443.yaml` (which switches on the portrait layout),
+`features/battery.yaml` and `features/voice_tap.yaml`. Install
+`ha/panel_lyrics.yaml` in HA for lyrics.
+
+**First install**
+
+1. Use the USB-C port marked **Full-speed** (the chip's own USB; the log
+   comes out there too).
+2. If the dashboard says **"Configuration does not match the platform of
+   the connected device"**, use **Install → Manual download** and flash the
+   file at [web.esphome.io](https://web.esphome.io).
+3. The first boards sold have a pre-production chip (`esp32p4-eco2` in the
+   boot log), which the hardware file assumes. A board that reboots right
+   after "entry" with "Illegal instruction" needs the other setting
+   (`p4_engineering_sample`, see [Display file reference](display-file.md#hardware)).
+4. Add it to HA and turn on **"Allow the device to perform Home Assistant
+   actions"** as for any panel — lyrics and voice need it too.
+
+**Using it:** tap to wake; it goes to standby after 2 hours untouched and a
+tap brings it back. See [Battery, standby and charging](features.md#battery-standby-and-charging).
 
 ## Developing locally
 

@@ -13,7 +13,8 @@ in `configuration.yaml`), then restart Home Assistant.
 | `panel_updates.yaml` | `sensor.esphome_lvgl_panel_latest` — the newest released version (from GitHub tags, every 6 hours). | The update notice in Settings. Optional. |
 | `panel_notes.yaml` | `input_text.panel_sleep_message`, `sensor.panel_night_note` (the night clock note: a sleep message, or the next birthday within a week, from Date helpers named `Birthday: …`), and the *Panel reminders* automation (banners when a Schedule helper named `Reminder: …` starts a time block). | `features/sleep_notes.yaml` and reminders. Edit the `panels:` list in the automation. Needs `panel_messages.yaml` for reminders. |
 | `panel_marine.yaml` | `sensor.panel_marine` — state: `hazard`, `upcoming` or `clear`; attributes `hazard_text`, `upcoming_text`, `event` (e.g. Small Craft Advisory), `short` (SCA, Gale, Storm… for small dashboard badges), `period_1..5`, `forecast_1..5`. Built from the [NOAA It All](https://github.com/dawg-io/noaa_it_all) integration's marine Forecast and Hazard sensors. | `features/marine.yaml`. Replace `lmz741` with your marine zone (4 places). |
-| `panel_ma_favorites.yaml` | `sensor.panel_ma_favorites` — state: number of favorites; attribute `items` (compact list the panels read). Re-read every 15 minutes with `music_assistant.get_library`, and when a panel's refresh button is tapped. | `tabs/ma_favorites.yaml`. Set `ma_entry` to your Music Assistant config entry id (the entry picker in Developer Tools → Actions → `music_assistant.get_library` shows it). |
+| `panel_ma_favorites.yaml` | `sensor.panel_ma_favorites` — state: number of favorites; attribute `items` (compact list the panels read). Re-read every 15 minutes with `music_assistant.get_library`, and when a panel's refresh button is tapped. | `tabs/ma_favorites.yaml`. Set `ma_entry` to your Music Assistant config entry id (the entry picker in Developer Tools → Actions → `music_assistant.get_library` shows it). `fav_order` sets the order within each category: `last_played_desc` (recently played first, the default), `play_count_desc`, `name`, `timestamp_added_desc`. |
+| `panel_lyrics.yaml` | `script.panel_lyrics` and two `rest_command`s that look up a song on [LRCLIB](https://lrclib.net) (exact match first, then a search). No account or key. | [Lyrics](features.md#lyrics) on the Music tab. Restart HA after installing (a new `rest_command` needs it). |
 
 One forecast sensor serves every panel in the house, and one favorites sensor
 every panel with the Music Assistant favorites tab.
@@ -59,6 +60,8 @@ On the panel's device page:
 | Antiburn | switch | Runs the anti-burn "snow" now. |
 | Holiday Theme | switch | Panels with `features/holidays.yaml`: holiday colours and night clock decorations by date. Off by default. |
 | Holiday Preview | select | Disabled until you enable it: shows one holiday's theme now (By date / Halloween / Christmas / Valentine's Day / St. Patrick's Day). |
+| Swipe Between Tabs | switch | Off by default. On: swipe left / right on the screen to change tabs. |
+| Lyrics Delay | number (s) | Panels with lyrics: hold the lyrics back this many seconds for speakers that play behind the reported position (Sonos). −5 to 10. |
 | Restart | button | |
 
 **Controls / Diagnostic**
@@ -69,6 +72,16 @@ On the panel's device page:
 | IP Address, Wi-Fi Signal, Uptime, Reset Reason | Diagnostics. *Reset Reason* tells you why the panel last restarted (power loss, brown-out, crash). |
 | Loop Stack Free | Diagnostic: the least free space the main loop's stack has had since boot (16 KB stack). Should stay well above 1000 B. |
 | Relay 1–3 | The board's three relays (Guition board, if wired). |
+
+**Battery boards** (the [handheld remote](features.md#handheld-remote) with
+`features/battery.yaml`) also add:
+
+| Entity | |
+|---|---|
+| Battery | Level in %, from the battery voltage. |
+| Charging | On while the remote is on a powered charger (read from the voltage; can lag a minute). |
+| Battery Voltage | Diagnostic, averaged over 30 s. |
+| Standby | Button: send the remote to standby now (a tap on its screen brings it back). |
 
 ## Voice
 
@@ -87,6 +100,9 @@ Set up Assist under **Settings → Voice assistants** (speech-to-text,
 text-to-speech, conversation agent) before the first try. The "Allow the
 device to perform Home Assistant actions" option above is needed for voice
 too.
+
+The handheld remote's [tap-to-talk voice](features.md#tap-to-talk-voice-handheld-remote)
+(`features/voice_tap.yaml`) adds the same entities except the wake word ones.
 
 ## Messages
 
@@ -181,6 +197,41 @@ actions:
 ```
 
 (Entity IDs depend on each panel's name — check its device page.)
+
+## Charging the remote only when needed
+
+The [handheld remote](features.md#handheld-remote) restarts when it's lifted
+off a **powered** dock (its charger chip drops power for a moment while it
+switches to the battery). Put the dock on a smart plug and charge only when
+the battery needs it: most of the time the dock is off, and lifting the
+remote does nothing. (When the plug turns off with the remote on the dock,
+the remote restarts quietly there.)
+
+```yaml
+alias: Remote dock — charge between 50% and 90%
+triggers:
+  - trigger: numeric_state
+    entity_id: sensor.living_room_remote_battery      # the remote's Battery
+    below: 50
+    id: low
+  - trigger: numeric_state
+    entity_id: sensor.living_room_remote_battery
+    above: 90
+    id: full
+actions:
+  - choose:
+      - conditions: [{ condition: trigger, id: low }]
+        sequence:
+          - action: switch.turn_on
+            target: { entity_id: switch.remote_dock_plug }   # the dock's smart plug
+      - conditions: [{ condition: trigger, id: full }]
+        sequence:
+          - action: switch.turn_off
+            target: { entity_id: switch.remote_dock_plug }
+```
+
+The Battery sensor is unavailable while the remote is in standby; a
+standby remote on an unpowered dock stays asleep until it's tapped.
 
 ## Room scenes with several lighting systems
 

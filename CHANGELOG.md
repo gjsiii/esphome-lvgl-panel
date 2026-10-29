@@ -1,5 +1,53 @@
 # Changelog
 
+## Unreleased
+
+**Upgrading:** needs ESPHome **2026.10.0** or newer. Copy the updated
+`ha/panel_ma_favorites.yaml` and the new `ha/panel_lyrics.yaml` into
+`/config/packages/` and restart Home Assistant. Swiping between tabs is now
+**off** by default (turn it back on per panel with *Swipe Between Tabs*).
+A hardware package of your own needs `screen_h: 480` in its substitutions.
+
+- **Handheld remote** (`hardware/guition-jc4880p443.yaml`): the Guition
+  JC4880P443 (4.3″ 480×800, ESP32-P4 + C6, battery and speaker connectors,
+  built-in mic) as a battery-powered remote, with a **portrait layout** for
+  every tab: a two-row status bar, taller light sliders, a TV tab with large
+  artwork, episode title and a progress bar and the d-pad centred for one
+  hand, a Music tab with 320 px art, three rows of favorites, and camera
+  pop-ups centred on the tall screen. Square panels are unchanged. Start from
+  `examples/remote-template.yaml`.
+- **Battery** (`features/battery.yaml`): level and charging icon in the
+  status bar, a low-battery banner, *Battery* / *Charging* / *Standby* in HA,
+  and standby after 2 hours untouched (`standby_after_min`) or at 3%; a tap
+  or docking wakes it. Charging is read from the battery voltage.
+- **Tap-to-talk voice** (`features/voice_tap.yaml`): a *Voice Assistant*
+  button (label is `voice_label`) for Assist without a wake word, with a
+  full-screen overlay: Listening, *Hearing you* once speech is detected,
+  Thinking with what was heard, then the reply. Says so after 8 s if Home
+  Assistant doesn't answer.
+- **Lyrics** on the Music tab (new `ha/panel_lyrics.yaml`; LRCLIB, no
+  account): synced lyrics follow the song with the current line in the
+  middle, plain lyrics scroll. On by default on the remote
+  (`music_lyrics: "auto"`), `"true"` for a square panel (they take the place
+  of the artwork). *Lyrics Delay* in HA for speakers that play behind
+  (Sonos). Kept in PSRAM, so the 480×480 boards can run them.
+- **Volume − / + step 2%** on the Music and TV tabs (`music_volume_step`,
+  `tv_volume_step`). The TV keys now set the level, so quick taps add up,
+  whatever the speaker's own step.
+- **Swipe Between Tabs** (HA switch, off by default): a sideways slip while
+  setting a slider no longer changes tabs.
+- **Music Assistant favorites, recently played first** within each category
+  (`fav_order` in the package). Artwork only from Music Assistant, Spotify,
+  Apple Music and SiriusXM; other sites show the music note (a radio
+  station's logo with no size hung the panel's download and froze the
+  remote).
+- **Picture downloads can't hang the panel any more:** one that holds the
+  image loader for 12 s is aborted and logged with its address (album art had
+  stopped changing until a restart).
+- **On/off rows** (`items/switch.yaml`): a switch, `input_boolean` or
+  non-dimming light in the Lights list. Same look as a slider; tap anywhere
+  on the row to toggle.
+
 ## v0.6.0 — 2026-10-16
 
 - **Marine forecast from NOAA It All, with a three-colour sailboat.**

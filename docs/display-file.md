@@ -53,9 +53,21 @@ packages:                      # 3. the shared files it's built from
 |---|---|
 | `hardware/guition-4848s040.yaml` | Guition ESP32-S3-4848S040: 4″ 480×480, relays, 16 MB flash. |
 | `hardware/waveshare-esp32-p4-86-4b.yaml` | Waveshare ESP32-P4-WIFI6-Touch-LCD-4B: 4″ 720×720, Wi-Fi 6, speaker and microphones (for [voice](features.md#voice)), 32 MB flash. |
+| `hardware/guition-jc4880p443.yaml` | Guition JC4880P443C_I_W: 4.3″ 480×800 **portrait**, battery-powered [handheld remote](features.md#handheld-remote), Wi-Fi 6, speaker and microphone, 16 MB flash. |
 
 The screens are designed once and scaled to each board, so a 720×720 panel
-looks the same as a 480×480 one, only sharper.
+looks the same as a 480×480 one, only sharper. The 480×800 board gets its own
+**portrait layout** (taller tabs, a two-row status bar, larger artwork); the
+hardware file selects it with `screen_h: 800`, so a display file needs nothing
+extra.
+
+**Guition JC4880P443 settings** (substitutions, defaults shown):
+
+| Name | Default | Meaning |
+|---|---|---|
+| `p4_engineering_sample` | `true` | The first boards sold have a pre-production chip (boot log `ESP-ROM:esp32p4-eco2`). Set `false` (no quotes) only for a production (rev 3) chip; a build for the wrong revision won't boot. |
+| `p4_cpu_frequency` | `360MHz` | The vendor's rating. |
+| `p4_psram_speed` | `200MHz` | Try `100MHz` if a flickering band appears at one edge of the screen. |
 
 **Waveshare P4 settings** (substitutions, defaults shown):
 
@@ -94,6 +106,7 @@ Set in the display file's `substitutions:`.
 | `update_entity` | `sensor.esphome_lvgl_panel_latest` | HA sensor with the newest released version, for the update notice (`ha/panel_updates.yaml`). |
 | `camera_popup_seconds`, `camera_refresh_seconds` | `"60"`, `"5"` | Camera pop-up duration and refresh interval. |
 | `climate_min`, `climate_max` | `"50"`, `"90"` | Thermostat dial range. |
+| `music_volume_step`, `tv_volume_step` | `"2"`, `"2"` | Percent per tap of the volume − / + buttons on the Music and TV tabs. |
 | `wind_unit`, `rain_unit` | `mph`, `in` | Units shown on the weather sheet. |
 | `c_bg`, `c_surface`, `c_surface_2`, `c_separator`, `c_text`, `c_text_2`, `c_accent`, `c_on_accent`, `c_selected` | see `core/theme.yaml` | Theme colors (`"0xRRGGBB"`). |
 
@@ -108,7 +121,7 @@ orders the tab bar. Leave a tab out and it simply isn't there.
 | File | Vars | |
 |---|---|---|
 | `tabs/tv_appletv.yaml` | `tab_position`, `tv_remote`, `tv_player`, `tv_volume_player`, `tv_mute_player` | Apple TV remote. `tv_volume_player` and `tv_mute_player` can be the Apple TV itself, a soundbar or the TV. |
-| `tabs/music.yaml` | `tab_position`, `music_player` | Now Playing for one speaker (a Music Assistant player works best). |
+| `tabs/music.yaml` | `tab_position`, `music_player`, optional `music_lyrics` (`"auto"`: on for the portrait remote, off for square panels; `"true"`, `"false"`) | Now Playing for one speaker (a Music Assistant player works best). Lyrics need `ha/panel_lyrics.yaml`. See [Lyrics](features.md#lyrics). |
 | `tabs/favorites.yaml` | `tab_position` | Grid for `items/favorite.yaml`. |
 | `tabs/ma_favorites.yaml` | `tab_position`, `music_player`, `ma_url`, optional `favorites_entity` (default `sensor.panel_ma_favorites`) | Live Music Assistant favorites with category chips. Needs `ha/panel_ma_favorites.yaml` (same release). Any board; artwork is kept in PSRAM. See [Favorites from Music Assistant](features.md#favorites-from-music-assistant). |
 | `tabs/timer.yaml` | `tab_position`, optional `preset_1` … `preset_6` (minutes; default 1, 3, 5, 10, 15, 30) | Preset, custom and voice timers. Needs `features/voice_assistant.yaml`. See [Timer tab](features.md#timer-tab). |
@@ -124,6 +137,7 @@ Items are repeated: include one per light, scene, app, speaker or favorite.
 | `items/action_chip.yaml` | `slot`, `name`, `action`, `entity` | scene chips | Any HA action, e.g. `light.turn_off`, `scene.turn_on` or `script.turn_on`. `entity` may be a comma-separated list (e.g. an HA scene plus a Hue scene). |
 | `items/light.yaml` | `slot`, `name`, `entity` | sliders | Brightness slider; tap the name to toggle, hold it for the color sheet. |
 | `items/fan.yaml` | `slot`, `name`, `entity` | sliders | Fan speed (percentage) slider. |
+| `items/switch.yaml` | `slot`, `name`, `entity` | sliders | On/off row for a switch, `input_boolean` or non-dimming light; tap to toggle. |
 | `items/cover.yaml` | `slot`, `name`, `entity` | sliders | Shade / blind / curtain position slider; tap the name to open, close or stop. |
 | `items/tv_app.yaml` | `slot`, `icon`, `source`, `entity` | TV apps | `icon`: path to an image relative to the display file; `source`: the Apple TV source name. |
 | `items/speaker.yaml` | `slot`, `name`, `entity`, `leader` | Play on | `leader` is this room's `music_player`. A grouped speaker shows its own volume slider. |
@@ -145,6 +159,8 @@ Each feature is included at most once, except camera pop-ups and status chips.
 | `features/sleep_notes.yaml` | optional `note_entity` (default `sensor.panel_night_note`) | Sleep message and birthdays on the night clock. Needs `ha/panel_notes.yaml`. See [Sleep screen notes](features.md#sleep-screen-notes). |
 | `features/holidays.yaml` | optional `decorations` (default `8`) | Holiday themes, off until the panel's **Holiday Theme** switch is turned on in HA. See [Holiday themes](features.md#holiday-themes). |
 | `features/voice_assistant.yaml` | — | Wake word and Home Assistant Assist, with a mic button in the status bar. Needs a board with a speaker and microphones (Waveshare P4). See [Voice](features.md#voice). |
+| `features/voice_tap.yaml` | optional `voice_label` (default `"Voice Assistant"`) | Tap-to-talk Assist without a wake word, for the battery remote: a button in the status bar's second row. See [Tap-to-talk voice](features.md#tap-to-talk-voice-handheld-remote). |
+| `features/battery.yaml` | optional `standby_after_min` (default `"120"`) | Battery level in the status bar, docked detection, low-battery banner and standby. Needs a battery board (JC4880P443). See [Handheld remote](features.md#handheld-remote). |
 
 ## Values and quoting
 
@@ -156,6 +172,9 @@ Each feature is included at most once, except camera pop-ups and status chips.
   `../www/playlist_icons/jazz.png` for `/config/www/playlist_icons/jazz.png`.
 
 ## A complete example
+
+(For the handheld remote, start from
+[`examples/remote-template.yaml`](../examples/remote-template.yaml) instead.)
 
 ```yaml
 substitutions:
