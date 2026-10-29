@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.7.0 — 2026-10-28
 
 **Upgrading:** needs ESPHome **2026.10.0** or newer. Copy the updated
 `ha/panel_ma_favorites.yaml` and the new `ha/panel_lyrics.yaml` into
