@@ -35,16 +35,19 @@ globals:
     type: std::function<void(lv_obj_t *, lv_obj_t *, lv_obj_t *)>
     initial_value: |-
       [](lv_obj_t *hdr, lv_obj_t *card, lv_obj_t *before) {
+        // id() isn't translated inside a global's initial value: it gives the
+        // object, so take its address
+        lv_obj_t *panel = &id(settings_panel);
         const int32_t at = lv_obj_get_style_y(before, LV_PART_MAIN);
         const int32_t shift = ${(22*px)|int} + lv_obj_get_style_height(card, LV_PART_MAIN) + ${(16*px)|int};
-        uint32_t n = lv_obj_get_child_cnt(id(settings_panel));
+        uint32_t n = lv_obj_get_child_cnt(panel);
         for (uint32_t k = 0; k < n; k++) {
-          lv_obj_t *c = lv_obj_get_child(id(settings_panel), k);
+          lv_obj_t *c = lv_obj_get_child(panel, k);
           int32_t y = lv_obj_get_style_y(c, LV_PART_MAIN);
           if (y >= at) lv_obj_set_y(c, y + shift);
         }
-        lv_obj_set_parent(hdr, id(settings_panel));
-        lv_obj_set_parent(card, id(settings_panel));
+        lv_obj_set_parent(hdr, panel);
+        lv_obj_set_parent(card, panel);
         lv_obj_set_y(hdr, at);
         lv_obj_set_y(card, at + ${(22*px)|int});
       }
